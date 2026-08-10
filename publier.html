@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Publier une annonce — MALAGA</title>
+  <meta name="theme-color" content="#009E60">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link"><span class="logo-text">MALAGA 🇬🇦</span></a>
+      <div class="nav-actions">
+        <a href="mes-annonces.html" class="btn btn-blanc">← Mes annonces</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-form">
+    <div class="form-card">
+      <h2>Publier une annonce</h2>
+      <p class="sous-titre">Remplissez les détails de votre logement à louer</p>
+
+      <div id="erreurMsg" class="erreur-msg"></div>
+
+      <form id="formAnnonce">
+        <div class="champ">
+          <label>Titre de l'annonce *</label>
+          <input type="text" id="titre" required placeholder="Ex : Belle villa meublée avec jardin">
+        </div>
+
+        <div class="grille-2">
+          <div class="champ">
+            <label>Type de bien *</label>
+            <select id="type" required></select>
+          </div>
+          <div class="champ">
+            <label>Loyer mensuel (FCFA) *</label>
+            <input type="number" id="prix" required min="1000" placeholder="150000">
+          </div>
+        </div>
+
+        <div class="champ">
+          <label>Description *</label>
+          <textarea id="description" required placeholder="Décrivez le logement, son environnement, ses atouts..."></textarea>
+        </div>
+
+        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">📍 Localisation</h3>
+
+        <div class="grille-2">
+          <div class="champ">
+            <label>Commune *</label>
+            <select id="commune" required></select>
+          </div>
+          <div class="champ">
+            <label>Arrondissement *</label>
+            <select id="arrondissement" required></select>
+          </div>
+        </div>
+        <div class="champ">
+          <label>Quartier</label>
+          <input type="text" id="quartier" list="listeQuartiers" placeholder="Ex : Angondjé">
+          <datalist id="listeQuartiers"></datalist>
+        </div>
+
+        <div class="champ">
+          <label>Rue / point de repère</label>
+          <input type="text" id="pointRepere" placeholder="Ex : derrière la station Total d'Angondjé">
+        </div>
+
+        <div class="champ">
+          <label>Position exacte sur la carte *</label>
+          <div class="aide">Cliquez sur la carte pour placer le repère, ou utilisez votre position actuelle.</div>
+          <button type="button" class="btn btn-outline" id="btnMaPosition" style="margin:8px 0;">📍 Utiliser ma position actuelle</button>
+          <div id="miniMap" class="mini-map"></div>
+        </div>
+
+        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">🏠 Caractéristiques</h3>
+
+        <div class="grille-2">
+          <div class="champ">
+            <label>Surface (m²)</label>
+            <input type="number" id="surface" min="1" placeholder="75">
+          </div>
+          <div class="champ">
+            <label>Chambres</label>
+            <input type="number" id="chambres" min="0" placeholder="2">
+          </div>
+        </div>
+        <div class="grille-2">
+          <div class="champ">
+            <label>Salles de bain</label>
+            <input type="number" id="sdb" min="0" placeholder="1">
+          </div>
+          <div class="champ">
+            <label>État du bâtiment</label>
+            <select id="etat"></select>
+          </div>
+        </div>
+
+        <div class="champ">
+          <label>Terrain clôturé ?</label>
+          <div class="toggle-oui-non" id="toggleCloture">
+            <div class="chip" data-val="oui">Oui</div>
+            <div class="chip actif" data-val="non">Non</div>
+          </div>
+        </div>
+
+        <div class="grille-2">
+          <div class="champ">
+            <label>Alimentation en eau</label>
+            <select id="eau"></select>
+          </div>
+          <div class="champ">
+            <label>Électricité</label>
+            <select id="electricite"></select>
+          </div>
+        </div>
+        <div class="champ">
+          <label>Compteur</label>
+          <select id="compteur"></select>
+        </div>
+
+        <div class="champ">
+          <label>Équipements</label>
+          <div class="chips" id="chipsEquipements"></div>
+        </div>
+
+        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">📸 Photos et vidéo</h3>
+
+        <div class="champ">
+          <label>Photos (jusqu'à 10) *</label>
+          <div class="upload-zone" id="zonePhotos">
+            <div class="icone">📷</div>
+            <p>Cliquez pour ajouter des photos</p>
+          </div>
+          <input type="file" id="inputPhotos" accept="image/*" multiple hidden>
+          <div class="previsu-grille" id="previsuPhotos"></div>
+        </div>
+
+        <div class="champ">
+          <label>Vidéo courte (5 secondes maximum, facultatif)</label>
+          <div class="upload-zone" id="zoneVideo">
+            <div class="icone">🎥</div>
+            <p>Cliquez pour ajouter une vidéo</p>
+          </div>
+          <input type="file" id="inputVideo" accept="video/*" hidden>
+          <div class="previsu-grille" id="previsuVideo"></div>
+        </div>
+
+        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">📞 Contact</h3>
+
+        <div class="grille-2">
+          <div class="champ">
+            <label>Numéro WhatsApp *</label>
+            <input type="tel" id="whatsapp" required placeholder="+241 XX XX XX XX">
+          </div>
+          <div class="champ">
+            <label>Email de contact</label>
+            <input type="email" id="emailContact" placeholder="vous@exemple.com">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-vert btn-full" id="btnPublier" style="margin-top:10px;">Publier l'annonce</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module">
+    import { auth, db, doc, collection, setDoc, serverTimestamp } from "./firebase-config.js";
+
+    // --- Configuration Cloudinary (hébergement des photos/vidéos) ---
+    const CLOUDINARY_CLOUD_NAME = "enpphgwu";
+    const CLOUDINARY_UPLOAD_PRESET = "malaga_photos";
+
+    async function uploaderVersCloudinary(fichier) {
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+      const formData = new FormData();
+      formData.append("file", fichier);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+      const reponse = await fetch(url, { method: "POST", body: formData });
+      if (!reponse.ok) throw new Error("Échec de l'envoi vers Cloudinary");
+      const data = await reponse.json();
+      return data.secure_url;
+    }
+    import { protegerPage, getProfil } from "./auth.js";
+    import {
+      COMMUNES, ARRONDISSEMENTS, getQuartiers, CENTRES, TYPES_BIEN, EQUIPEMENTS,
+      EAU_OPTIONS, ELECTRICITE_OPTIONS, COMPTEUR_OPTIONS, ETAT_BATIMENT, LIBREVILLE_CENTER
+    } from "./malaga-reference.js";
+
+    let utilisateurCourant = null;
+    let photosFichiers = [];
+    let videoFichier = null;
+    let marqueur = null;
+    let clotureVal = "non";
+    let equipementsChoisis = new Set();
+
+    protegerPage((user) => { utilisateurCourant = user; }, "proprietaire");
+
+    // Remplissage des listes déroulantes
+    document.getElementById("type").innerHTML = TYPES_BIEN.map(t => `<option>${t}</option>`).join("");
+    document.getElementById("etat").innerHTML = ETAT_BATIMENT.map(e => `<option>${e}</option>`).join("");
+
+    // Commune → Arrondissement → Quartier (données réelles en cascade)
+    const selectCommune = document.getElementById("commune");
+    const selectArrondissement = document.getElementById("arrondissement");
+    const listeQuartiers = document.getElementById("listeQuartiers");
+
+    selectCommune.innerHTML = '<option value="">Choisir…</option>' + COMMUNES.map(c => `<option>${c}</option>`).join("");
+
+    function rafraichirArrondissements() {
+      const commune = selectCommune.value;
+      const liste = ARRONDISSEMENTS[commune] || [];
+      selectArrondissement.innerHTML = '<option value="">Choisir…</option>' + liste.map(a => `<option>${a}</option>`).join("");
+      rafraichirQuartiers();
+      if (CENTRES[commune]) miniMap.setView([CENTRES[commune].lat, CENTRES[commune].lng], CENTRES[commune].zoom);
+    }
+    function rafraichirQuartiers() {
+      const quartiers = getQuartiers(selectCommune.value, selectArrondissement.value);
+      listeQuartiers.innerHTML = quartiers.map(q => `<option value="${q}">`).join("");
+    }
+    selectCommune.onchange = rafraichirArrondissements;
+    selectArrondissement.onchange = rafraichirQuartiers;
+    document.getElementById("eau").innerHTML = EAU_OPTIONS.map(e => `<option>${e}</option>`).join("");
+    document.getElementById("electricite").innerHTML = ELECTRICITE_OPTIONS.map(e => `<option>${e}</option>`).join("");
+    document.getElementById("compteur").innerHTML = COMPTEUR_OPTIONS.map(e => `<option>${e}</option>`).join("");
+    document.getElementById("chipsEquipements").innerHTML = EQUIPEMENTS.map(e =>
+      `<div class="chip" data-val="${e}">${e}</div>`).join("");
+
+    document.querySelectorAll("#chipsEquipements .chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        chip.classList.toggle("actif");
+        chip.classList.contains("actif") ? equipementsChoisis.add(chip.dataset.val) : equipementsChoisis.delete(chip.dataset.val);
+      });
+    });
+
+    document.querySelectorAll("#toggleCloture .chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll("#toggleCloture .chip").forEach(c => c.classList.remove("actif"));
+        chip.classList.add("actif");
+        clotureVal = chip.dataset.val;
+      });
+    });
+
+    // Carte mini pour choisir la position
+    const miniMap = L.map("miniMap").setView([LIBREVILLE_CENTER.lat, LIBREVILLE_CENTER.lng], 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(miniMap);
+    function placerMarqueur(lat, lng) {
+      if (marqueur) miniMap.removeLayer(marqueur);
+      marqueur = L.marker([lat, lng], { draggable: true }).addTo(miniMap);
+      miniMap.setView([lat, lng], 15);
+    }
+    miniMap.on("click", (e) => placerMarqueur(e.latlng.lat, e.latlng.lng));
+    document.getElementById("btnMaPosition").onclick = () => {
+      if (!navigator.geolocation) { alert("La géolocalisation n'est pas disponible sur cet appareil."); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => placerMarqueur(pos.coords.latitude, pos.coords.longitude),
+        () => alert("Impossible de récupérer votre position. Placez le repère manuellement sur la carte.")
+      );
+    };
+
+    // Upload photos
+    const zonePhotos = document.getElementById("zonePhotos");
+    const inputPhotos = document.getElementById("inputPhotos");
+    const previsuPhotos = document.getElementById("previsuPhotos");
+    zonePhotos.onclick = () => inputPhotos.click();
+    inputPhotos.onchange = () => {
+      const nouveaux = Array.from(inputPhotos.files);
+      photosFichiers = [...photosFichiers, ...nouveaux].slice(0, 10);
+      rafraichirPrevisuPhotos();
+      inputPhotos.value = "";
+    };
+    function rafraichirPrevisuPhotos() {
+      previsuPhotos.innerHTML = "";
+      photosFichiers.forEach((f, i) => {
+        const item = document.createElement("div");
+        item.className = "previsu-item";
+        item.innerHTML = `<img src="${URL.createObjectURL(f)}"><button type="button" class="suppr">✕</button>`;
+        item.querySelector(".suppr").onclick = () => { photosFichiers.splice(i, 1); rafraichirPrevisuPhotos(); };
+        previsuPhotos.appendChild(item);
+      });
+    }
+
+    // Upload vidéo (5 secondes maximum)
+    const zoneVideo = document.getElementById("zoneVideo");
+    const inputVideo = document.getElementById("inputVideo");
+    const previsuVideo = document.getElementById("previsuVideo");
+    zoneVideo.onclick = () => inputVideo.click();
+    inputVideo.onchange = () => {
+      const fichier = inputVideo.files[0];
+      if (!fichier) return;
+      const videoEl = document.createElement("video");
+      videoEl.preload = "metadata";
+      videoEl.onloadedmetadata = () => {
+        URL.revokeObjectURL(videoEl.src);
+        if (videoEl.duration > 5.5) {
+          alert("La vidéo doit durer 5 secondes maximum.");
+          inputVideo.value = "";
+          return;
+        }
+        videoFichier = fichier;
+        previsuVideo.innerHTML = `
+          <div class="previsu-item" style="aspect-ratio:auto;height:100px;">
+            <video src="${URL.createObjectURL(fichier)}" muted></video>
+            <button type="button" class="suppr">✕</button>
+          </div>`;
+        previsuVideo.querySelector(".suppr").onclick = () => { videoFichier = null; previsuVideo.innerHTML = ""; inputVideo.value = ""; };
+      };
+      videoEl.src = URL.createObjectURL(fichier);
+    };
+
+    // Soumission du formulaire
+    document.getElementById("formAnnonce").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const erreurMsg = document.getElementById("erreurMsg");
+      erreurMsg.classList.remove("visible");
+
+      if (photosFichiers.length === 0) {
+        erreurMsg.textContent = "Ajoutez au moins une photo.";
+        erreurMsg.classList.add("visible");
+        return;
+      }
+      if (!marqueur) {
+        erreurMsg.textContent = "Placez la position du logement sur la carte.";
+        erreurMsg.classList.add("visible");
+        return;
+      }
+
+      const btn = document.getElementById("btnPublier");
+      btn.disabled = true; btn.textContent = "Publication en cours…";
+
+      try {
+        const profil = await getProfil(utilisateurCourant.uid);
+        const nouvelleRef = doc(collection(db, "annonces"));
+
+        // Upload des photos vers Cloudinary
+        const urlsPhotos = [];
+        for (let i = 0; i < photosFichiers.length; i++) {
+          btn.textContent = `Envoi des photos… (${i + 1}/${photosFichiers.length})`;
+          urlsPhotos.push(await uploaderVersCloudinary(photosFichiers[i]));
+        }
+
+        // Upload de la vidéo vers Cloudinary
+        let urlVideo = null;
+        if (videoFichier) {
+          btn.textContent = "Envoi de la vidéo…";
+          urlVideo = await uploaderVersCloudinary(videoFichier);
+        }
+        btn.textContent = "Publication en cours…";
+
+        const { lat, lng } = marqueur.getLatLng();
+
+        await setDoc(nouvelleRef, {
+          proprietaireId: utilisateurCourant.uid,
+          proprietaireNom: profil?.nom || "",
+          proprietaireTel: profil?.tel || "",
+          proprietaireEmail: document.getElementById("emailContact").value.trim() || profil?.email || "",
+          whatsapp: document.getElementById("whatsapp").value.trim(),
+          titre: document.getElementById("titre").value.trim(),
+          type: document.getElementById("type").value,
+          prix: Number(document.getElementById("prix").value),
+          description: document.getElementById("description").value.trim(),
+          commune: document.getElementById("commune").value,
+          arrondissement: document.getElementById("arrondissement").value,
+          quartier: document.getElementById("quartier").value.trim(),
+          pointRepere: document.getElementById("pointRepere").value.trim(),
+          lat, lng,
+          surface: Number(document.getElementById("surface").value) || null,
+          chambres: Number(document.getElementById("chambres").value) || null,
+          sdb: Number(document.getElementById("sdb").value) || null,
+          etat: document.getElementById("etat").value,
+          cloture: clotureVal === "oui",
+          eau: document.getElementById("eau").value,
+          electricite: document.getElementById("electricite").value,
+          compteur: document.getElementById("compteur").value,
+          equipements: Array.from(equipementsChoisis),
+          photos: urlsPhotos,
+          video: urlVideo,
+          statut: "disponible",
+          vues: 0,
+          dateCreation: serverTimestamp(),
+          dateModification: serverTimestamp()
+        });
+
+        window.location.href = "mes-annonces.html";
+      } catch (err) {
+        console.error(err);
+        erreurMsg.textContent = "Une erreur est survenue lors de la publication. Réessayez.";
+        erreurMsg.classList.add("visible");
+        btn.disabled = false; btn.textContent = "Publier l'annonce";
+      }
+    });
+  </script>
+</body>
+</html>

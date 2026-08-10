@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mes annonces — MALAGA</title>
+  <meta name="theme-color" content="#009E60">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link"><span class="logo-text">MALAGA 🇬🇦</span></a>
+      <div class="nav-actions">
+        <a href="publier.html" class="btn btn-jaune">➕ Publier</a>
+        <button class="btn btn-blanc" id="btnDeconnexion">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="dashboard-header">
+    <h1>Mes annonces</h1>
+    <p id="sousTitreDashboard">Chargement…</p>
+  </div>
+
+  <div class="liste-dashboard" id="listeDashboard">
+    <div class="spinner">Chargement de vos annonces…</div>
+  </div>
+
+  <!-- Modal modification -->
+  <div class="modal-overlay" id="modalModifier">
+    <div class="modal-panneau">
+      <div class="form-card">
+        <h2>Modifier l'annonce</h2>
+        <p class="sous-titre">Les photos et la position ne se modifient pas ici — supprimez et republiez si besoin.</p>
+        <form id="formModifier">
+          <div class="champ"><label>Titre</label><input type="text" id="modTitre" required></div>
+          <div class="grille-2">
+            <div class="champ"><label>Loyer mensuel (FCFA)</label><input type="number" id="modPrix" required></div>
+            <div class="champ"><label>Statut</label>
+              <select id="modStatut">
+                <option value="disponible">Disponible</option>
+                <option value="occupe">Occupé</option>
+              </select>
+            </div>
+          </div>
+          <div class="champ"><label>Description</label><textarea id="modDescription" required></textarea></div>
+          <div style="display:flex;gap:10px;">
+            <button type="button" class="btn btn-blanc" id="btnAnnulerModif" style="flex:1;">Annuler</button>
+            <button type="submit" class="btn btn-vert" style="flex:1;">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db, signOut, collection, query, where, orderBy, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "./firebase-config.js";
+    import { protegerPage } from "./auth.js";
+    import { getIconeType, formatPrix } from "./malaga-reference.js";
+
+    let uidCourant = null;
+    let annonceEnEdition = null;
+
+    protegerPage((user) => {
+      uidCourant = user.uid;
+      ecouterMesAnnonces(user.uid);
+    }, "proprietaire");
+
+    document.getElementById("btnDeconnexion").onclick = () => signOut(auth);
+
+    function ecouterMesAnnonces(uid) {
+      const q = query(collection(db, "annonces"), where("proprietaireId", "==", uid), orderBy("dateCreation", "desc"));
+      onSnapshot(q, (snap) => {
+        const annonces = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        rendreListe(annonces);
+      }, (err) => {
+        console.error(err);
+        document.getElementById("listeDashboard").innerHTML = `<p class="spinner">Impossible de charger vos annonces.</p>`;
+      });
+    }
+
+    function rendreListe(annonces) {
+      const container = document.getElementById("listeDashboard");
+      const disponibles = annonces.filter(a => a.statut === "disponible").length;
+      document.getElementById("sousTitreDashboard").textContent =
+        `${annonces.length} annonce(s) publiée(s) — ${disponibles} disponible(s)`;
+
+      if (annonces.length === 0) {
+        container.innerHTML = `
+          <div class="etat-vide">
+            <div class="icone">🏠</div>
+            <p>Vous n'avez encore publié aucune annonce.</p>
+            <a href="publier.html" class="btn btn-vert" style="margin-top:14px;display:inline-flex;">➕ Publier ma première annonce</a>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = "";
+      annonces.forEach(a => {
+        const ligne = document.createElement("div");
+        ligne.className = "ligne-annonce";
+        const photo = a.photos && a.photos[0];
+        ligne.innerHTML = `
+          <div class="miniature">${photo ? `<img src="${photo}">` : getIconeType(a.type)}</div>
+          <div>
+            <h3>${a.titre}</h3>
+            <div class="meta">${formatPrix(a.prix)} · 📍 ${a.quartier || ""} — ${a.arrondissement || ""}, ${a.commune || ""} · 👁️ ${a.vues || 0} vue(s)</div>
+            <span class="badge ${a.statut === 'disponible' ? 'badge-disponible' : 'badge-occupe'}" style="margin-top:6px;">
+              ${a.statut === 'disponible' ? '🟢 Disponible' : '🔴 Occupé'}
+            </span>
+          </div>
+          <div class="ligne-actions">
+            <div class="toggle-statut">
+              <button class="${a.statut === 'disponible' ? 'actif-dispo' : ''}" data-statut="disponible">Disponible</button>
+              <button class="${a.statut === 'occupe' ? 'actif-occupe' : ''}" data-statut="occupe">Occupé</button>
+            </div>
+            <button class="btn btn-outline btn-modifier">✏️ Modifier</button>
+            <button class="btn btn-rouge btn-supprimer">🗑️ Supprimer</button>
+          </div>
+        `;
+
+        ligne.querySelectorAll(".toggle-statut button").forEach(btn => {
+          btn.onclick = () => changerStatut(a.id, btn.dataset.statut);
+        });
+        ligne.querySelector(".btn-modifier").onclick = () => ouvrirModification(a);
+        ligne.querySelector(".btn-supprimer").onclick = () => supprimerAnnonce(a.id, a.titre);
+
+        container.appendChild(ligne);
+      });
+    }
+
+    async function changerStatut(id, statut) {
+      try {
+        await updateDoc(doc(db, "annonces", id), { statut, dateModification: serverTimestamp() });
+      } catch (err) {
+        alert("Impossible de mettre à jour le statut. Réessayez.");
+      }
+    }
+
+    async function supprimerAnnonce(id, titre) {
+      if (!confirm(`Supprimer définitivement l'annonce "${titre}" ? Cette action est irréversible.`)) return;
+      try {
+        await deleteDoc(doc(db, "annonces", id));
+      } catch (err) {
+        alert("Impossible de supprimer l'annonce. Réessayez.");
+      }
+    }
+
+    function ouvrirModification(a) {
+      annonceEnEdition = a.id;
+      document.getElementById("modTitre").value = a.titre;
+      document.getElementById("modPrix").value = a.prix;
+      document.getElementById("modStatut").value = a.statut;
+      document.getElementById("modDescription").value = a.description || "";
+      document.getElementById("modalModifier").classList.add("ouverte");
+    }
+    document.getElementById("btnAnnulerModif").onclick = () => document.getElementById("modalModifier").classList.remove("ouverte");
+
+    document.getElementById("formModifier").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try {
+        await updateDoc(doc(db, "annonces", annonceEnEdition), {
+          titre: document.getElementById("modTitre").value.trim(),
+          prix: Number(document.getElementById("modPrix").value),
+          statut: document.getElementById("modStatut").value,
+          description: document.getElementById("modDescription").value.trim(),
+          dateModification: serverTimestamp()
+        });
+        document.getElementById("modalModifier").classList.remove("ouverte");
+      } catch (err) {
+        alert("Impossible d'enregistrer les modifications. Réessayez.");
+      }
+    });
+  </script>
+
+  <footer class="footer">
+    <div class="brand">MALAGA 🇬🇦</div>
+  </footer>
+</body>
+</html>
