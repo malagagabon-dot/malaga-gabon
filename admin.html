@@ -185,7 +185,11 @@
   <div class="page" id="page-annonces">
     <div class="page-header">
       <h1>Gestion des annonces</h1>
-      <button class="btn-primary" onclick="showPage('publier')">+ Publier une annonce</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-outline" onclick="supprimerAnnoncesDemo()">🗑️ Supprimer les démos</button>
+        <button class="btn-outline" onclick="semerAnnoncesDemo()">🌱 Ajouter des annonces démo</button>
+        <button class="btn-primary" onclick="showPage('publier')">+ Publier une annonce</button>
+      </div>
     </div>
 
     <!-- Filtres -->
@@ -194,17 +198,13 @@
       <select class="filter-select" id="filterStatut" onchange="filtrerAnnonces()">
         <option value="">Tous les statuts</option>
         <option value="disponible">🟢 Disponible</option>
-        <option value="réservé">🟡 Réservé</option>
-        <option value="loué">🔴 Loué</option>
-        <option value="masqué">⚫ Masqué</option>
+        <option value="occupe">🔴 Occupé</option>
       </select>
       <select class="filter-select" id="filterVille" onchange="filtrerAnnonces()">
-        <option value="">Toutes les villes</option>
+        <option value="">Toutes les communes</option>
         <option>Libreville</option>
-        <option>Port-Gentil</option>
-        <option>Franceville</option>
-        <option>Oyem</option>
-        <option>Moanda</option>
+        <option>Akanda</option>
+        <option>Owendo</option>
       </select>
     </div>
 
@@ -500,6 +500,102 @@
   </div>
 
 </div><!-- /admin-main -->
+
+<!-- ═══ MODAL MODIFIER ANNONCE ═══ -->
+<div class="modal-overlay hidden" id="modalModifierAnnonce">
+  <div class="modal" style="max-width:640px;width:92%;max-height:88vh;overflow-y:auto;">
+    <h3>✏️ Modifier l'annonce</h3>
+    <div class="form-grid">
+      <div class="form-group full-col">
+        <label>Titre *</label>
+        <input type="text" id="modTitre" />
+      </div>
+      <div class="form-group">
+        <label>Type de bien *</label>
+        <select id="modType">
+          <option>Maison</option>
+          <option>Appartement</option>
+          <option>Studio</option>
+          <option>Villa</option>
+          <option>Chambre</option>
+          <option>Bureau</option>
+          <option>Local commercial</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Commune *</label>
+        <select id="modCommune">
+          <option>Libreville</option>
+          <option>Akanda</option>
+          <option>Owendo</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Arrondissement</label>
+        <input type="text" id="modArrondissement" placeholder="Ex: 2e arrondissement" />
+      </div>
+      <div class="form-group">
+        <label>Quartier</label>
+        <input type="text" id="modQuartier" />
+      </div>
+      <div class="form-group">
+        <label>Loyer mensuel (FCFA) *</label>
+        <input type="number" id="modPrix" />
+      </div>
+      <div class="form-group">
+        <label>Surface (m²)</label>
+        <input type="number" id="modSurface" />
+      </div>
+      <div class="form-group">
+        <label>Chambres</label>
+        <input type="number" id="modChambres" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Salles de bain</label>
+        <input type="number" id="modSdb" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Statut</label>
+        <select id="modStatut">
+          <option value="disponible">🟢 Disponible</option>
+          <option value="occupe">🔴 Occupé</option>
+        </select>
+      </div>
+      <div class="form-group full-col">
+        <label>Description</label>
+        <textarea id="modDescription" rows="4"></textarea>
+      </div>
+      <div class="form-group full-col">
+        <label>Équipements / Tags</label>
+        <div class="tags-picker" id="modTagsPicker">
+          <label class="tag-opt"><input type="checkbox" value="Meublé" /> Meublé</label>
+          <label class="tag-opt"><input type="checkbox" value="Climatisé" /> Climatisé</label>
+          <label class="tag-opt"><input type="checkbox" value="Clôturé" /> Clôturé</label>
+          <label class="tag-opt"><input type="checkbox" value="Parking" /> Parking</label>
+          <label class="tag-opt"><input type="checkbox" value="Jardin" /> Jardin</label>
+          <label class="tag-opt"><input type="checkbox" value="Piscine" /> Piscine</label>
+          <label class="tag-opt"><input type="checkbox" value="Fibre optique" /> Fibre optique</label>
+          <label class="tag-opt"><input type="checkbox" value="Groupe électrogène" /> Groupe électrogène</label>
+          <label class="tag-opt"><input type="checkbox" value="Forage" /> Forage</label>
+          <label class="tag-opt"><input type="checkbox" value="Gardiennage" /> Gardiennage</label>
+          <label class="tag-opt"><input type="checkbox" value="Interphone" /> Interphone</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Nom du propriétaire</label>
+        <input type="text" id="modProprioNom" />
+      </div>
+      <div class="form-group">
+        <label>Téléphone du propriétaire</label>
+        <input type="tel" id="modProprioTel" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="fermerModalModifier()">Annuler</button>
+      <button class="btn-primary" id="modBtnEnregistrer" onclick="enregistrerModificationAnnonce()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ MODAL CONFIRMATION ═══ -->
 <div class="modal-overlay hidden" id="modalConfirm">

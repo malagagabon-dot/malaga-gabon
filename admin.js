@@ -309,6 +309,7 @@ function loadAnnonces(liste) {
         <td><span style="background:#D1FAE5;padding:3px 8px;border-radius:6px;font-size:11px;">${texte(a, 'statut', 'disponibilite')}</span></td>
         <td>
           <button onclick="voirAnnonce('${a.id}')" style="padding:4px 8px;background:#3A75C4;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">Voir</button>
+          <button onclick="modifierAnnonce('${a.id}')" style="padding:4px 8px;background:#F59E0B;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">✏️ Modifier</button>
           <button onclick="supprimerAnnonce('${a.id}')" style="padding:4px 8px;background:#EF4444;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">Supprimer</button>
         </td>
       </tr>
@@ -357,6 +358,208 @@ function supprimerAnnonce(id) {
     fermerModal();
   };
   document.getElementById('modalConfirm').classList.remove('hidden');
+}
+
+let annonceEnEdition = null;
+
+function modifierAnnonce(id) {
+  const a = annoncesData.find(x => x.id === id);
+  if (!a) return;
+  annonceEnEdition = id;
+
+  document.getElementById('modTitre').value = texte(a, 'titre', 'title') === '—' ? '' : texte(a, 'titre', 'title');
+  document.getElementById('modType').value = champ(a, 'type') || 'Maison';
+  document.getElementById('modCommune').value = champ(a, 'commune', 'ville') || 'Libreville';
+  document.getElementById('modArrondissement').value = champ(a, 'arrondissement') || '';
+  document.getElementById('modQuartier').value = champ(a, 'quartier', 'adresse') || '';
+  document.getElementById('modPrix').value = nombre(a, 'prix', 'prixMensuel', 'loyer') || '';
+  document.getElementById('modSurface').value = champ(a, 'surface') || '';
+  document.getElementById('modChambres').value = champ(a, 'chambres') || '';
+  document.getElementById('modSdb').value = champ(a, 'sdb') || '';
+  document.getElementById('modStatut').value = (champ(a, 'statut', 'disponibilite') === 'occupe') ? 'occupe' : 'disponible';
+  document.getElementById('modDescription').value = champ(a, 'description') || '';
+  document.getElementById('modProprioNom').value = champ(a, 'proprietaireNom', 'proprio', 'nomProprietaire') || '';
+  document.getElementById('modProprioTel').value = champ(a, 'proprietaireTel', 'whatsapp') || '';
+
+  const equipementsActuels = Array.isArray(a.equipements) ? a.equipements : [];
+  document.querySelectorAll('#modTagsPicker input[type="checkbox"]').forEach(cb => {
+    cb.checked = equipementsActuels.includes(cb.value);
+  });
+
+  document.getElementById('modalModifierAnnonce').classList.remove('hidden');
+}
+
+function fermerModalModifier() {
+  document.getElementById('modalModifierAnnonce').classList.add('hidden');
+  annonceEnEdition = null;
+}
+
+function enregistrerModificationAnnonce() {
+  if (!annonceEnEdition) return;
+
+  const titre = document.getElementById('modTitre').value.trim();
+  const prix = document.getElementById('modPrix').value;
+  if (!titre || !prix) {
+    alert('⚠️ Le titre et le loyer sont obligatoires.');
+    return;
+  }
+
+  const equipements = Array.from(document.querySelectorAll('#modTagsPicker input:checked')).map(el => el.value);
+  const btn = document.getElementById('modBtnEnregistrer');
+  btn.textContent = '⏳ Enregistrement...';
+
+  window.dbAdmin.collection('annonces').doc(annonceEnEdition).update({
+    titre,
+    type: document.getElementById('modType').value,
+    commune: document.getElementById('modCommune').value,
+    arrondissement: document.getElementById('modArrondissement').value.trim(),
+    quartier: document.getElementById('modQuartier').value.trim(),
+    prix: parseInt(prix) || 0,
+    surface: parseInt(document.getElementById('modSurface').value) || null,
+    chambres: parseInt(document.getElementById('modChambres').value) || null,
+    sdb: parseInt(document.getElementById('modSdb').value) || null,
+    statut: document.getElementById('modStatut').value,
+    description: document.getElementById('modDescription').value.trim(),
+    equipements,
+    proprietaireNom: document.getElementById('modProprioNom').value.trim(),
+    proprietaireTel: document.getElementById('modProprioTel').value.trim(),
+    dateModification: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    toast('✅ Annonce mise à jour');
+    fermerModalModifier();
+  }).catch((err) => {
+    console.error(err);
+    toast('❌ Erreur lors de la mise à jour');
+  }).finally(() => {
+    btn.textContent = '💾 Enregistrer';
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ANNONCES DÉMO — génération et nettoyage en un clic
+   Chaque annonce démo porte le champ demo:true, ce qui permet
+   de toutes les supprimer d'un coup sans toucher aux vraies
+   annonces publiées par de vrais propriétaires.
+══════════════════════════════════════════════════════════ */
+function annoncesDemoData() {
+  const photo = (seed) => [1, 2, 3].map(n => `https://picsum.photos/seed/${seed}-${n}/800/600`);
+
+  return [
+    {
+      titre: "Villa meublée avec piscine à Akournam",
+      type: "Villa", commune: "Owendo", arrondissement: "2e arrondissement", quartier: "Akournam 2",
+      prix: 450000, surface: 180, chambres: 4, sdb: 3, cloture: true,
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Magnifique villa entièrement meublée avec piscine privée, grand jardin clôturé et parking pour 2 véhicules. Idéale pour une famille ou une résidence de fonction.",
+      equipements: ["Meublé", "Climatisé", "Piscine", "Parking", "Groupe électrogène"],
+      statut: "disponible", lat: 0.2905, lng: 9.4980, photos: photo("villa-akournam")
+    },
+    {
+      titre: "Appartement moderne aux Cocotiers",
+      type: "Appartement", commune: "Libreville", arrondissement: "2e arrondissement", quartier: "Cocotiers",
+      prix: 220000, surface: 85, chambres: 2, sdb: 1, cloture: false,
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Bel appartement lumineux au 2e étage, proche des commerces et des transports. Cuisine équipée et balcon avec vue dégagée.",
+      equipements: ["Climatisé", "Fibre optique", "Interphone"],
+      statut: "disponible", lat: 0.3912, lng: 9.4580, photos: photo("appart-cocotiers")
+    },
+    {
+      titre: "Studio meublé à Akébé-Ville",
+      type: "Studio", commune: "Libreville", arrondissement: "3e arrondissement", quartier: "Akébé-Ville",
+      prix: 95000, surface: 28, chambres: 0, sdb: 1, cloture: false,
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Commun",
+      description: "Studio compact et fonctionnel, parfait pour un étudiant ou une personne seule. Quartier calme et bien desservi.",
+      equipements: ["Meublé", "Interphone"],
+      statut: "disponible", lat: 0.3830, lng: 9.4650, photos: photo("studio-akebe")
+    },
+    {
+      titre: "Maison familiale à Angondjé",
+      type: "Maison", commune: "Akanda", arrondissement: "2e arrondissement", quartier: "Angondjé",
+      prix: 300000, surface: 140, chambres: 3, sdb: 2, cloture: true,
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Maison spacieuse dans un quartier résidentiel calme, cour clôturée avec espace pour jardin potager. Proche des écoles.",
+      equipements: ["Clôturé", "Parking", "Forage", "Gardiennage"],
+      statut: "disponible", lat: 0.4790, lng: 9.4240, photos: photo("maison-angondje")
+    },
+    {
+      titre: "Chambre meublée à Glass",
+      type: "Chambre", commune: "Libreville", arrondissement: "4e arrondissement", quartier: "Glass",
+      prix: 60000, surface: 18, chambres: 1, sdb: 1, cloture: false,
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Commun",
+      description: "Chambre meublée avec salle d'eau partagée, dans une résidence sécurisée en bord de mer. Idéal petit budget.",
+      equipements: ["Meublé", "Gardiennage"],
+      statut: "disponible", lat: 0.3980, lng: 9.4470, photos: photo("chambre-glass")
+    },
+    {
+      titre: "Villa avec grand jardin à Cap Estérias",
+      type: "Villa", commune: "Akanda", arrondissement: "1er arrondissement", quartier: "Cap Estérias",
+      prix: 500000, surface: 220, chambres: 4, sdb: 3, cloture: true,
+      eau: "Forage", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Villa de standing en bord de mer avec grand jardin arboré, parking et groupe électrogène de secours. Cadre exceptionnel.",
+      equipements: ["Meublé", "Jardin", "Parking", "Groupe électrogène", "Gardiennage"],
+      statut: "occupe", lat: 0.5320, lng: 9.3650, photos: photo("villa-esterias")
+    },
+    {
+      titre: "Bureau climatisé à Charbonnages",
+      type: "Bureau", commune: "Libreville", arrondissement: "1er arrondissement", quartier: "Charbonnages",
+      prix: 350000, surface: 100, chambres: null, sdb: 1, cloture: false,
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Espace de bureau climatisé, open-space modulable, idéal pour une PME. Parking visiteurs disponible.",
+      equipements: ["Climatisé", "Parking", "Fibre optique"],
+      statut: "disponible", lat: 0.4210, lng: 9.4390, photos: photo("bureau-charbonnages")
+    },
+    {
+      titre: "Local commercial au port d'Owendo",
+      type: "Local commercial", commune: "Owendo", arrondissement: "1er arrondissement", quartier: "Owendo Port",
+      prix: 400000, surface: 120, chambres: null, sdb: 1, cloture: true,
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Local commercial bien situé à proximité du port, forte visibilité et passage. Idéal commerce ou entrepôt.",
+      equipements: ["Clôturé", "Parking", "Gardiennage"],
+      statut: "disponible", lat: 0.2940, lng: 9.5050, photos: photo("local-owendo")
+    }
+  ];
+}
+
+function semerAnnoncesDemo() {
+  if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
+  if (!confirm('Ajouter 8 annonces de démonstration dans Firestore ? Elles seront visibles sur le site public et modifiables/supprimables ici.')) return;
+
+  const lot = annoncesDemoData();
+  const batch = window.dbAdmin.batch();
+  const maintenant = firebase.firestore.FieldValue.serverTimestamp();
+
+  lot.forEach((item) => {
+    const ref = window.dbAdmin.collection('annonces').doc();
+    batch.set(ref, {
+      ...item,
+      video: null,
+      proprietaireNom: item.proprietaireNom || "MALAGA Démo",
+      proprietaireTel: "+241 60 14 19 24",
+      whatsapp: "+241 60 14 19 24",
+      vues: Math.floor(Math.random() * 40),
+      demo: true,
+      dateCreation: maintenant,
+      dateModification: maintenant
+    });
+  });
+
+  batch.commit()
+    .then(() => toast(`✅ ${lot.length} annonces démo ajoutées`))
+    .catch((err) => { console.error(err); toast('❌ Erreur lors de l\'ajout des démos'); });
+}
+
+function supprimerAnnoncesDemo() {
+  if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
+  const demos = annoncesData.filter(a => a.demo === true);
+  if (demos.length === 0) { toast('ℹ️ Aucune annonce démo à supprimer'); return; }
+  if (!confirm(`Supprimer définitivement les ${demos.length} annonce(s) démo ?`)) return;
+
+  const batch = window.dbAdmin.batch();
+  demos.forEach(a => batch.delete(window.dbAdmin.collection('annonces').doc(a.id)));
+
+  batch.commit()
+    .then(() => toast(`✅ ${demos.length} annonce(s) démo supprimée(s)`))
+    .catch((err) => { console.error(err); toast('❌ Erreur lors de la suppression'); });
 }
 
 /* ══════════════════════════════════════════════════════════
