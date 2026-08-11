@@ -27,7 +27,8 @@
       <div class="drawer-sep"></div>
       <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
       <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
-      <a href="mailto:malagagabon@gmail.com" class="drawer-link">✉️ Nous écrire</a>
+      <a href="#" class="drawer-link" id="drawerContact">✉️ Nous écrire</a>
+      <a href="#" class="drawer-link" id="drawerSignaler">🚩 Signaler un problème</a>
       <div class="drawer-sep"></div>
       <a href="connexion.html" class="drawer-link" id="drawerConnexion">👤 Se connecter</a>
     </nav>
@@ -123,6 +124,75 @@
     <div class="modal-panneau" id="detailPanneau"></div>
   </div>
 
+  <!-- Modal contact -->
+  <div class="modal-overlay" id="contactModal">
+    <div class="modal-panneau">
+      <div class="mini-modal-header">
+        <h2>✉️ Nous écrire</h2>
+        <button class="modal-close" id="fermerContact" aria-label="Fermer">✕</button>
+      </div>
+      <form id="formContact" class="form-card mini-modal-body">
+        <div class="champ">
+          <label>Nom *</label>
+          <input type="text" id="contactNom" required placeholder="Votre nom">
+        </div>
+        <div class="champ">
+          <label>Téléphone *</label>
+          <input type="tel" id="contactTel" required placeholder="+241 6 XX XX XX">
+        </div>
+        <div class="champ">
+          <label>Sujet</label>
+          <input type="text" id="contactSujet" placeholder="Ex: Question sur une annonce">
+        </div>
+        <div class="champ">
+          <label>Message *</label>
+          <textarea id="contactMessage" required rows="4" placeholder="Votre message..."></textarea>
+        </div>
+        <div class="erreur-msg" id="contactErreur"></div>
+        <div class="succes-msg" id="contactSucces">✅ Message envoyé ! Nous vous répondrons rapidement.</div>
+        <button type="submit" class="btn btn-vert" style="width:100%;" id="contactBtn">Envoyer</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal signalement -->
+  <div class="modal-overlay" id="signalerModal">
+    <div class="modal-panneau">
+      <div class="mini-modal-header">
+        <h2>🚩 Signaler un problème</h2>
+        <button class="modal-close" id="fermerSignaler" aria-label="Fermer">✕</button>
+      </div>
+      <form id="formSignaler" class="form-card mini-modal-body">
+        <div class="champ">
+          <label>Type de problème *</label>
+          <select id="signalerType" required>
+            <option value="">Choisir...</option>
+            <option>Fausse annonce</option>
+            <option>Numéro frauduleux</option>
+            <option>Bien déjà loué</option>
+            <option>Contenu inapproprié</option>
+            <option>Autre</option>
+          </select>
+        </div>
+        <div class="champ">
+          <label>Annonce concernée</label>
+          <input type="text" id="signalerAnnonce" placeholder="Titre ou quartier de l'annonce (facultatif)">
+        </div>
+        <div class="champ">
+          <label>Votre nom</label>
+          <input type="text" id="signalerNom" placeholder="Facultatif">
+        </div>
+        <div class="champ">
+          <label>Description *</label>
+          <textarea id="signalerDesc" required rows="4" placeholder="Décrivez le problème..."></textarea>
+        </div>
+        <div class="erreur-msg" id="signalerErreur"></div>
+        <div class="succes-msg" id="signalerSucces">✅ Signalement envoyé. Merci de nous aider à garder MALAGA fiable.</div>
+        <button type="submit" class="btn btn-jaune" style="width:100%;" id="signalerBtn">Envoyer le signalement</button>
+      </form>
+    </div>
+  </div>
+
   <!-- Barre de navigation basse -->
   <nav class="bottom-nav">
     <a href="index.html" class="bn-item actif" data-page="index.html">
@@ -145,5 +215,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module" src="nav.js"></script>
   <script type="module" src="app.js"></script>
+  <script src="grille-adaptive.js"></script>
+  <script type="module" src="contact-signalement.js"></script>
 </body>
 </html>

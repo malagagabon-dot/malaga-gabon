@@ -2,11 +2,11 @@
    MALAGA – admin.js
    Panneau d'administration — authentification Firebase réelle
    (compte admin unique).
-   Annonces & Utilisateurs : branchés EN TEMPS RÉEL sur Firestore
-   (collections "annonces" et "users", comme le reste du site).
-   Signalements & Messages : toujours en mode démo (données mockées)
-   car aucune collection Firestore dédiée n'existe encore côté site
-   public pour ces deux fonctionnalités — voir note en bas de fichier.
+   Annonces, Utilisateurs, Signalements & Messages : branchés EN TEMPS
+   RÉEL sur Firestore (collections "annonces", "users", "signalements",
+   "messages"). Les deux dernières sont alimentées par le site public
+   via contact-signalement.js (formulaires du menu "Nous écrire" et
+   "Signaler un problème").
    Réservations : branchées en temps réel via reservations-admin.js.
 ═══════════════════════════════════════════════════════════ */
 
@@ -16,6 +16,9 @@ const ADMIN_EMAIL = 'malagagabon@gmail.com';
 
 /* ══════════ Lit plusieurs noms de champ possibles pour un même document
    (les pages du site public peuvent nommer les champs différemment) ══════════ */
+/* Lit plusieurs noms de champ possibles, en priorisant le schéma réel du site
+   public (voir app.js) : commune, quartier, arrondissement, proprietaireNom,
+   description, equipements... Les anciens noms restent en repli. */
 function champ(obj, ...cles) {
   for (const c of cles) {
     if (obj && obj[c] !== undefined && obj[c] !== null && obj[c] !== '') return obj[c];
@@ -25,24 +28,16 @@ function champ(obj, ...cles) {
 function texte(obj, ...cles) { return champ(obj, ...cles) ?? '—'; }
 function nombre(obj, ...cles) { const v = champ(obj, ...cles); return typeof v === 'number' ? v : (parseInt(v) || 0); }
 
-/* Signalements & messages : encore mockés, faute de collection Firestore connue */
-const MOCK_SIGNALEMENTS = [
-  { id:'sig001', date:'12 juin 2026', type:'Fausse annonce', annonce:'ann003', signalePar:'Alain Ntoutoume', desc:'Le bien ne correspond pas aux photos.', traite:false },
-  { id:'sig002', date:'10 juin 2026', type:'Numéro frauduleux', annonce:'ann006', signalePar:'Jean Mbadinga', desc:'Le numéro demande de l\'argent à l\'avance.', traite:false },
-];
-const MOCK_MESSAGES = [
-  { date:'13 juin 2026', nom:'Alain Ntoutoume', tel:'+24166998877', sujet:'Question sur une annonce', msg:'Bonjour, est-ce que la villa à Angondjé est encore disponible ?' },
-  { date:'11 juin 2026', nom:'Fatou Diallo', tel:'+24177223344', sujet:'Problème technique', msg:'Je n\'arrive pas à publier mon annonce depuis hier soir.' },
-];
-
 let currentUser = null;
-let annoncesData = [];   // alimenté en temps réel depuis Firestore "annonces"
-let usersData = [];      // alimenté en temps réel depuis Firestore "users"
-let signalementsData = [...MOCK_SIGNALEMENTS];
-let messagesData = [...MOCK_MESSAGES];
+let annoncesData = [];       // alimenté en temps réel depuis Firestore "annonces"
+let usersData = [];          // alimenté en temps réel depuis Firestore "users"
+let signalementsData = [];   // alimenté en temps réel depuis Firestore "signalements"
+let messagesData = [];       // alimenté en temps réel depuis Firestore "messages"
 let theme = localStorage.getItem('malaga_admin_theme') || 'light';
 let ecouteAnnoncesDemarree = false;
 let ecouteUsersDemarree = false;
+let ecouteSignalementsDemarree = false;
+let ecouteMessagesDemarree = false;
 let pageActuelle = 'dashboard';
 
 /* ══════════════════════════════════════════════════════════
@@ -114,6 +109,8 @@ function onLoginSuccess(user) {
   document.getElementById('adminEmailDisplay').textContent = user.email || '';
   demarrerEcouteAnnonces();
   demarrerEcouteUtilisateurs();
+  demarrerEcouteSignalements();
+  demarrerEcouteMessages();
   loadDashboard();
 }
 
@@ -169,6 +166,52 @@ function demarrerEcouteUtilisateurs() {
 }
 
 /* ══════════════════════════════════════════════════════════
+   ÉCOUTE TEMPS RÉEL — SIGNALEMENTS (Firestore, collection "signalements")
+   Écrit par le site public via contact-signalement.js (formulaire
+   "🚩 Signaler un problème" dans le menu).
+══════════════════════════════════════════════════════════ */
+function demarrerEcouteSignalements() {
+  if (ecouteSignalementsDemarree) return;
+  ecouteSignalementsDemarree = true;
+  if (!window.dbAdmin) return;
+
+  window.dbAdmin.collection('signalements').orderBy('dateCreation', 'desc').onSnapshot((snap) => {
+    signalementsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const nbNonTraites = signalementsData.filter(s => !s.traite).length;
+    const badge = document.getElementById('badgeSignal');
+    if (badge) badge.textContent = nbNonTraites;
+    const kpi = document.getElementById('kpiSignal');
+    if (kpi) kpi.textContent = nbNonTraites;
+    if (pageActuelle === 'dashboard') loadDashboard();
+    if (pageActuelle === 'signalements') loadSignalements();
+  }, (err) => {
+    console.error('Erreur de synchronisation des signalements :', err);
+    const tbody = document.getElementById('signalementsBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Impossible de charger les signalements. Vérifiez les règles Firestore.</td></tr>';
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ÉCOUTE TEMPS RÉEL — MESSAGES (Firestore, collection "messages")
+   Écrit par le site public via contact-signalement.js (formulaire
+   "✉️ Nous écrire" dans le menu).
+══════════════════════════════════════════════════════════ */
+function demarrerEcouteMessages() {
+  if (ecouteMessagesDemarree) return;
+  ecouteMessagesDemarree = true;
+  if (!window.dbAdmin) return;
+
+  window.dbAdmin.collection('messages').orderBy('dateCreation', 'desc').onSnapshot((snap) => {
+    messagesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (pageActuelle === 'messages') loadMessages();
+  }, (err) => {
+    console.error('Erreur de synchronisation des messages :', err);
+    const tbody = document.getElementById('messagesBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Impossible de charger les messages. Vérifiez les règles Firestore.</td></tr>';
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
    NAVIGATION
 ══════════════════════════════════════════════════════════ */
 function showPage(pageId) {
@@ -219,7 +262,7 @@ function loadDashboard() {
       return `
         <tr>
           <td style="font-weight:700;">${String(titre).substring(0, 30)}</td>
-          <td>${texte(a, 'ville', 'commune')}</td>
+          <td>${texte(a, 'commune', 'ville')}</td>
           <td>${nombre(a, 'prix', 'prixMensuel', 'loyer').toLocaleString()}</td>
           <td><span style="background:#D1FAE5;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;">${texte(a, 'statut', 'disponibilite')}</span></td>
           <td><button onclick="voirAnnonce('${a.id}')" style="padding:6px 10px;background:#009E60;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;">Voir</button></td>
@@ -259,8 +302,8 @@ function loadAnnonces(liste) {
       <tr>
         <td style="font-size:11px;color:#888;">${a.id}</td>
         <td style="font-weight:600;">${String(titre).substring(0, 20)}</td>
-        <td>${texte(a, 'proprio', 'proprietaireNom', 'nomProprietaire')}</td>
-        <td>${texte(a, 'ville', 'commune')}</td>
+        <td>${texte(a, 'proprietaireNom', 'proprio', 'nomProprietaire')}</td>
+        <td>${texte(a, 'commune', 'ville')}</td>
         <td>${nombre(a, 'prix', 'prixMensuel', 'loyer').toLocaleString()}</td>
         <td>${nombre(a, 'vues').toLocaleString()}</td>
         <td><span style="background:#D1FAE5;padding:3px 8px;border-radius:6px;font-size:11px;">${texte(a, 'statut', 'disponibilite')}</span></td>
@@ -281,7 +324,7 @@ function filtrerAnnonces() {
   const filtrees = annoncesData.filter(a => {
     const titre = String(texte(a, 'titre', 'title')).toLowerCase();
     const quartier = String(texte(a, 'quartier', 'adresse')).toLowerCase();
-    const villeAnnonce = texte(a, 'ville', 'commune');
+    const villeAnnonce = texte(a, 'commune', 'ville');
     const statutAnnonce = texte(a, 'statut', 'disponibilite');
 
     const correspondTexte = !texteRecherche || titre.includes(texteRecherche) || quartier.includes(texteRecherche);
@@ -297,7 +340,7 @@ function filtrerAnnonces() {
 function voirAnnonce(id) {
   const a = annoncesData.find(x => x.id === id);
   if (!a) return;
-  alert(`${texte(a, 'titre', 'title')}\n${texte(a, 'ville', 'commune')} — ${nombre(a, 'prix', 'prixMensuel', 'loyer').toLocaleString()} FCFA/mois\nStatut : ${texte(a, 'statut', 'disponibilite')}`);
+  alert(`${texte(a, 'titre', 'title')}\n${texte(a, 'commune', 'ville')} — ${nombre(a, 'prix', 'prixMensuel', 'loyer').toLocaleString()} FCFA/mois\nStatut : ${texte(a, 'statut', 'disponibilite')}`);
 }
 
 function supprimerAnnonce(id) {
@@ -387,20 +430,24 @@ function formaterDate(valeur) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   SIGNALEMENTS (encore mocké — pas de collection Firestore connue)
+   SIGNALEMENTS (temps réel Firestore)
 ══════════════════════════════════════════════════════════ */
 function loadSignalements() {
   const tbody = document.getElementById('signalementsBody');
+  if (signalementsData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Aucun signalement</td></tr>';
+    return;
+  }
   tbody.innerHTML = signalementsData.map(s => `
     <tr>
-      <td>${s.date}</td>
-      <td style="font-weight:600;">${s.type}</td>
-      <td>${s.annonce}</td>
-      <td>${s.signalePar}</td>
-      <td style="font-size:12px;">${s.desc}</td>
+      <td style="font-size:12px;">${formaterDate(champ(s, 'dateCreation', 'date'))}</td>
+      <td style="font-weight:600;">${texte(s, 'type')}</td>
+      <td>${texte(s, 'annonceTitre', 'annonce')}</td>
+      <td>${texte(s, 'signalePar')}</td>
+      <td style="font-size:12px;">${texte(s, 'desc', 'description')}</td>
       <td>
-        <button onclick="marquerTraite('${s.id}')" style="padding:4px 8px;background:#009E60;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">
-          ${s.traite ? 'Traité' : 'Traiter'}
+        <button onclick="marquerTraite('${s.id}')" style="padding:4px 8px;background:${s.traite ? '#9CA3AF' : '#009E60'};color:#fff;border:none;border-radius:5px;cursor:${s.traite ? 'default' : 'pointer'};font-size:11px;" ${s.traite ? 'disabled' : ''}>
+          ${s.traite ? '✓ Traité' : 'Traiter'}
         </button>
       </td>
     </tr>
@@ -408,26 +455,40 @@ function loadSignalements() {
 }
 
 function marquerTraite(id) {
-  const sig = signalementsData.find(s => s.id === id);
-  if (sig) sig.traite = true;
-  loadSignalements();
+  window.dbAdmin.collection('signalements').doc(id).update({ traite: true })
+    .then(() => toast('✅ Signalement marqué comme traité'))
+    .catch((err) => { console.error(err); toast('❌ Erreur'); });
 }
 
 /* ══════════════════════════════════════════════════════════
-   MESSAGES (encore mocké — pas de collection Firestore connue)
+   MESSAGES (temps réel Firestore)
 ══════════════════════════════════════════════════════════ */
 function loadMessages() {
   const tbody = document.getElementById('messagesBody');
-  tbody.innerHTML = messagesData.map(m => `
-    <tr>
-      <td>${m.date}</td>
-      <td style="font-weight:600;">${m.nom}</td>
-      <td>${m.tel}</td>
-      <td>${m.sujet}</td>
-      <td style="font-size:12px;max-width:200px;">${m.msg.substring(0, 50)}...</td>
-      <td><button onclick="alert('${m.msg.replace(/'/g, "\\'")}')" style="padding:4px 8px;background:#3A75C4;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">Lire</button></td>
-    </tr>
-  `).join('');
+  if (messagesData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Aucun message</td></tr>';
+    return;
+  }
+  tbody.innerHTML = messagesData.map(m => {
+    const msg = texte(m, 'msg', 'message');
+    return `
+      <tr style="${m.lu ? '' : 'font-weight:600;'}">
+        <td style="font-size:12px;">${formaterDate(champ(m, 'dateCreation', 'date'))}</td>
+        <td>${texte(m, 'nom')}</td>
+        <td>${texte(m, 'tel')}</td>
+        <td>${texte(m, 'sujet')}</td>
+        <td style="font-size:12px;max-width:200px;">${String(msg).substring(0, 50)}${msg.length > 50 ? '...' : ''}</td>
+        <td><button onclick="lireMessage('${m.id}')" style="padding:4px 8px;background:#3A75C4;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">Lire</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function lireMessage(id) {
+  const m = messagesData.find(x => x.id === id);
+  if (!m) return;
+  alert(`De : ${texte(m, 'nom')} (${texte(m, 'tel')})\nSujet : ${texte(m, 'sujet')}\n\n${texte(m, 'msg', 'message')}`);
+  if (!m.lu) window.dbAdmin.collection('messages').doc(id).update({ lu: true }).catch(() => {});
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -443,36 +504,43 @@ function loadStats() {
 function publierAnnonce() {
   const titre = document.getElementById('pubTitre').value.trim();
   const type = document.getElementById('pubType').value;
-  const ville = document.getElementById('pubVille').value;
+  const commune = document.getElementById('pubVille').value;
   const quartier = document.getElementById('pubQuartier').value.trim();
+  const arrondissement = document.getElementById('pubArrondissement').value.trim();
   const prix = document.getElementById('pubPrix').value;
   const tel = document.getElementById('pubTel').value.trim();
 
-  if (!titre || !type || !ville || !quartier || !prix || !tel) {
+  if (!titre || !type || !commune || !quartier || !prix || !tel) {
     alert('⚠️ Remplissez tous les champs obligatoires (*)');
     return;
   }
 
   if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
 
-  const tags = Array.from(document.querySelectorAll('#tagsPicker input:checked')).map(el => el.value);
+  const equipements = Array.from(document.querySelectorAll('#tagsPicker input:checked')).map(el => el.value);
   const btn = document.getElementById('pubBtnText');
   btn.textContent = '⏳ Publication...';
 
+  const lat = parseFloat(document.getElementById('pubLat').value);
+  const lng = parseFloat(document.getElementById('pubLng').value);
+
   const nouvelleAnnonce = {
-    titre, type, ville, quartier,
+    titre, type, commune, quartier, arrondissement,
     prix: parseInt(prix) || 0,
-    tel,
     surface: parseInt(document.getElementById('pubSurface').value) || 0,
     chambres: parseInt(document.getElementById('pubChambres').value) || 0,
     sdb: parseInt(document.getElementById('pubSdb').value) || 0,
-    desc: document.getElementById('pubDesc').value.trim(),
-    tags,
+    description: document.getElementById('pubDesc').value.trim(),
+    equipements,
     statut: document.getElementById('pubStatut').value || 'disponible',
-    proprio: 'Admin',
+    proprietaireNom: document.getElementById('pubProprioNom').value.trim() || 'Admin',
+    proprietaireTel: tel,
+    proprietaireEmail: document.getElementById('pubProprioEmail').value.trim() || null,
+    whatsapp: tel,
     vues: 0,
     dateCreation: firebase.firestore.FieldValue.serverTimestamp()
   };
+  if (!isNaN(lat) && !isNaN(lng)) { nouvelleAnnonce.lat = lat; nouvelleAnnonce.lng = lng; }
 
   window.dbAdmin.collection('annonces').add(nouvelleAnnonce)
     .then(() => {
@@ -492,12 +560,17 @@ function resetForm() {
   document.getElementById('pubType').value = '';
   document.getElementById('pubVille').value = '';
   document.getElementById('pubQuartier').value = '';
+  document.getElementById('pubArrondissement').value = '';
   document.getElementById('pubPrix').value = '';
   document.getElementById('pubTel').value = '';
   document.getElementById('pubDesc').value = '';
   document.getElementById('pubSurface').value = '';
   document.getElementById('pubChambres').value = '';
   document.getElementById('pubSdb').value = '';
+  document.getElementById('pubProprioNom').value = '';
+  document.getElementById('pubProprioEmail').value = '';
+  document.getElementById('pubLat').value = '';
+  document.getElementById('pubLng').value = '';
   document.querySelectorAll('#tagsPicker input:checked').forEach(el => el.checked = false);
 }
 
@@ -546,16 +619,4 @@ function toast(msg) {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   NOTE — Signalements & Messages
-   Ces deux onglets restent en données factices (MOCK_SIGNALEMENTS /
-   MOCK_MESSAGES) car aucune page du site public n'écrit actuellement
-   dans une collection Firestore "signalements" ou "messages".
-   Pour les rendre réels, il faut :
-   1) ajouter un formulaire de signalement / contact côté site public
-      qui écrit dans ces collections (comme demandesVisite le fait
-      pour les réservations),
-   2) puis remplacer loadSignalements()/loadMessages() ci-dessus par
-      des écouteurs onSnapshot, sur le même modèle que
-      demarrerEcouteAnnonces() plus haut.
-═══════════════════════════════════════════════════════════ */
+

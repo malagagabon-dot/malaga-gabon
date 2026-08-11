@@ -229,7 +229,25 @@ body { padding-bottom: 68px; }
 .section-header span { font-size: 12px; color: var(--gris-clair); }
 
 .grille-annonces {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px;
+  --tile-min: 240px;
+  --tile-img-h: 150px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--tile-min), 1fr)); gap: 14px;
+  transition: grid-template-columns .2s ease;
+}
+/* Quand il y a beaucoup d'annonces, la colonne liste devient scrollable au lieu
+   d'étirer la hauteur de toute la page indéfiniment. */
+.grille-annonces.grille-scroll {
+  max-height: 68vh;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  align-content: start;
+}
+.grille-annonces.grille-scroll::-webkit-scrollbar { width: 6px; }
+.grille-annonces.grille-scroll::-webkit-scrollbar-thumb { background: var(--gris-bordure); border-radius: 6px; }
+@media (max-width: 860px) {
+  /* Sur mobile la page défile naturellement : pas de scroll interne, juste des tuiles plus compactes */
+  .grille-annonces.grille-scroll { max-height: none; overflow-y: visible; padding-right: 0; }
 }
 
 .carte-annonce {
@@ -241,8 +259,9 @@ body { padding-bottom: 68px; }
 .carte-annonce.survolee { border-color: var(--vert); }
 
 .carte-annonce .visuel {
-  height: 150px; background: #e0e0e0; display: flex; align-items: center; justify-content: center;
+  height: var(--tile-img-h); background: #e0e0e0; display: flex; align-items: center; justify-content: center;
   position: relative; font-size: 44px; color: #999; overflow: hidden;
+  transition: height .2s ease;
 }
 .carte-annonce .visuel img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -268,8 +287,15 @@ body { padding-bottom: 68px; }
 /* ===== CARTE LEAFLET ===== */
 .map-wrap { position: sticky; top: 90px; }
 #carteMap {
-  width: 100%; height: 520px; border-radius: var(--radius); box-shadow: 0 2px 10px rgba(0,0,0,.08);
-  z-index: 1;
+  width: 100%; height: 420px; max-height: 68vh; border-radius: var(--radius); box-shadow: 0 2px 10px rgba(0,0,0,.08);
+  z-index: 1; transition: height .2s ease;
+}
+/* Bureau : quand la liste passe en scroll interne, la carte s'aligne sur la même hauteur */
+.split-layout:has(.grille-scroll) #carteMap { height: 68vh; }
+@media (max-width: 860px) {
+  /* Mobile : carte réduite et non "collée" (sticky) pour ne pas manger l'écran */
+  .map-wrap { position: static; }
+  #carteMap { height: 240px; max-height: 240px; }
 }
 .leaflet-popup-content { font-family: 'Plus Jakarta Sans', sans-serif; }
 .popup-annonce { min-width: 180px; }
@@ -396,6 +422,20 @@ body { padding-bottom: 68px; }
 }
 .modal-overlay.ouverte { display: flex; }
 .modal-panneau { background: white; border-radius: 18px 18px 0 0; width: 100%; max-width: 680px; max-height: 92vh; overflow-y: auto; }
+
+/* ===== MODALES CONTACT / SIGNALEMENT ===== */
+.mini-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 0;
+}
+.mini-modal-header h2 { font-size: 17px; color: var(--vert); }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--gris-fond);
+  font-size: 15px; cursor: pointer; color: var(--texte); flex-shrink: 0;
+}
+.modal-close:hover { background: var(--gris-bordure); }
+.mini-modal-body { box-shadow: none; padding: 16px 22px 24px; }
+.mini-modal-body .btn:disabled { opacity: .6; cursor: default; }
 
 /* ===== FOOTER ===== */
 .footer {
