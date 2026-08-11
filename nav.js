@@ -60,12 +60,16 @@ function initDrawer() {
   drawer.querySelectorAll("a").forEach(a => a.addEventListener("click", fermer));
 }
 
+/* Doit rester identique à ADMIN_EMAIL dans admin.js */
+const ADMIN_EMAIL = "malagagabon@gmail.com";
+
 /* ══════════ ÉTAT DE CONNEXION → AVATAR, DRAWER, BARRE BASSE ══════════ */
 function initAuthUI() {
   onAuthStateChanged(auth, async (user) => {
     const avatar = document.getElementById("btnCompte");
     const drawerConnexion = document.getElementById("drawerConnexion");
     const drawerProprio = document.getElementById("drawerProprio");
+    const drawerAdmin = document.getElementById("drawerAdmin");
     const bnProfilLabel = document.getElementById("bnProfilLabel");
     const bnProfilLien = document.getElementById("bnProfil");
 
@@ -73,6 +77,7 @@ function initAuthUI() {
       if (avatar) { avatar.textContent = "👤"; avatar.href = "connexion.html"; avatar.classList.remove("avatar-initiales"); }
       if (drawerConnexion) { drawerConnexion.textContent = "👤 Se connecter"; drawerConnexion.href = "connexion.html"; }
       if (drawerProprio) drawerProprio.style.display = "none";
+      if (drawerAdmin) drawerAdmin.style.display = "none";
       if (bnProfilLabel) bnProfilLabel.textContent = "Profil";
       if (bnProfilLien) bnProfilLien.href = "connexion.html";
       return;
@@ -87,6 +92,7 @@ function initAuthUI() {
     }
     if (drawerConnexion) { drawerConnexion.textContent = "🚪 Se déconnecter"; drawerConnexion.href = "#"; drawerConnexion.onclick = (e) => { e.preventDefault(); signOut(auth); }; }
     if (drawerProprio) drawerProprio.style.display = profil?.role === "proprietaire" ? "block" : "none";
+    if (drawerAdmin) drawerAdmin.style.display = user.email === ADMIN_EMAIL ? "block" : "none";
     if (bnProfilLabel) bnProfilLabel.textContent = nom.split(" ")[0];
     if (bnProfilLien) bnProfilLien.href = profil?.role === "proprietaire" ? "mes-annonces.html" : "connexion.html";
   });
