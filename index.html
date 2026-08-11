@@ -11,17 +11,45 @@
 </head>
 <body>
 
+  <!-- Menu latéral -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-header">
+      <img src="img/logo.png" alt="MALAGA" class="drawer-logo">
+      <button class="drawer-close" id="fermerDrawer">✕</button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="index.html" class="drawer-link actif">🏠 Accueil</a>
+      <a href="#liste-annonces" class="drawer-link">📋 Toutes les annonces</a>
+      <a href="#" class="drawer-link" id="drawerFavorisLink">❤️ Mes favoris</a>
+      <a href="connexion.html?inscription=1&role=proprietaire" class="drawer-link">➕ Publier une annonce</a>
+      <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;">🏘️ Gérer mes annonces</a>
+      <div class="drawer-sep"></div>
+      <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
+      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
+      <a href="mailto:malagagabon@gmail.com" class="drawer-link">✉️ Nous écrire</a>
+      <div class="drawer-sep"></div>
+      <a href="connexion.html" class="drawer-link" id="drawerConnexion">👤 Se connecter</a>
+    </nav>
+    <div class="drawer-footer">MALAGA 🇬🇦 — Libreville, Gabon</div>
+  </aside>
+
   <!-- Header -->
   <header class="header">
     <div class="header-inner">
+      <button class="icon-btn" id="btnMenu" aria-label="Menu">☰</button>
       <a href="index.html" class="logo-link">
-        <span>
-          <span class="logo-text">MALAGA 🇬🇦</span>
-          <span class="slogan">Votre maison à louer partout au Gabon</span>
+        <img src="img/logo.png" alt="MALAGA" class="logo-img">
+        <span class="logo-text-wrap">
+          <span class="logo-text">MALAGA</span>
+          <span class="slogan">Maison à louer au Gabon 🇬🇦</span>
         </span>
       </a>
-      <div class="nav-actions" id="navActions">
-        <!-- Rempli dynamiquement par app.js selon l'état de connexion -->
+      <div class="header-actions" id="navActions">
+        <button class="icon-btn" id="btnFavorisHeader" aria-label="Favoris">
+          ❤️<span class="badge-favoris" id="badgeFavorisHeader"></span>
+        </button>
+        <a href="connexion.html" class="icon-btn avatar-btn" id="btnCompte" aria-label="Mon compte">👤</a>
       </div>
     </div>
   </header>
@@ -70,15 +98,15 @@
   <div class="split-layout">
     <div>
       <div class="section-header">
-        <h2>Annonces disponibles</h2>
+        <h2 id="liste-annonces">Annonces disponibles</h2>
         <span id="count-annonces">Chargement…</span>
       </div>
-      <div id="liste-annonces" class="grille-annonces">
+      <div id="liste-annonces-grille" class="grille-annonces">
         <div class="spinner">Chargement des annonces en temps réel…</div>
       </div>
     </div>
 
-    <div class="map-wrap">
+    <div class="map-wrap" id="carteWrap">
       <div id="carteMap"></div>
     </div>
   </div>
@@ -95,7 +123,27 @@
     <div class="modal-panneau" id="detailPanneau"></div>
   </div>
 
+  <!-- Barre de navigation basse -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="bn-item actif" data-page="index.html">
+      <span class="bn-icon">🏠</span><span>Accueil</span>
+    </a>
+    <a href="#carteWrap" class="bn-item" id="bnCarte">
+      <span class="bn-icon">🗺️</span><span>Carte</span>
+    </a>
+    <a href="connexion.html?inscription=1&role=proprietaire" class="bn-item bn-central">
+      <span class="bn-icon">➕</span>
+    </a>
+    <a href="#" class="bn-item" id="bnFavoris">
+      <span class="bn-icon">❤️<span class="badge-favoris" id="badgeFavorisBn"></span></span><span>Favoris</span>
+    </a>
+    <a href="connexion.html" class="bn-item" id="bnProfil" data-page="connexion.html">
+      <span class="bn-icon">👤</span><span id="bnProfilLabel">Profil</span>
+    </a>
+  </nav>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="nav.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

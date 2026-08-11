@@ -10,15 +10,50 @@
 </head>
 <body>
 
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-header">
+      <img src="img/logo.png" alt="MALAGA" class="drawer-logo">
+      <button class="drawer-close" id="fermerDrawer">✕</button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="index.html" class="drawer-link">🏠 Accueil</a>
+      <a href="mes-annonces.html" class="drawer-link actif">🏘️ Gérer mes annonces</a>
+      <a href="publier.html" class="drawer-link">➕ Publier une annonce</a>
+      <div class="drawer-sep"></div>
+      <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
+      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
+      <a href="mailto:malagagabon@gmail.com" class="drawer-link">✉️ Nous écrire</a>
+      <div class="drawer-sep"></div>
+      <a href="connexion.html" class="drawer-link" id="drawerConnexion">🚪 Se déconnecter</a>
+    </nav>
+    <div class="drawer-footer">MALAGA 🇬🇦 — Libreville, Gabon</div>
+  </aside>
+
   <header class="header">
     <div class="header-inner">
-      <a href="index.html" class="logo-link"><span class="logo-text">MALAGA 🇬🇦</span></a>
-      <div class="nav-actions">
-        <a href="publier.html" class="btn btn-jaune">➕ Publier</a>
-        <button class="btn btn-blanc" id="btnDeconnexion">Déconnexion</button>
+      <button class="icon-btn" id="btnMenu" aria-label="Menu">☰</button>
+      <a href="index.html" class="logo-link">
+        <img src="img/logo.png" alt="MALAGA" class="logo-img">
+        <span class="logo-text-wrap">
+          <span class="logo-text">MALAGA</span>
+          <span class="slogan">Maison à louer au Gabon 🇬🇦</span>
+        </span>
+      </a>
+      <div class="header-actions">
+        <a href="publier.html" class="icon-btn" aria-label="Publier">➕</a>
+        <a href="connexion.html" class="icon-btn avatar-btn" id="btnCompte" aria-label="Mon compte">👤</a>
       </div>
     </div>
   </header>
+
+  <nav class="bottom-nav">
+    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span>Accueil</span></a>
+    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span>Carte</span></a>
+    <a href="publier.html" class="bn-item bn-central"><span class="bn-icon">➕</span></a>
+    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span>Favoris</span></a>
+    <a href="mes-annonces.html" class="bn-item actif" id="bnProfil" data-page="mes-annonces.html"><span class="bn-icon">👤</span><span id="bnProfilLabel">Profil</span></a>
+  </nav>
 
   <div class="dashboard-header">
     <h1>Mes annonces</h1>
@@ -68,8 +103,6 @@
       uidCourant = user.uid;
       ecouterMesAnnonces(user.uid);
     }, "proprietaire");
-
-    document.getElementById("btnDeconnexion").onclick = () => signOut(auth);
 
     function ecouterMesAnnonces(uid) {
       const q = query(collection(db, "annonces"), where("proprietaireId", "==", uid), orderBy("dateCreation", "desc"));
@@ -179,5 +212,6 @@
   <footer class="footer">
     <div class="brand">MALAGA 🇬🇦</div>
   </footer>
+  <script type="module" src="nav.js"></script>
 </body>
 </html>
