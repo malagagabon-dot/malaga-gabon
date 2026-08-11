@@ -4,43 +4,18 @@
 ═══════════════════════════════════════════ */
 
 import {
-  auth, db, onAuthStateChanged, signOut,
+  db,
   collection, query, where, orderBy, onSnapshot, doc, updateDoc, increment
 } from "./firebase-config.js";
-import { getProfil } from "./auth.js";
 import {
   COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, getIconeType, formatPrix
 } from "./malaga-reference.js";
+import { estFavori, toggleFavori } from "./nav.js";
 
 let toutesLesAnnonces = [];
 let filtres = { commune: "", arrondissement: "", type: "", prixMax: "", texte: "" };
+let modeFavoris = false;
 let map, markersParId = {};
-
-/* ══════════ NAVIGATION SELON L'ÉTAT DE CONNEXION ══════════ */
-onAuthStateChanged(auth, async (user) => {
-  const nav = document.getElementById("navActions");
-  if (!user) {
-    nav.innerHTML = `
-      <a href="connexion.html" class="btn btn-blanc">Se connecter</a>
-      <a href="connexion.html?inscription=1&role=proprietaire" class="btn btn-jaune">➕ Publier une annonce</a>
-    `;
-    return;
-  }
-  const profil = await getProfil(user.uid);
-  if (profil?.role === "proprietaire") {
-    nav.innerHTML = `
-      <a href="mes-annonces.html" class="btn btn-blanc">🏠 Mes annonces</a>
-      <a href="publier.html" class="btn btn-jaune">➕ Publier</a>
-      <button class="btn btn-blanc" id="btnDeconnexion">Déconnexion</button>
-    `;
-  } else {
-    nav.innerHTML = `
-      <span class="btn btn-blanc" style="cursor:default;">👋 ${profil?.nom || "Bonjour"}</span>
-      <button class="btn btn-blanc" id="btnDeconnexion">Déconnexion</button>
-    `;
-  }
-  document.getElementById("btnDeconnexion")?.addEventListener("click", () => signOut(auth));
-});
 
 /* ══════════ INITIALISATION ══════════ */
 document.addEventListener("DOMContentLoaded", () => {
@@ -55,6 +30,17 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("search-input").addEventListener("keydown", (e) => {
     if (e.key === "Enter") document.getElementById("btnRechercher").click();
   });
+
+  // Bascule vers l'affichage "Mes favoris uniquement" depuis le header ou la barre basse
+  const basculerFavoris = (e) => {
+    e.preventDefault();
+    modeFavoris = !modeFavoris;
+    document.querySelectorAll("#bnFavoris, #btnFavorisHeader").forEach(el => el.classList.toggle("actif", modeFavoris));
+    rendreTout();
+  };
+  document.getElementById("btnFavorisHeader")?.addEventListener("click", basculerFavoris);
+  document.getElementById("bnFavoris")?.addEventListener("click", basculerFavoris);
+  document.getElementById("drawerFavorisLink")?.addEventListener("click", basculerFavoris);
 });
 
 /* ══════════ CARTE LEAFLET ══════════ */
@@ -89,7 +75,7 @@ function ecouterAnnoncesTempsReel() {
     mettreAJourStats();
   }, (err) => {
     console.error("Erreur de synchronisation :", err);
-    document.getElementById("liste-annonces").innerHTML =
+    document.getElementById("liste-annonces-grille").innerHTML =
       `<p class="spinner">Impossible de charger les annonces pour le moment.</p>`;
   });
 }
@@ -128,7 +114,8 @@ function appliquerFiltres(liste) {
       (a.quartier || "").toLowerCase().includes(filtres.texte) ||
       (a.arrondissement || "").toLowerCase().includes(filtres.texte) ||
       (a.commune || "").toLowerCase().includes(filtres.texte);
-    return okCommune && okArr && okType && okPrix && okTexte;
+    const okFavoris = !modeFavoris || estFavori(a.id);
+    return okCommune && okArr && okType && okPrix && okTexte && okFavoris;
   });
 }
 
@@ -141,11 +128,13 @@ function rendreTout() {
 }
 
 function rendreListe(liste) {
-  const container = document.getElementById("liste-annonces");
+  const container = document.getElementById("liste-annonces-grille");
   container.innerHTML = "";
 
   if (liste.length === 0) {
-    container.innerHTML = `<p class="spinner">Aucune annonce trouvée. Modifiez vos critères.</p>`;
+    container.innerHTML = modeFavoris
+      ? `<div class="etat-vide"><div class="icone">💔</div><p>Aucun favori pour le moment.<br>Touchez le cœur d'une annonce pour l'ajouter ici.</p></div>`
+      : `<p class="spinner">Aucune annonce trouvée. Modifiez vos critères.</p>`;
     return;
   }
 
@@ -156,7 +145,8 @@ function rendreListe(liste) {
     const photo = a.photos && a.photos[0];
     carte.innerHTML = `
       <div class="visuel">
-        ${photo ? `<img src="${photo}" alt="${a.titre}">` : getIconeType(a.type)}
+        ${photo ? `<img src="${photo}" alt="${a.titre}" loading="lazy">` : getIconeType(a.type)}
+        <button class="btn-favori ${estFavori(a.id) ? "actif" : ""}" data-id="${a.id}" aria-label="Ajouter aux favoris">${estFavori(a.id) ? "❤️" : "🤍"}</button>
         <span class="badge badge-disponible" style="position:absolute;top:8px;right:8px;">🟢 Disponible</span>
       </div>
       <div class="carte-info">
@@ -165,6 +155,13 @@ function rendreListe(liste) {
         <div class="localisation">📍 ${a.quartier || ""}${a.quartier ? " — " : ""}${a.arrondissement || ""}, ${a.commune || ""}</div>
       </div>
     `;
+    carte.querySelector(".btn-favori").onclick = (e) => {
+      e.stopPropagation();
+      const actif = toggleFavori(a.id);
+      e.currentTarget.classList.toggle("actif", actif);
+      e.currentTarget.textContent = actif ? "❤️" : "🤍";
+      if (modeFavoris && !actif) rendreTout();
+    };
     carte.onclick = () => afficherDetail(a);
     carte.addEventListener("mouseenter", () => survolerMarqueur(a.id, true));
     carte.addEventListener("mouseleave", () => survolerMarqueur(a.id, false));
