@@ -5,7 +5,7 @@
 
 'use strict';
 
-const ADMIN_EMAIL = 'malaga.gabon@gmail.com';
+const ADMIN_EMAIL = 'malagagabon@gmail.com';
 
 // Mock data
 const MOCK_ANNONCES = [
@@ -17,7 +17,7 @@ const MOCK_ANNONCES = [
 ];
 
 const MOCK_USERS = [
-  { nom:'KOZANGUE Patrick', email:'malaga.gabon@gmail.com', tel:'+24166580032', role:'admin', date:'12 jan 2026' },
+  { nom:'KOZANGUE Patrick', email:'malagagabon@gmail.com', tel:'+24166580032', role:'admin', date:'12 jan 2026' },
   { nom:'Jean Mbadinga', email:'jean.mbadinga@gmail.com', tel:'+24166111222', role:'proprietaire', date:'15 jan 2026' },
   { nom:'Marie Ondo', email:'marie.ondo@gmail.com', tel:'+24177334455', role:'proprietaire', date:'18 jan 2026' },
   { nom:'Alain Ntoutoume', email:'alain.ntout@gmail.com', tel:'+24166998877', role:'locataire', date:'20 jan 2026' },
@@ -121,6 +121,7 @@ function showPage(pageId) {
     'annonces': 'Gestion des annonces',
     'utilisateurs': 'Utilisateurs',
     'signalements': 'Signalements',
+    'reservations': 'Demandes de visite',
     'messages': 'Messages',
     'stats': 'Statistiques',
     'publier': 'Publier une annonce'
@@ -131,6 +132,7 @@ function showPage(pageId) {
   else if (pageId === 'annonces') loadAnnonces();
   else if (pageId === 'utilisateurs') loadUsers();
   else if (pageId === 'signalements') loadSignalements();
+  else if (pageId === 'reservations' && window.chargerReservations) window.chargerReservations();
   else if (pageId === 'messages') loadMessages();
   else if (pageId === 'stats') loadStats();
 }

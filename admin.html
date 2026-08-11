@@ -65,6 +65,10 @@
       <span class="nav-icon">🚨</span> Signalements
       <span class="nav-badge danger" id="badgeSignal">0</span>
     </a>
+    <a class="nav-item" onclick="showPage('reservations')" data-page="reservations">
+      <span class="nav-icon">💳</span> Réservations
+      <span class="nav-badge danger" id="badgeReservations">0</span>
+    </a>
     <a class="nav-item" onclick="showPage('messages')" data-page="messages">
       <span class="nav-icon">✉️</span> Messages
     </a>
@@ -288,6 +292,52 @@
     </div>
   </div>
 
+  <!-- ═══ PAGE : RÉSERVATIONS ═══ -->
+  <div class="page" id="page-reservations">
+    <div class="page-header">
+      <h1>💳 Demandes de visite</h1>
+      <p>Validation manuelle des paiements Airtel Money / Moov Money, en temps réel.</p>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon yellow">🟡</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiResAttente">0</div>
+          <div class="kpi-label">En attente</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon blue">🔵</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiResProgrammees">0</div>
+          <div class="kpi-label">Visites programmées</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon green">📅</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiResJour">0</div>
+          <div class="kpi-label">Reçues aujourd'hui</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <select class="filter-select" id="filterResStatut" onchange="filtrerReservations()">
+        <option value="en_attente">🟡 En attente</option>
+        <option value="confirmee">🔵 Programmées</option>
+        <option value="refusee">🚫 Refusées</option>
+        <option value="expiree">⌛ Expirées</option>
+      </select>
+      <span class="btn-theme" id="toggleSonRes" title="Activer/couper le son des notifications" style="cursor:pointer;">🔔</span>
+    </div>
+
+    <div id="listeReservations" class="card" style="padding:1rem 1.25rem;">
+      <p class="table-empty">Connexion au flux temps réel…</p>
+    </div>
+  </div>
+
   <!-- ═══ PAGE : MESSAGES ═══ -->
   <div class="page" id="page-messages">
     <div class="page-header">
@@ -470,7 +520,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
+<script src="firebase-config-compat.js"></script>
 <script src="admin.js"></script>
+<script src="reservations-admin.js"></script>
 </body>
 </html>
