@@ -1,6 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
-   MALAGA – admin.js (SIMPLIFIÉ)
-   Panneau d'administration en mode démo (sans Firebase)
+   MALAGA – admin.js
+   Panneau d'administration — authentification Firebase réelle
+   (compte admin unique), reste des données encore en mode démo
+   (annonces/utilisateurs/signalements/messages mockés).
+   Les réservations, elles, sont branchées en temps réel sur
+   Firestore via reservations-admin.js.
 ═══════════════════════════════════════════════════════════ */
 
 'use strict';
@@ -52,15 +56,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ══════════════════════════════════════════════════════════
-   AUTHENTIFICATION
+   AUTHENTIFICATION (Firebase réelle — compte admin unique)
 ══════════════════════════════════════════════════════════ */
 function checkAuth() {
-  const saved = sessionStorage.getItem('malaga_admin_demo');
-  if (saved) {
-    onLoginSuccess({ email: saved, displayName: 'KOZANGUE Patrick' });
-  } else {
-    document.getElementById('loginOverlay').classList.remove('hidden');
-  }
+  // authAdmin vient de firebase-config-compat.js (chargé avant ce script)
+  authAdmin.onAuthStateChanged((user) => {
+    if (user && user.email === ADMIN_EMAIL) {
+      onLoginSuccess(user);
+    } else {
+      if (user) authAdmin.signOut(); // connecté mais pas le bon compte : on rejette
+      document.getElementById('loginOverlay').classList.remove('hidden');
+    }
+  });
 }
 
 function adminLogin() {
@@ -78,30 +85,40 @@ function adminLogin() {
   btn.textContent = '⏳ Connexion...';
   errEl.classList.add('hidden');
 
-  setTimeout(() => {
-    if (email === ADMIN_EMAIL && password.length >= 6) {
-      sessionStorage.setItem('malaga_admin_demo', email);
-      onLoginSuccess({ email, displayName: 'KOZANGUE Patrick' });
-    } else {
-      errEl.textContent = '❌ Email ou mot de passe incorrect';
+  authAdmin.signInWithEmailAndPassword(email, password)
+    .then((cred) => {
+      if (cred.user.email !== ADMIN_EMAIL) {
+        authAdmin.signOut();
+        throw { code: 'auth/unauthorized' };
+      }
+      // onLoginSuccess est déclenché automatiquement par onAuthStateChanged (checkAuth)
+    })
+    .catch((err) => {
+      const messages = {
+        'auth/invalid-email': "Adresse email invalide.",
+        'auth/user-not-found': "Aucun compte administrateur avec cet email.",
+        'auth/wrong-password': "Mot de passe incorrect.",
+        'auth/invalid-credential': "Email ou mot de passe incorrect.",
+        'auth/too-many-requests': "Trop de tentatives. Réessayez dans quelques minutes.",
+        'auth/unauthorized': "Ce compte n'a pas les droits administrateur."
+      };
+      errEl.textContent = '❌ ' + (messages[err.code] || "Une erreur est survenue. Réessayez.");
       errEl.classList.remove('hidden');
       btn.textContent = 'Se connecter';
-    }
-  }, 500);
+    });
 }
 
 function onLoginSuccess(user) {
   currentUser = user;
   document.getElementById('loginOverlay').classList.add('hidden');
-  document.getElementById('adminName').textContent = user.displayName || 'Admin';
+  document.getElementById('adminName').textContent = 'KOZANGUE Patrick';
   document.getElementById('adminEmailDisplay').textContent = user.email || '';
   loadDashboard();
 }
 
 function adminLogout() {
   if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-    sessionStorage.removeItem('malaga_admin_demo');
-    location.reload();
+    authAdmin.signOut().then(() => location.reload());
   }
 }
 
