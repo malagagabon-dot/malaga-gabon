@@ -106,6 +106,39 @@ export const ELECTRICITE_OPTIONS = ["SEEG (réseau)", "Groupe électrogène", "A
 export const COMPTEUR_OPTIONS = ["Individuel", "Commun"];
 export const ETAT_BATIMENT = ["Neuf", "Bon état", "À rénover"];
 
+/* ═══════════════════════════════════════════════════════════
+   RECHERCHE AVANCÉE — Construction, finitions & zonage
+   Ajouté pour le filtre avancé (public + admin). Ces listes
+   restent volontairement courtes et fermées pour que le filtre
+   reste fiable (données cohérentes en base) ; un champ "Autre"
+   avec saisie libre est prévu là où le terrain l'exige.
+═══════════════════════════════════════════════════════════ */
+
+// Nature du zonage / caractère du secteur (en plus du quartier administratif)
+export const ZONES_CARACTERE = [
+  "Résidentiel calme", "Centre-ville", "Bord de mer / lagune", "Axe principal",
+  "Zone commerciale", "Zone industrielle", "Périphérie / semi-rural"
+];
+
+// Matériau principal de construction
+export const MATERIAUX = ["Dur (parpaing / béton)", "Bois", "Semi-dur", "Autre"];
+
+// Cuisine et douche : implantation par rapport au bâtiment principal
+export const CUISINE_TYPES = ["Interne", "Externe"];
+export const DOUCHE_TYPES = ["Interne", "Externe"];
+
+// Couleurs de peinture murale les plus courantes sur le marché locatif de Libreville
+export const COULEURS_MURALES = [
+  "Blanc", "Crème / Ivoire", "Beige", "Gris", "Bleu ciel", "Vert", "Jaune",
+  "Saumon / Rose", "Marron / Terracotta", "Autre"
+];
+
+// Options binaires affichées en toggle Oui / Non / Indifférent (formulaires + filtre)
+export const OPTIONS_OUI_NON = ["Oui", "Non"];
+
+// Paliers utilisés par les sélecteurs "au moins N" du filtre avancé (chambres, salons, douches)
+export const PALIERS_PIECES = [1, 2, 3, 4, 5];
+
 // Centre par défaut de la carte au chargement (agglomération de Libreville)
 export const LIBREVILLE_CENTER = { lat: 0.3924, lng: 9.4536 };
 

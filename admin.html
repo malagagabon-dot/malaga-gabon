@@ -210,6 +210,76 @@
         <option>Akanda</option>
         <option>Owendo</option>
       </select>
+      <button class="btn-outline" type="button" onclick="toggleFiltresAvancesAdmin()">🎛️ Filtres avancés</button>
+    </div>
+
+    <!-- Filtres avancés (repliable) -->
+    <div class="card" id="filtresAvancesAdmin" style="margin-bottom:16px;display:none;">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Quartier / rue</label>
+          <input type="text" id="faaTexteLoc" placeholder="Ex : Angondjé" oninput="filtrerAnnonces()">
+        </div>
+        <div class="form-group">
+          <label>Caractère de la zone</label>
+          <select id="faaZone" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+        </div>
+        <div class="form-group">
+          <label>Type de bien</label>
+          <select id="faaType" onchange="filtrerAnnonces()"><option value="">Tous</option></select>
+        </div>
+        <div class="form-group">
+          <label>Chambres (min.)</label>
+          <select id="faaChambres" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+        </div>
+        <div class="form-group">
+          <label>Salons (min.)</label>
+          <select id="faaSalons" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+        </div>
+        <div class="form-group">
+          <label>Douches (min.)</label>
+          <select id="faaDouches" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+        </div>
+        <div class="form-group">
+          <label>Cuisine</label>
+          <select id="faaCuisineType" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+        </div>
+        <div class="form-group">
+          <label>Douche (type)</label>
+          <select id="faaDoucheType" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+        </div>
+        <div class="form-group">
+          <label>Matériau</label>
+          <select id="faaMateriau" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+        </div>
+        <div class="form-group">
+          <label>Couleur murale</label>
+          <select id="faaCouleur" onchange="filtrerAnnonces()"><option value="">Indifférente</option></select>
+        </div>
+        <div class="form-group">
+          <label>Terrasse</label>
+          <select id="faaTerrasse" onchange="filtrerAnnonces()">
+            <option value="">Indifférent</option><option value="oui">Oui</option><option value="non">Non</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sol carrelé</label>
+          <select id="faaCarreaux" onchange="filtrerAnnonces()">
+            <option value="">Indifférent</option><option value="oui">Oui</option><option value="non">Non</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prix min. (FCFA)</label>
+          <input type="number" id="faaPrixMin" min="0" oninput="filtrerAnnonces()">
+        </div>
+        <div class="form-group">
+          <label>Prix max. (FCFA)</label>
+          <input type="number" id="faaPrixMax" min="0" oninput="filtrerAnnonces()">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-outline" type="button" onclick="reinitialiserFiltresAvancesAdmin()">Réinitialiser</button>
+      </div>
     </div>
 
     <div class="card">
@@ -543,6 +613,14 @@
         <input type="text" id="modQuartier" />
       </div>
       <div class="form-group">
+        <label>Rue / point de repère</label>
+        <input type="text" id="modPointRepere" />
+      </div>
+      <div class="form-group">
+        <label>Caractère de la zone</label>
+        <select id="modZoneCaractere"><option value="">Non précisé</option></select>
+      </div>
+      <div class="form-group">
         <label>Loyer mensuel (FCFA) *</label>
         <input type="number" id="modPrix" />
       </div>
@@ -555,8 +633,42 @@
         <input type="number" id="modChambres" min="0" />
       </div>
       <div class="form-group">
-        <label>Salles de bain</label>
+        <label>Salons</label>
+        <input type="number" id="modSalons" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Salles de bain / douches</label>
         <input type="number" id="modSdb" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Cuisine</label>
+        <select id="modCuisineType"></select>
+      </div>
+      <div class="form-group">
+        <label>Douche</label>
+        <select id="modDoucheType"></select>
+      </div>
+      <div class="form-group">
+        <label>Matériau de construction</label>
+        <select id="modMateriau"></select>
+      </div>
+      <div class="form-group">
+        <label>Couleur peinture murale</label>
+        <select id="modCouleurMurale"></select>
+      </div>
+      <div class="form-group">
+        <label>Terrasse</label>
+        <select id="modTerrasse">
+          <option value="non">Non</option>
+          <option value="oui">Oui</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Sol carrelé</label>
+        <select id="modCarreaux">
+          <option value="non">Non</option>
+          <option value="oui">Oui</option>
+        </select>
       </div>
       <div class="form-group">
         <label>Statut</label>
@@ -617,6 +729,20 @@
 <div class="toast hidden" id="toast"></div>
 
 <!-- Firebase -->
+<!-- Pont ES module → global : expose les listes de référence de malaga-reference.js
+     à admin.js (script classique) via window.MALAGA_REF. Les scripts "module" sont
+     différés automatiquement par le navigateur et s'exécutent avant DOMContentLoaded,
+     donc window.MALAGA_REF est garanti disponible quand admin.js l'utilise. -->
+<script type="module">
+  import {
+    ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
+    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES
+  } from "./malaga-reference.js";
+  window.MALAGA_REF = {
+    ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
+    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES
+  };
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>

@@ -106,6 +106,11 @@
         </div>
 
         <div class="champ">
+          <label>Caractère de la zone</label>
+          <select id="zoneCaractere"></select>
+        </div>
+
+        <div class="champ">
           <label>Position exacte sur la carte *</label>
           <div class="aide">Cliquez sur la carte pour placer le repère, ou utilisez votre position actuelle.</div>
           <button type="button" class="btn btn-outline" id="btnMaPosition" style="margin:8px 0;">📍 Utiliser ma position actuelle</button>
@@ -126,13 +131,27 @@
         </div>
         <div class="grille-2">
           <div class="champ">
-            <label>Salles de bain</label>
-            <input type="number" id="sdb" min="0" placeholder="1">
+            <label>Salons</label>
+            <input type="number" id="salons" min="0" placeholder="1">
           </div>
           <div class="champ">
-            <label>État du bâtiment</label>
-            <select id="etat"></select>
+            <label>Salles de bain / douches</label>
+            <input type="number" id="sdb" min="0" placeholder="1">
           </div>
+        </div>
+        <div class="grille-2">
+          <div class="champ">
+            <label>Cuisine</label>
+            <select id="cuisineType"></select>
+          </div>
+          <div class="champ">
+            <label>Douche</label>
+            <select id="doucheType"></select>
+          </div>
+        </div>
+        <div class="champ">
+          <label>État du bâtiment</label>
+          <select id="etat"></select>
         </div>
 
         <div class="champ">
@@ -161,6 +180,40 @@
         <div class="champ">
           <label>Équipements</label>
           <div class="chips" id="chipsEquipements"></div>
+        </div>
+
+        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">🧱 Construction &amp; finitions</h3>
+
+        <div class="grille-2">
+          <div class="champ">
+            <label>Matériau de construction</label>
+            <select id="materiau"></select>
+          </div>
+          <div class="champ">
+            <label>Couleur de la peinture murale</label>
+            <select id="couleurMurale"></select>
+          </div>
+        </div>
+        <div class="champ" id="champCouleurAutre" style="display:none;">
+          <label>Précisez la couleur</label>
+          <input type="text" id="couleurMuraleAutre" placeholder="Ex : Bleu marine">
+        </div>
+
+        <div class="grille-2">
+          <div class="champ">
+            <label>Terrasse ?</label>
+            <div class="toggle-oui-non" id="toggleTerrasse">
+              <div class="chip" data-val="oui">Oui</div>
+              <div class="chip actif" data-val="non">Non</div>
+            </div>
+          </div>
+          <div class="champ">
+            <label>Sol carrelé ?</label>
+            <div class="toggle-oui-non" id="toggleCarreaux">
+              <div class="chip" data-val="oui">Oui</div>
+              <div class="chip actif" data-val="non">Non</div>
+            </div>
+          </div>
         </div>
 
         <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">📸 Photos et vidéo</h3>
@@ -204,6 +257,9 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Notifications email automatiques (voir emailjs-config.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="emailjs-config.js"></script>
   <script type="module">
     import { auth, db, doc, collection, setDoc, serverTimestamp } from "./firebase-config.js";
 
@@ -221,10 +277,39 @@
       const data = await reponse.json();
       return data.secure_url;
     }
+
+    /* Redimensionne/compresse une photo côté navigateur avant l'envoi
+       (améliore les performances, surtout sur mobile/Android avec des
+       photos issues directement de l'appareil photo). Les fichiers qui
+       ne sont pas des images (ex: erreur de sélection) sont renvoyés tels quels. */
+    async function compresserImage(fichier, dimensionMax = 1600, qualite = 0.82) {
+      if (!fichier.type || !fichier.type.startsWith("image/") || fichier.type === "image/gif") {
+        return fichier; // on ne touche pas aux GIF ni aux fichiers non-image
+      }
+      try {
+        const bitmap = await createImageBitmap(fichier);
+        const ratio = Math.min(1, dimensionMax / Math.max(bitmap.width, bitmap.height));
+        const largeur = Math.round(bitmap.width * ratio);
+        const hauteur = Math.round(bitmap.height * ratio);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = largeur;
+        canvas.height = hauteur;
+        canvas.getContext("2d").drawImage(bitmap, 0, 0, largeur, hauteur);
+
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", qualite));
+        if (!blob || blob.size >= fichier.size) return fichier; // pas d'intérêt si ce n'est pas plus petit
+        return new File([blob], fichier.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" });
+      } catch (err) {
+        console.warn("Compression d'image impossible, envoi du fichier original :", err);
+        return fichier; // en cas d'échec (ex: format non supporté), on garde le fichier original
+      }
+    }
     import { protegerPage, getProfil } from "./auth.js";
     import {
       COMMUNES, ARRONDISSEMENTS, getQuartiers, CENTRES, TYPES_BIEN, EQUIPEMENTS,
-      EAU_OPTIONS, ELECTRICITE_OPTIONS, COMPTEUR_OPTIONS, ETAT_BATIMENT, LIBREVILLE_CENTER
+      EAU_OPTIONS, ELECTRICITE_OPTIONS, COMPTEUR_OPTIONS, ETAT_BATIMENT, LIBREVILLE_CENTER,
+      ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES
     } from "./malaga-reference.js";
 
     let utilisateurCourant = null;
@@ -232,6 +317,8 @@
     let videoFichier = null;
     let marqueur = null;
     let clotureVal = "non";
+    let terrasseVal = "non";
+    let carreauxVal = "non";
     let equipementsChoisis = new Set();
 
     protegerPage((user) => { utilisateurCourant = user; }, "proprietaire");
@@ -265,6 +352,31 @@
     document.getElementById("compteur").innerHTML = COMPTEUR_OPTIONS.map(e => `<option>${e}</option>`).join("");
     document.getElementById("chipsEquipements").innerHTML = EQUIPEMENTS.map(e =>
       `<div class="chip" data-val="${e}">${e}</div>`).join("");
+
+    // Zone, capacités et construction / finitions
+    document.getElementById("zoneCaractere").innerHTML =
+      '<option value="">Non précisé</option>' + ZONES_CARACTERE.map(z => `<option>${z}</option>`).join("");
+    document.getElementById("cuisineType").innerHTML = CUISINE_TYPES.map(c => `<option>${c}</option>`).join("");
+    document.getElementById("doucheType").innerHTML = DOUCHE_TYPES.map(d => `<option>${d}</option>`).join("");
+    document.getElementById("materiau").innerHTML = MATERIAUX.map(m => `<option>${m}</option>`).join("");
+    document.getElementById("couleurMurale").innerHTML = COULEURS_MURALES.map(c => `<option>${c}</option>`).join("");
+
+    const champCouleurAutre = document.getElementById("champCouleurAutre");
+    document.getElementById("couleurMurale").addEventListener("change", (e) => {
+      champCouleurAutre.style.display = e.target.value === "Autre" ? "block" : "none";
+    });
+
+    function initToggleOuiNon(idToggle, setter) {
+      document.querySelectorAll(`#${idToggle} .chip`).forEach(chip => {
+        chip.addEventListener("click", () => {
+          document.querySelectorAll(`#${idToggle} .chip`).forEach(c => c.classList.remove("actif"));
+          chip.classList.add("actif");
+          setter(chip.dataset.val);
+        });
+      });
+    }
+    initToggleOuiNon("toggleTerrasse", (val) => terrasseVal = val);
+    initToggleOuiNon("toggleCarreaux", (val) => carreauxVal = val);
 
     document.querySelectorAll("#chipsEquipements .chip").forEach(chip => {
       chip.addEventListener("click", () => {
@@ -303,9 +415,18 @@
     const inputPhotos = document.getElementById("inputPhotos");
     const previsuPhotos = document.getElementById("previsuPhotos");
     zonePhotos.onclick = () => inputPhotos.click();
+    const TAILLE_MAX_PHOTO = 20 * 1024 * 1024; // 20 Mo — au-delà, trop lourd même pour la compression
     inputPhotos.onchange = () => {
-      const nouveaux = Array.from(inputPhotos.files);
-      photosFichiers = [...photosFichiers, ...nouveaux].slice(0, 10);
+      const candidats = Array.from(inputPhotos.files);
+      const valides = [];
+      const rejetes = [];
+      candidats.forEach(f => {
+        if (!f.type.startsWith("image/")) { rejetes.push(`${f.name} (format non supporté)`); return; }
+        if (f.size > TAILLE_MAX_PHOTO) { rejetes.push(`${f.name} (fichier trop lourd, max 20 Mo)`); return; }
+        valides.push(f);
+      });
+      if (rejetes.length) alert("Certaines photos ont été ignorées :\n" + rejetes.join("\n"));
+      photosFichiers = [...photosFichiers, ...valides].slice(0, 10);
       rafraichirPrevisuPhotos();
       inputPhotos.value = "";
     };
@@ -376,7 +497,8 @@
         const urlsPhotos = [];
         for (let i = 0; i < photosFichiers.length; i++) {
           btn.textContent = `Envoi des photos… (${i + 1}/${photosFichiers.length})`;
-          urlsPhotos.push(await uploaderVersCloudinary(photosFichiers[i]));
+          const photoOptimisee = await compresserImage(photosFichiers[i]);
+          urlsPhotos.push(await uploaderVersCloudinary(photoOptimisee));
         }
 
         // Upload de la vidéo vers Cloudinary
@@ -403,12 +525,23 @@
           arrondissement: document.getElementById("arrondissement").value,
           quartier: document.getElementById("quartier").value.trim(),
           pointRepere: document.getElementById("pointRepere").value.trim(),
+          zoneCaractere: document.getElementById("zoneCaractere").value,
           lat, lng,
           surface: Number(document.getElementById("surface").value) || null,
           chambres: Number(document.getElementById("chambres").value) || null,
+          salons: Number(document.getElementById("salons").value) || null,
           sdb: Number(document.getElementById("sdb").value) || null,
+          douches: Number(document.getElementById("sdb").value) || null,
+          cuisineType: document.getElementById("cuisineType").value,
+          doucheType: document.getElementById("doucheType").value,
           etat: document.getElementById("etat").value,
           cloture: clotureVal === "oui",
+          materiau: document.getElementById("materiau").value,
+          terrasse: terrasseVal === "oui",
+          carreaux: carreauxVal === "oui",
+          couleurMurale: document.getElementById("couleurMurale").value === "Autre"
+            ? (document.getElementById("couleurMuraleAutre").value.trim() || "Autre")
+            : document.getElementById("couleurMurale").value,
           eau: document.getElementById("eau").value,
           electricite: document.getElementById("electricite").value,
           compteur: document.getElementById("compteur").value,
@@ -419,6 +552,17 @@
           vues: 0,
           dateCreation: serverTimestamp(),
           dateModification: serverTimestamp()
+        });
+
+        // Notification email à l'admin (n'empêche jamais la publication en cas d'échec)
+        window.MALAGA_EMAIL?.envoyerEmail("TEMPLATE_ANNONCE", {
+          titre: document.getElementById("titre").value.trim(),
+          type: document.getElementById("type").value,
+          prix: document.getElementById("prix").value,
+          commune: document.getElementById("commune").value,
+          quartier: document.getElementById("quartier").value.trim(),
+          proprietaire: profil?.nom || "",
+          tel: document.getElementById("whatsapp").value.trim()
         });
 
         window.location.href = "mes-annonces.html";

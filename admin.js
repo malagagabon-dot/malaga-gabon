@@ -48,8 +48,58 @@ document.addEventListener('DOMContentLoaded', () => {
   initTopbarDate();
   initSidebar();
   initToggleMdp();
+  initListesReference();
   checkAuth();
 });
+
+/* ══════════════════════════════════════════════════════════
+   LISTES DE RÉFÉRENCE (issues de malaga-reference.js via
+   window.MALAGA_REF, voir le pont de module dans admin.html)
+══════════════════════════════════════════════════════════ */
+function initListesReference() {
+  const ref = window.MALAGA_REF || {};
+  const remplir = (id, liste = [], placeholder) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = (placeholder !== undefined ? `<option value="">${placeholder}</option>` : '') +
+      (liste || []).map(v => `<option>${v}</option>`).join('');
+  };
+
+  // Modal "Modifier l'annonce"
+  remplir('modZoneCaractere', ref.ZONES_CARACTERE, 'Non précisé');
+  remplir('modCuisineType', ref.CUISINE_TYPES);
+  remplir('modDoucheType', ref.DOUCHE_TYPES);
+  remplir('modMateriau', ref.MATERIAUX);
+  remplir('modCouleurMurale', ref.COULEURS_MURALES);
+
+  // Filtres avancés (page Annonces)
+  remplir('faaZone', ref.ZONES_CARACTERE, 'Indifférent');
+  remplir('faaType', ref.TYPES_BIEN, 'Tous');
+  remplir('faaCuisineType', ref.CUISINE_TYPES, 'Indifférent');
+  remplir('faaDoucheType', ref.DOUCHE_TYPES, 'Indifférent');
+  remplir('faaMateriau', ref.MATERIAUX, 'Indifférent');
+  remplir('faaCouleur', ref.COULEURS_MURALES, 'Indifférente');
+
+  const optionsPaliers = '<option value="">Indifférent</option>' +
+    (ref.PALIERS_PIECES || [1, 2, 3, 4, 5]).map(n => `<option value="${n}">${n}+</option>`).join('');
+  ['faaChambres', 'faaSalons', 'faaDouches'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = optionsPaliers;
+  });
+}
+
+function toggleFiltresAvancesAdmin() {
+  const panneau = document.getElementById('filtresAvancesAdmin');
+  if (!panneau) return;
+  panneau.style.display = panneau.style.display === 'none' ? 'block' : 'none';
+}
+
+function reinitialiserFiltresAvancesAdmin() {
+  ['faaTexteLoc', 'faaPrixMin', 'faaPrixMax'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['faaZone', 'faaType', 'faaChambres', 'faaSalons', 'faaDouches', 'faaCuisineType',
+    'faaDoucheType', 'faaMateriau', 'faaCouleur', 'faaTerrasse', 'faaCarreaux'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  filtrerAnnonces();
+}
 
 /* ══════════════════════════════════════════════════════════
    AFFICHER / MASQUER LE MOT DE PASSE (icône œil)
@@ -336,21 +386,59 @@ function loadAnnonces(liste) {
 }
 
 function filtrerAnnonces() {
-  const texteRecherche = (document.getElementById('filterAnnonce')?.value || '').toLowerCase().trim();
-  const statut = document.getElementById('filterStatut')?.value || '';
-  const ville = document.getElementById('filterVille')?.value || '';
+  const $ = (id) => document.getElementById(id);
+  const texteRecherche = ($('filterAnnonce')?.value || '').toLowerCase().trim();
+  const statut = $('filterStatut')?.value || '';
+  const ville = $('filterVille')?.value || '';
+
+  // Filtres avancés (facultatifs, tiroir repliable)
+  const texteLoc = ($('faaTexteLoc')?.value || '').toLowerCase().trim();
+  const zone = $('faaZone')?.value || '';
+  const type = $('faaType')?.value || '';
+  const chambresMin = $('faaChambres')?.value || '';
+  const salonsMin = $('faaSalons')?.value || '';
+  const douchesMin = $('faaDouches')?.value || '';
+  const cuisineType = $('faaCuisineType')?.value || '';
+  const doucheType = $('faaDoucheType')?.value || '';
+  const materiau = $('faaMateriau')?.value || '';
+  const couleur = $('faaCouleur')?.value || '';
+  const terrasse = $('faaTerrasse')?.value || '';
+  const carreaux = $('faaCarreaux')?.value || '';
+  const prixMin = $('faaPrixMin')?.value || '';
+  const prixMax = $('faaPrixMax')?.value || '';
 
   const filtrees = annoncesData.filter(a => {
     const titre = String(texte(a, 'titre', 'title')).toLowerCase();
     const quartier = String(texte(a, 'quartier', 'adresse')).toLowerCase();
+    const rue = String(champ(a, 'pointRepere') || '').toLowerCase();
     const villeAnnonce = texte(a, 'commune', 'ville');
     const statutAnnonce = texte(a, 'statut', 'disponibilite');
+    const prix = nombre(a, 'prix', 'prixMensuel', 'loyer');
 
     const correspondTexte = !texteRecherche || titre.includes(texteRecherche) || quartier.includes(texteRecherche);
     const correspondStatut = !statut || statutAnnonce === statut;
     const correspondVille = !ville || villeAnnonce === ville;
 
-    return correspondTexte && correspondStatut && correspondVille;
+    const correspondLoc = !texteLoc || quartier.includes(texteLoc) || rue.includes(texteLoc);
+    const correspondZone = !zone || champ(a, 'zoneCaractere') === zone;
+    const correspondType = !type || champ(a, 'type') === type;
+    const correspondChambres = !chambresMin || nombre(a, 'chambres') >= parseInt(chambresMin);
+    const correspondSalons = !salonsMin || nombre(a, 'salons') >= parseInt(salonsMin);
+    const correspondDouches = !douchesMin || nombre(a, 'douches', 'sdb') >= parseInt(douchesMin);
+    const correspondCuisine = !cuisineType || champ(a, 'cuisineType') === cuisineType;
+    const correspondDouche = !doucheType || champ(a, 'doucheType') === doucheType;
+    const correspondMateriau = !materiau || champ(a, 'materiau') === materiau;
+    const correspondCouleur = !couleur || champ(a, 'couleurMurale') === couleur;
+    const correspondTerrasse = !terrasse || (terrasse === 'oui' ? !!a.terrasse : !a.terrasse);
+    const correspondCarreaux = !carreaux || (carreaux === 'oui' ? !!a.carreaux : !a.carreaux);
+    const correspondPrixMin = !prixMin || prix >= parseInt(prixMin);
+    const correspondPrixMax = !prixMax || prix <= parseInt(prixMax);
+
+    return correspondTexte && correspondStatut && correspondVille &&
+      correspondLoc && correspondZone && correspondType && correspondChambres &&
+      correspondSalons && correspondDouches && correspondCuisine && correspondDouche &&
+      correspondMateriau && correspondCouleur && correspondTerrasse && correspondCarreaux &&
+      correspondPrixMin && correspondPrixMax;
   });
 
   loadAnnonces(filtrees);
@@ -390,10 +478,19 @@ function modifierAnnonce(id) {
   document.getElementById('modCommune').value = champ(a, 'commune', 'ville') || 'Libreville';
   document.getElementById('modArrondissement').value = champ(a, 'arrondissement') || '';
   document.getElementById('modQuartier').value = champ(a, 'quartier', 'adresse') || '';
+  document.getElementById('modPointRepere').value = champ(a, 'pointRepere') || '';
+  document.getElementById('modZoneCaractere').value = champ(a, 'zoneCaractere') || '';
   document.getElementById('modPrix').value = nombre(a, 'prix', 'prixMensuel', 'loyer') || '';
   document.getElementById('modSurface').value = champ(a, 'surface') || '';
   document.getElementById('modChambres').value = champ(a, 'chambres') || '';
+  document.getElementById('modSalons').value = champ(a, 'salons') || '';
   document.getElementById('modSdb').value = champ(a, 'sdb') || '';
+  document.getElementById('modCuisineType').value = champ(a, 'cuisineType') || '';
+  document.getElementById('modDoucheType').value = champ(a, 'doucheType') || '';
+  document.getElementById('modMateriau').value = champ(a, 'materiau') || '';
+  document.getElementById('modCouleurMurale').value = champ(a, 'couleurMurale') || '';
+  document.getElementById('modTerrasse').value = a.terrasse ? 'oui' : 'non';
+  document.getElementById('modCarreaux').value = a.carreaux ? 'oui' : 'non';
   document.getElementById('modStatut').value = (champ(a, 'statut', 'disponibilite') === 'occupe') ? 'occupe' : 'disponible';
   document.getElementById('modDescription').value = champ(a, 'description') || '';
   document.getElementById('modProprioNom').value = champ(a, 'proprietaireNom', 'proprio', 'nomProprietaire') || '';
@@ -432,10 +529,20 @@ function enregistrerModificationAnnonce() {
     commune: document.getElementById('modCommune').value,
     arrondissement: document.getElementById('modArrondissement').value.trim(),
     quartier: document.getElementById('modQuartier').value.trim(),
+    pointRepere: document.getElementById('modPointRepere').value.trim(),
+    zoneCaractere: document.getElementById('modZoneCaractere').value,
     prix: parseInt(prix) || 0,
     surface: parseInt(document.getElementById('modSurface').value) || null,
     chambres: parseInt(document.getElementById('modChambres').value) || null,
+    salons: parseInt(document.getElementById('modSalons').value) || null,
     sdb: parseInt(document.getElementById('modSdb').value) || null,
+    douches: parseInt(document.getElementById('modSdb').value) || null,
+    cuisineType: document.getElementById('modCuisineType').value,
+    doucheType: document.getElementById('modDoucheType').value,
+    materiau: document.getElementById('modMateriau').value,
+    couleurMurale: document.getElementById('modCouleurMurale').value,
+    terrasse: document.getElementById('modTerrasse').value === 'oui',
+    carreaux: document.getElementById('modCarreaux').value === 'oui',
     statut: document.getElementById('modStatut').value,
     description: document.getElementById('modDescription').value.trim(),
     equipements,

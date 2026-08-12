@@ -8,19 +8,30 @@ import {
   collection, query, where, orderBy, onSnapshot, doc, updateDoc, increment
 } from "./firebase-config.js";
 import {
-  COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, getIconeType, formatPrix
+  COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, getIconeType, formatPrix,
+  ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
+  EQUIPEMENTS, PALIERS_PIECES
 } from "./malaga-reference.js";
 import { estFavori, toggleFavori } from "./nav.js";
 
 let toutesLesAnnonces = [];
-let filtres = { commune: "", arrondissement: "", type: "", prixMax: "", texte: "" };
+let filtres = {
+  commune: "", arrondissement: "", type: "", prixMax: "", texte: "",
+  // Filtres avancés
+  quartier: "", rue: "", zone: "", presLocalisation: false,
+  chambresMin: "", salonsMin: "", douchesMin: "", doucheType: "", cuisineType: "",
+  materiau: "", couleur: "", terrasse: "", carreaux: "",
+  prixMin: "", prixMaxAvance: "", equipements: []
+};
 let modeFavoris = false;
 let map, markersParId = {};
+let positionUtilisateur = null; // { lat, lng } — utilisée pour le tri "près de moi"
 
 /* ══════════ INITIALISATION ══════════ */
 document.addEventListener("DOMContentLoaded", () => {
   initCarte();
   initFiltres();
+  initFiltresAvances();
   ecouterAnnoncesTempsReel();
 
   document.getElementById("btnRechercher").onclick = () => {
@@ -104,7 +115,7 @@ function initFiltres() {
 }
 
 function appliquerFiltres(liste) {
-  return liste.filter(a => {
+  const resultat = liste.filter(a => {
     const okCommune = !filtres.commune || a.commune === filtres.commune;
     const okArr = !filtres.arrondissement || a.arrondissement === filtres.arrondissement;
     const okType = !filtres.type || a.type === filtres.type;
@@ -115,8 +126,142 @@ function appliquerFiltres(liste) {
       (a.arrondissement || "").toLowerCase().includes(filtres.texte) ||
       (a.commune || "").toLowerCase().includes(filtres.texte);
     const okFavoris = !modeFavoris || estFavori(a.id);
-    return okCommune && okArr && okType && okPrix && okTexte && okFavoris;
+
+    // ══ Filtres avancés ══
+    const okQuartier = !filtres.quartier || (a.quartier || "").toLowerCase().includes(filtres.quartier);
+    const okRue = !filtres.rue || (a.pointRepere || "").toLowerCase().includes(filtres.rue);
+    const okZone = !filtres.zone || a.zoneCaractere === filtres.zone;
+    const okChambres = !filtres.chambresMin || (a.chambres || 0) >= parseInt(filtres.chambresMin);
+    const okSalons = !filtres.salonsMin || (a.salons || 0) >= parseInt(filtres.salonsMin);
+    const okDouches = !filtres.douchesMin || (a.douches || a.sdb || 0) >= parseInt(filtres.douchesMin);
+    const okDoucheType = !filtres.doucheType || a.doucheType === filtres.doucheType;
+    const okCuisineType = !filtres.cuisineType || a.cuisineType === filtres.cuisineType;
+    const okMateriau = !filtres.materiau || a.materiau === filtres.materiau;
+    const okCouleur = !filtres.couleur || a.couleurMurale === filtres.couleur;
+    const okTerrasse = !filtres.terrasse || (filtres.terrasse === "oui" ? !!a.terrasse : !a.terrasse);
+    const okCarreaux = !filtres.carreaux || (filtres.carreaux === "oui" ? !!a.carreaux : !a.carreaux);
+    const okPrixMin = !filtres.prixMin || a.prix >= parseInt(filtres.prixMin);
+    const okPrixMaxAv = !filtres.prixMaxAvance || a.prix <= parseInt(filtres.prixMaxAvance);
+    const okEquipements = !filtres.equipements.length ||
+      filtres.equipements.every(e => (a.equipements || []).includes(e));
+
+    return okCommune && okArr && okType && okPrix && okTexte && okFavoris &&
+      okQuartier && okRue && okZone && okChambres && okSalons && okDouches &&
+      okDoucheType && okCuisineType && okMateriau && okCouleur && okTerrasse &&
+      okCarreaux && okPrixMin && okPrixMaxAv && okEquipements;
   });
+
+  // Tri "près de moi" si activé et position disponible
+  if (filtres.presLocalisation && positionUtilisateur) {
+    resultat.sort((a, b) => {
+      if (typeof a.lat !== "number" || typeof a.lng !== "number") return 1;
+      if (typeof b.lat !== "number" || typeof b.lng !== "number") return -1;
+      return distanceKm(positionUtilisateur, a) - distanceKm(positionUtilisateur, b);
+    });
+  }
+
+  return resultat;
+}
+
+function distanceKm(pos, annonce) {
+  const R = 6371;
+  const dLat = (annonce.lat - pos.lat) * Math.PI / 180;
+  const dLng = (annonce.lng - pos.lng) * Math.PI / 180;
+  const lat1 = pos.lat * Math.PI / 180, lat2 = annonce.lat * Math.PI / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/* ══════════ FILTRE AVANCÉ (tiroir) ══════════ */
+function initFiltresAvances() {
+  const $ = (id) => document.getElementById(id);
+  const remplir = (id, liste, placeholder) => {
+    $(id).innerHTML = `<option value="">${placeholder}</option>` + liste.map(v => `<option>${v}</option>`).join("");
+  };
+
+  remplir("faZone", ZONES_CARACTERE, "Indifférent");
+  remplir("faDoucheType", DOUCHE_TYPES, "Indifférent");
+  remplir("faCuisineType", CUISINE_TYPES, "Indifférent");
+  remplir("faMateriau", MATERIAUX, "Indifférent");
+  remplir("faCouleur", COULEURS_MURALES, "Indifférente");
+
+  const optionsPaliers = '<option value="">Indifférent</option>' +
+    PALIERS_PIECES.map(n => `<option value="${n}">${n}+</option>`).join("");
+  $("faChambres").innerHTML = optionsPaliers;
+  $("faSalons").innerHTML = optionsPaliers;
+  $("faDouches").innerHTML = optionsPaliers;
+
+  $("faEquipements").innerHTML = EQUIPEMENTS.map(e => `<div class="chip" data-val="${e}">${e}</div>`).join("");
+  $("faEquipements").querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => chip.classList.toggle("actif"));
+  });
+
+  const overlay = $("filtresAvancesOverlay");
+  const panneau = $("filtresAvancesPanel");
+  const ouvrir = () => { overlay.classList.add("ouvert"); panneau.classList.add("ouvert"); panneau.setAttribute("aria-hidden", "false"); };
+  const fermer = () => { overlay.classList.remove("ouvert"); panneau.classList.remove("ouvert"); panneau.setAttribute("aria-hidden", "true"); };
+
+  $("btnFiltresAvances").onclick = ouvrir;
+  $("fermerFiltresAvances").onclick = fermer;
+  overlay.onclick = fermer;
+
+  $("faPresLocalisation").onchange = (e) => {
+    if (e.target.checked && !positionUtilisateur && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { positionUtilisateur = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
+        () => { alert("Impossible de récupérer votre position."); e.target.checked = false; }
+      );
+    }
+  };
+
+  $("btnAppliquerFiltres").onclick = () => {
+    filtres.quartier = $("faQuartier").value.trim().toLowerCase();
+    filtres.rue = $("faRue").value.trim().toLowerCase();
+    filtres.zone = $("faZone").value;
+    filtres.presLocalisation = $("faPresLocalisation").checked;
+    filtres.chambresMin = $("faChambres").value;
+    filtres.salonsMin = $("faSalons").value;
+    filtres.douchesMin = $("faDouches").value;
+    filtres.doucheType = $("faDoucheType").value;
+    filtres.cuisineType = $("faCuisineType").value;
+    filtres.materiau = $("faMateriau").value;
+    filtres.couleur = $("faCouleur").value;
+    filtres.terrasse = $("faTerrasse").value;
+    filtres.carreaux = $("faCarreaux").value;
+    filtres.prixMin = $("faPrixMin").value;
+    filtres.prixMaxAvance = $("faPrixMax").value;
+    filtres.equipements = Array.from($("faEquipements").querySelectorAll(".chip.actif")).map(c => c.dataset.val);
+
+    mettreAJourBadgeFiltres();
+    rendreTout();
+    fermer();
+  };
+
+  $("btnReinitialiserFiltres").onclick = () => {
+    ["faQuartier", "faRue", "faPrixMin", "faPrixMax"].forEach(id => $(id).value = "");
+    ["faZone", "faChambres", "faSalons", "faDouches", "faDoucheType", "faCuisineType",
+      "faMateriau", "faCouleur", "faTerrasse", "faCarreaux"].forEach(id => $(id).value = "");
+    $("faPresLocalisation").checked = false;
+    $("faEquipements").querySelectorAll(".chip.actif").forEach(c => c.classList.remove("actif"));
+
+    Object.assign(filtres, {
+      quartier: "", rue: "", zone: "", presLocalisation: false,
+      chambresMin: "", salonsMin: "", douchesMin: "", doucheType: "", cuisineType: "",
+      materiau: "", couleur: "", terrasse: "", carreaux: "",
+      prixMin: "", prixMaxAvance: "", equipements: []
+    });
+    mettreAJourBadgeFiltres();
+    rendreTout();
+  };
+}
+
+function mettreAJourBadgeFiltres() {
+  const cles = ["quartier", "rue", "zone", "chambresMin", "salonsMin", "douchesMin",
+    "doucheType", "cuisineType", "materiau", "couleur", "terrasse", "carreaux", "prixMin", "prixMaxAvance"];
+  let n = cles.filter(c => filtres[c]).length + (filtres.presLocalisation ? 1 : 0) + filtres.equipements.length;
+  const badge = document.getElementById("badgeFiltresActifs");
+  badge.hidden = n === 0;
+  badge.textContent = n;
 }
 
 /* ══════════ RENDU LISTE + CARTE ══════════ */
@@ -221,6 +366,7 @@ function afficherDetail(a) {
 
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
         ${a.chambres ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">🛏️ ${a.chambres}</div><div style="font-size:11px;color:#666;">Chambres</div></div>` : ""}
+        ${a.salons ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">🛋️ ${a.salons}</div><div style="font-size:11px;color:#666;">Salons</div></div>` : ""}
         ${a.sdb ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">🚿 ${a.sdb}</div><div style="font-size:11px;color:#666;">S. bain</div></div>` : ""}
         ${a.surface ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">📐 ${a.surface}</div><div style="font-size:11px;color:#666;">m²</div></div>` : ""}
       </div>
@@ -230,10 +376,17 @@ function afficherDetail(a) {
         <p style="font-size:13px;color:#666;">${a.description || "Aucune description."}</p>
       </div>
 
-      <div style="margin-bottom:16px;font-size:13px;color:#444;">
+      <div style="margin-bottom:16px;font-size:13px;color:#444;line-height:1.9;">
         ${a.cloture ? "✓ Clôturé &nbsp;" : ""}${a.eau ? `✓ Eau : ${a.eau} &nbsp;` : ""}${a.electricite ? `✓ Électricité : ${a.electricite}` : ""}
         ${a.compteur ? `<br>✓ Compteur ${a.compteur}` : ""}
         ${a.etat ? `<br>✓ État du bâtiment : ${a.etat}` : ""}
+        ${a.materiau ? `<br>✓ Matériau : ${a.materiau}` : ""}
+        ${a.couleurMurale ? ` &nbsp;✓ Peinture murale : ${a.couleurMurale}` : ""}
+        ${a.cuisineType ? `<br>✓ Cuisine ${a.cuisineType.toLowerCase()}` : ""}
+        ${a.doucheType ? ` &nbsp;✓ Douche ${a.doucheType.toLowerCase()}` : ""}
+        ${a.terrasse ? "<br>✓ Terrasse" : ""}${a.carreaux ? " &nbsp;✓ Sol carrelé" : ""}
+        ${a.zoneCaractere ? `<br>✓ Zone : ${a.zoneCaractere}` : ""}
+        ${a.pointRepere ? `<br>✓ Repère : ${a.pointRepere}` : ""}
       </div>
 
       ${a.equipements && a.equipements.length ? `

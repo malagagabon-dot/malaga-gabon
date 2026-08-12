@@ -6,8 +6,8 @@
   <title>MALAGA — Maison À Louer Au Gabon</title>
   <meta name="theme-color" content="#009E60">
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="img/icon-192-v2.png">
-  <link rel="apple-touch-icon" href="img/icon-192-v2.png">
+  <link rel="icon" type="image/png" href="img/icon-night-192.png">
+  <link rel="apple-touch-icon" href="img/icon-night-192.png">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -97,7 +97,150 @@
       <option value="400000">400 000 FCFA</option>
       <option value="1000000">1 000 000 FCFA</option>
     </select>
+    <button type="button" class="btn btn-outline" id="btnFiltresAvances">🎛️ Filtres avancés<span class="badge-filtres-actifs" id="badgeFiltresActifs" hidden>0</span></button>
   </div>
+
+  <!-- Panneau de filtre avancé (tiroir) -->
+  <div class="filtres-avances-overlay" id="filtresAvancesOverlay"></div>
+  <aside class="filtres-avances-panel" id="filtresAvancesPanel" aria-hidden="true">
+    <div class="fa-header">
+      <h3>Filtres avancés</h3>
+      <button type="button" class="fa-fermer" id="fermerFiltresAvances" aria-label="Fermer">✕</button>
+    </div>
+
+    <div class="fa-body">
+      <section class="fa-section">
+        <h4>📍 Localisation</h4>
+        <div class="fa-champ">
+          <label>Quartier</label>
+          <input type="text" id="faQuartier" placeholder="Ex : Angondjé">
+        </div>
+        <div class="fa-champ">
+          <label>Rue / point de repère</label>
+          <input type="text" id="faRue" placeholder="Ex : Total d'Angondjé">
+        </div>
+        <div class="fa-champ">
+          <label>Caractère de la zone</label>
+          <select id="faZone"><option value="">Indifférent</option></select>
+        </div>
+        <div class="fa-champ">
+          <label class="fa-check">
+            <input type="checkbox" id="faPresLocalisation">
+            Trier les annonces les plus proches de moi
+          </label>
+        </div>
+      </section>
+
+      <section class="fa-section">
+        <h4>🏠 Type &amp; capacités</h4>
+        <div class="fa-grille-2">
+          <div class="fa-champ">
+            <label>Chambres (min.)</label>
+            <select id="faChambres"><option value="">Indifférent</option></select>
+          </div>
+          <div class="fa-champ">
+            <label>Salons (min.)</label>
+            <select id="faSalons"><option value="">Indifférent</option></select>
+          </div>
+        </div>
+        <div class="fa-grille-2">
+          <div class="fa-champ">
+            <label>Douches (min.)</label>
+            <select id="faDouches"><option value="">Indifférent</option></select>
+          </div>
+          <div class="fa-champ">
+            <label>Type de douche</label>
+            <select id="faDoucheType"><option value="">Indifférent</option></select>
+          </div>
+        </div>
+        <div class="fa-champ">
+          <label>Cuisine</label>
+          <select id="faCuisineType"><option value="">Indifférent</option></select>
+        </div>
+      </section>
+
+      <section class="fa-section">
+        <h4>🧱 Construction &amp; finitions</h4>
+        <div class="fa-champ">
+          <label>Matériau de construction</label>
+          <select id="faMateriau"><option value="">Indifférent</option></select>
+        </div>
+        <div class="fa-champ">
+          <label>Couleur de peinture murale</label>
+          <select id="faCouleur"><option value="">Indifférente</option></select>
+        </div>
+        <div class="fa-grille-2">
+          <div class="fa-champ">
+            <label>Terrasse</label>
+            <select id="faTerrasse">
+              <option value="">Indifférent</option>
+              <option value="oui">Avec terrasse</option>
+              <option value="non">Sans terrasse</option>
+            </select>
+          </div>
+          <div class="fa-champ">
+            <label>Sol carrelé</label>
+            <select id="faCarreaux">
+              <option value="">Indifférent</option>
+              <option value="oui">Carrelé</option>
+              <option value="non">Non carrelé</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="fa-section">
+        <h4>💰 Budget</h4>
+        <div class="fa-grille-2">
+          <div class="fa-champ">
+            <label>Prix min. (FCFA)</label>
+            <input type="number" id="faPrixMin" min="0" placeholder="0">
+          </div>
+          <div class="fa-champ">
+            <label>Prix max. (FCFA)</label>
+            <input type="number" id="faPrixMax" min="0" placeholder="Sans limite">
+          </div>
+        </div>
+      </section>
+
+      <section class="fa-section">
+        <h4>✅ Équipements</h4>
+        <div class="fa-chips" id="faEquipements"></div>
+      </section>
+    </div>
+
+    <div class="fa-footer">
+      <button type="button" class="btn btn-outline" id="btnReinitialiserFiltres">Réinitialiser</button>
+      <button type="button" class="btn btn-vert" id="btnAppliquerFiltres">Appliquer les filtres</button>
+    </div>
+  </aside>
+
+  <style>
+    .btn-outline{position:relative;}
+    .badge-filtres-actifs{background:var(--jaune,#F2B90C);color:#000;font-size:11px;font-weight:800;border-radius:10px;padding:1px 7px;margin-left:6px;}
+    .filtres-avances-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:998;opacity:0;pointer-events:none;transition:opacity .2s;}
+    .filtres-avances-overlay.ouvert{opacity:1;pointer-events:auto;}
+    .filtres-avances-panel{position:fixed;top:0;right:0;height:100%;width:min(380px,92vw);background:#fff;z-index:999;
+      transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-6px 0 24px rgba(0,0,0,.15);}
+    .filtres-avances-panel.ouvert{transform:translateX(0);}
+    .fa-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #eee;flex-shrink:0;}
+    .fa-header h3{margin:0;font-size:16px;font-weight:800;}
+    .fa-fermer{background:#f2f2f2;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;}
+    .fa-body{flex:1;overflow-y:auto;padding:16px 18px;}
+    .fa-section{margin-bottom:22px;}
+    .fa-section h4{font-size:13px;font-weight:800;color:var(--vert,#009E60);margin:0 0 10px;}
+    .fa-champ{margin-bottom:12px;}
+    .fa-champ label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:4px;}
+    .fa-champ input, .fa-champ select{width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;}
+    .fa-grille-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .fa-check{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:#333;cursor:pointer;}
+    .fa-chips{display:flex;flex-wrap:wrap;gap:8px;}
+    .fa-chips .chip{padding:6px 12px;border:1px solid #ddd;border-radius:20px;font-size:12px;cursor:pointer;user-select:none;}
+    .fa-chips .chip.actif{background:var(--vert,#009E60);color:#fff;border-color:var(--vert,#009E60);}
+    .fa-footer{display:flex;gap:10px;padding:14px 18px;border-top:1px solid #eee;flex-shrink:0;}
+    .fa-footer .btn{flex:1;text-align:center;}
+    @media(max-width:480px){.fa-grille-2{grid-template-columns:1fr;}}
+  </style>
 
   <!-- Contenu : liste + carte côte à côte -->
   <div class="split-layout">
