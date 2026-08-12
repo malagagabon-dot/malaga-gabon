@@ -454,6 +454,35 @@ body {
   background: var(--surface);
 }
 
+.champ-mdp-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.champ-mdp-wrap input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.btn-oeil {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
+  padding: 7px 9px;
+  opacity: .6;
+  transition: opacity .15s;
+}
+
+.btn-oeil:hover { opacity: 1; }
+.btn-oeil.actif { opacity: 1; }
+
 .tags-picker {
   display: flex; flex-wrap: wrap; gap: .5rem;
   padding: .75rem;

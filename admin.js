@@ -47,8 +47,26 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initTopbarDate();
   initSidebar();
+  initToggleMdp();
   checkAuth();
 });
+
+/* ══════════════════════════════════════════════════════════
+   AFFICHER / MASQUER LE MOT DE PASSE (icône œil)
+══════════════════════════════════════════════════════════ */
+function initToggleMdp() {
+  document.querySelectorAll('.btn-oeil').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.cible);
+      if (!input) return;
+      const estVisible = input.type === 'text';
+      input.type = estVisible ? 'password' : 'text';
+      btn.textContent = estVisible ? '👁️' : '🙈';
+      btn.classList.toggle('actif', !estVisible);
+      btn.setAttribute('aria-label', estVisible ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
+    });
+  });
+}
 
 /* ══════════════════════════════════════════════════════════
    AUTHENTIFICATION (Firebase réelle — compte admin unique)
