@@ -289,8 +289,12 @@
     .fa-equip .chip:not(.actif){background:#fff;}
 
     /* ===== Sélecteur de mode d'affichage des annonces ===== */
-    .vue-modes{display:flex;gap:6px;}
-    .vue-modes button{background:#f2f2f2;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;transition:background .15s,color .15s;}
+    .vue-modes-bar{display:flex;justify-content:center;margin:-4px 0 14px;}
+    .vue-modes{display:flex;gap:10px;}
+    .vue-modes button{background:#f2f2f2;border:none;border-radius:10px;width:52px;height:48px;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:background .15s,color .15s;}
+    .vue-modes .vm-icone{font-size:15px;line-height:1;}
+    .vue-modes .vm-label{font-size:9px;font-weight:700;line-height:1;}
     .vue-modes button.actif{background:var(--vert,#009E60);color:#fff;}
     .grille-annonces.vue-grande{--tile-min:280px;--tile-img-h:190px;}
     .grille-annonces.vue-moyenne{--tile-min:200px;--tile-img-h:130px;}
@@ -320,12 +324,12 @@
         <h2 id="liste-annonces">Annonces disponibles</h2>
         <span id="count-annonces">Chargement…</span>
       </div>
-      <div class="section-header" style="margin-top:-8px;">
+      <div class="vue-modes-bar">
         <div class="vue-modes" id="vueModes">
-          <button type="button" data-vue="liste" title="Liste détaillée">☰</button>
-          <button type="button" data-vue="compacte" title="Miniature">▪</button>
-          <button type="button" data-vue="moyenne" title="Moyenne">▦</button>
-          <button type="button" data-vue="grande" title="Grande">🔲</button>
+          <button type="button" data-vue="liste" title="Liste détaillée"><span class="vm-icone">☰</span><span class="vm-label">Liste</span></button>
+          <button type="button" data-vue="compacte" title="Miniature"><span class="vm-icone">▪</span><span class="vm-label">Mini</span></button>
+          <button type="button" data-vue="moyenne" title="Moyenne"><span class="vm-icone">▦</span><span class="vm-label">Moyen</span></button>
+          <button type="button" data-vue="grande" title="Grande"><span class="vm-icone">🔲</span><span class="vm-label">Grand</span></button>
         </div>
       </div>
       <div id="liste-annonces-grille" class="grille-annonces">
