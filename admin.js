@@ -570,75 +570,101 @@ function annoncesDemoData() {
   const photo = (seed) => [1, 2, 3].map(n => `https://picsum.photos/seed/${seed}-${n}/800/600`);
 
   return [
+    // ── VILLA ─────────────────────────────────────────────
     {
-      titre: "Villa meublée avec piscine à Akournam",
-      type: "Villa", commune: "Owendo", arrondissement: "2e arrondissement", quartier: "Akournam 2",
-      prix: 450000, surface: 180, chambres: 4, sdb: 3, cloture: true,
-      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
-      description: "Magnifique villa entièrement meublée avec piscine privée, grand jardin clôturé et parking pour 2 véhicules. Idéale pour une famille ou une résidence de fonction.",
-      equipements: ["Meublé", "Climatisé", "Piscine", "Parking", "Groupe électrogène"],
-      statut: "disponible", lat: 0.2905, lng: 9.4980, photos: photo("villa-akournam")
+      titre: "Villa de standing avec piscine à Cap Estérias",
+      type: "Villa", commune: "Akanda", arrondissement: "1er arrondissement", quartier: "Cap Estérias",
+      pointRepere: "À 200 m de la plage, après le carrefour Cap Estérias",
+      zoneCaractere: "Bord de mer / lagune",
+      prix: 550000, surface: 220, chambres: 4, salons: 2, sdb: 3, douches: 3,
+      cloture: true, materiau: "Dur (parpaing / béton)", couleurMurale: "Bleu ciel",
+      cuisineType: "Interne", doucheType: "Interne", terrasse: true, carreaux: true,
+      eau: "Forage", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Villa de standing en bord de mer avec piscine privée, grand jardin arboré, terrasse donnant sur la lagune, parking pour 2 véhicules et groupe électrogène de secours. Cadre exceptionnel, idéale pour une résidence de fonction.",
+      equipements: ["Meublé", "Climatisé", "Piscine", "Jardin", "Parking", "Groupe électrogène", "Gardiennage"],
+      statut: "disponible", lat: 0.5320, lng: 9.3650, photos: photo("villa-esterias")
     },
+    // ── APPARTEMENT ───────────────────────────────────────
     {
-      titre: "Appartement moderne aux Cocotiers",
+      titre: "Appartement moderne 2 chambres aux Cocotiers",
       type: "Appartement", commune: "Libreville", arrondissement: "2e arrondissement", quartier: "Cocotiers",
-      prix: 220000, surface: 85, chambres: 2, sdb: 1, cloture: false,
+      pointRepere: "Immeuble Le Baobab, près de la pharmacie des Cocotiers",
+      zoneCaractere: "Centre-ville",
+      prix: 220000, surface: 85, chambres: 2, salons: 1, sdb: 1, douches: 1,
+      cloture: false, materiau: "Dur (parpaing / béton)", couleurMurale: "Crème / Ivoire",
+      cuisineType: "Interne", doucheType: "Interne", terrasse: true, carreaux: true,
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
-      description: "Bel appartement lumineux au 2e étage, proche des commerces et des transports. Cuisine équipée et balcon avec vue dégagée.",
+      description: "Bel appartement lumineux au 2e étage, proche des commerces et des transports. Cuisine équipée, carrelage au sol dans toutes les pièces et balcon avec vue dégagée sur le quartier.",
       equipements: ["Climatisé", "Fibre optique", "Interphone"],
       statut: "disponible", lat: 0.3912, lng: 9.4580, photos: photo("appart-cocotiers")
     },
+    // ── STUDIO ────────────────────────────────────────────
     {
-      titre: "Studio meublé à Akébé-Ville",
+      titre: "Studio meublé et climatisé à Akébé-Ville",
       type: "Studio", commune: "Libreville", arrondissement: "3e arrondissement", quartier: "Akébé-Ville",
-      prix: 95000, surface: 28, chambres: 0, sdb: 1, cloture: false,
+      pointRepere: "Près du carrefour Akébé-Ville, à côté de l'école primaire",
+      zoneCaractere: "Résidentiel calme",
+      prix: 95000, surface: 28, chambres: 1, salons: 0, sdb: 1, douches: 1,
+      cloture: false, materiau: "Semi-dur", couleurMurale: "Beige",
+      cuisineType: "Interne", doucheType: "Interne", terrasse: false, carreaux: true,
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Commun",
-      description: "Studio compact et fonctionnel, parfait pour un étudiant ou une personne seule. Quartier calme et bien desservi.",
-      equipements: ["Meublé", "Interphone"],
+      description: "Studio compact et fonctionnel, parfait pour un étudiant ou une personne seule. Coin cuisine intégré, sol carrelé, quartier calme et bien desservi par les taxis.",
+      equipements: ["Meublé", "Climatisé", "Interphone"],
       statut: "disponible", lat: 0.3830, lng: 9.4650, photos: photo("studio-akebe")
     },
+    // ── CHAMBRE ───────────────────────────────────────────
     {
-      titre: "Maison familiale à Angondjé",
-      type: "Maison", commune: "Akanda", arrondissement: "2e arrondissement", quartier: "Angondjé",
-      prix: 300000, surface: 140, chambres: 3, sdb: 2, cloture: true,
-      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
-      description: "Maison spacieuse dans un quartier résidentiel calme, cour clôturée avec espace pour jardin potager. Proche des écoles.",
-      equipements: ["Clôturé", "Parking", "Forage", "Gardiennage"],
-      statut: "disponible", lat: 0.4790, lng: 9.4240, photos: photo("maison-angondje")
-    },
-    {
-      titre: "Chambre meublée à Glass",
+      titre: "Chambre meublée à Glass, salle d'eau partagée",
       type: "Chambre", commune: "Libreville", arrondissement: "4e arrondissement", quartier: "Glass",
-      prix: 60000, surface: 18, chambres: 1, sdb: 1, cloture: false,
+      pointRepere: "Résidence Bord-Mer, en face de l'ancien cinéma de Glass",
+      zoneCaractere: "Bord de mer / lagune",
+      prix: 60000, surface: 18, chambres: 1, salons: 0, sdb: 1, douches: 1,
+      cloture: false, materiau: "Semi-dur", couleurMurale: "Jaune",
+      cuisineType: "Externe", doucheType: "Externe", terrasse: false, carreaux: false,
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Commun",
-      description: "Chambre meublée avec salle d'eau partagée, dans une résidence sécurisée en bord de mer. Idéal petit budget.",
+      description: "Chambre meublée avec cuisine et douche communes, dans une résidence sécurisée en bord de mer. Idéal petit budget, à deux pas du marché de Glass.",
       equipements: ["Meublé", "Gardiennage"],
       statut: "disponible", lat: 0.3980, lng: 9.4470, photos: photo("chambre-glass")
     },
+    // ── MAISON ────────────────────────────────────────────
     {
-      titre: "Villa avec grand jardin à Cap Estérias",
-      type: "Villa", commune: "Akanda", arrondissement: "1er arrondissement", quartier: "Cap Estérias",
-      prix: 500000, surface: 220, chambres: 4, sdb: 3, cloture: true,
-      eau: "Forage", electricite: "SEEG (réseau)", compteur: "Individuel",
-      description: "Villa de standing en bord de mer avec grand jardin arboré, parking et groupe électrogène de secours. Cadre exceptionnel.",
-      equipements: ["Meublé", "Jardin", "Parking", "Groupe électrogène", "Gardiennage"],
-      statut: "occupe", lat: 0.5320, lng: 9.3650, photos: photo("villa-esterias")
-    },
-    {
-      titre: "Bureau climatisé à Charbonnages",
-      type: "Bureau", commune: "Libreville", arrondissement: "1er arrondissement", quartier: "Charbonnages",
-      prix: 350000, surface: 100, chambres: null, sdb: 1, cloture: false,
+      titre: "Maison familiale clôturée à Angondjé",
+      type: "Maison", commune: "Akanda", arrondissement: "2e arrondissement", quartier: "Angondjé",
+      pointRepere: "Lot 34, non loin du temple d'Angondjé",
+      zoneCaractere: "Périphérie / semi-rural",
+      prix: 300000, surface: 140, chambres: 3, salons: 1, sdb: 2, douches: 2,
+      cloture: true, materiau: "Dur (parpaing / béton)", couleurMurale: "Vert",
+      cuisineType: "Interne", doucheType: "Interne", terrasse: true, carreaux: true,
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
-      description: "Espace de bureau climatisé, open-space modulable, idéal pour une PME. Parking visiteurs disponible.",
+      description: "Maison spacieuse dans un quartier résidentiel calme, cour clôturée avec espace pour jardin potager et terrasse couverte. Proche des écoles et d'un forage de secours.",
+      equipements: ["Clôturé", "Parking", "Forage", "Gardiennage"],
+      statut: "disponible", lat: 0.4790, lng: 9.4240, photos: photo("maison-angondje")
+    },
+    // ── BUREAU ────────────────────────────────────────────
+    {
+      titre: "Bureau climatisé open-space à Charbonnages",
+      type: "Bureau", commune: "Libreville", arrondissement: "1er arrondissement", quartier: "Charbonnages",
+      pointRepere: "Immeuble Étoile, 1er étage, face à l'agence BICIG Charbonnages",
+      zoneCaractere: "Zone commerciale",
+      prix: 350000, surface: 100, chambres: 0, salons: 1, sdb: 1, douches: 1,
+      cloture: false, materiau: "Dur (parpaing / béton)", couleurMurale: "Gris",
+      cuisineType: "Externe", doucheType: "Interne", terrasse: false, carreaux: true,
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Espace de bureau climatisé, open-space modulable avec salle de réunion, idéal pour une PME. Parking visiteurs et connexion fibre optique disponibles.",
       equipements: ["Climatisé", "Parking", "Fibre optique"],
       statut: "disponible", lat: 0.4210, lng: 9.4390, photos: photo("bureau-charbonnages")
     },
+    // ── LOCAL COMMERCIAL ──────────────────────────────────
     {
-      titre: "Local commercial au port d'Owendo",
+      titre: "Local commercial clôturé au port d'Owendo",
       type: "Local commercial", commune: "Owendo", arrondissement: "1er arrondissement", quartier: "Owendo Port",
-      prix: 400000, surface: 120, chambres: null, sdb: 1, cloture: true,
+      pointRepere: "Le long de la route du port, entrepôt B12",
+      zoneCaractere: "Zone industrielle",
+      prix: 400000, surface: 120, chambres: 0, salons: 0, sdb: 1, douches: 1,
+      cloture: true, materiau: "Dur (parpaing / béton)", couleurMurale: "Autre",
+      cuisineType: "Externe", doucheType: "Externe", terrasse: false, carreaux: false,
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
-      description: "Local commercial bien situé à proximité du port, forte visibilité et passage. Idéal commerce ou entrepôt.",
+      description: "Local commercial bien situé à proximité immédiate du port, forte visibilité et passage. Grand espace de stockage, cour clôturée et gardiennée. Idéal commerce ou entrepôt.",
       equipements: ["Clôturé", "Parking", "Gardiennage"],
       statut: "disponible", lat: 0.2940, lng: 9.5050, photos: photo("local-owendo")
     }
@@ -647,9 +673,9 @@ function annoncesDemoData() {
 
 function semerAnnoncesDemo() {
   if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
-  if (!confirm('Ajouter 8 annonces de démonstration dans Firestore ? Elles seront visibles sur le site public et modifiables/supprimables ici.')) return;
-
   const lot = annoncesDemoData();
+  if (!confirm(`Ajouter ${lot.length} annonces de démonstration (une par type de bien) dans Firestore ? Elles seront visibles sur le site public et modifiables/supprimables ici.`)) return;
+
   const batch = window.dbAdmin.batch();
   const maintenant = firebase.firestore.FieldValue.serverTimestamp();
 
