@@ -189,7 +189,7 @@
   <div class="page" id="page-annonces">
     <div class="page-header">
       <h1>Gestion des annonces</h1>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div class="header-actions">
         <button class="btn-outline" onclick="supprimerAnnoncesDemo()">🗑️ Supprimer les démos</button>
         <button class="btn-outline" onclick="semerAnnoncesDemo()">🌱 Ajouter des annonces démo</button>
         <button class="btn-primary" onclick="showPage('publier')">+ Publier une annonce</button>
@@ -213,71 +213,96 @@
       <button class="btn-outline" type="button" onclick="toggleFiltresAvancesAdmin()">🎛️ Filtres avancés</button>
     </div>
 
-    <!-- Filtres avancés (repliable) -->
+    <!-- Filtres avancés (repliable) — mêmes sections et couleurs que le site public -->
     <div class="card" id="filtresAvancesAdmin" style="margin-bottom:16px;display:none;">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Quartier / rue</label>
-          <input type="text" id="faaTexteLoc" placeholder="Ex : Angondjé" oninput="filtrerAnnonces()">
-        </div>
-        <div class="form-group">
-          <label>Caractère de la zone</label>
-          <select id="faaZone" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
-        </div>
-        <div class="form-group">
-          <label>Type de bien</label>
-          <select id="faaType" onchange="filtrerAnnonces()"><option value="">Tous</option></select>
-        </div>
-        <div class="form-group">
-          <label>Chambres (min.)</label>
-          <select id="faaChambres" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
-        </div>
-        <div class="form-group">
-          <label>Salons (min.)</label>
-          <select id="faaSalons" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
-        </div>
-        <div class="form-group">
-          <label>Douches (min.)</label>
-          <select id="faaDouches" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
-        </div>
-        <div class="form-group">
-          <label>Cuisine</label>
-          <select id="faaCuisineType" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
-        </div>
-        <div class="form-group">
-          <label>Douche (type)</label>
-          <select id="faaDoucheType" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
-        </div>
-        <div class="form-group">
-          <label>Matériau</label>
-          <select id="faaMateriau" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
-        </div>
-        <div class="form-group">
-          <label>Couleur murale</label>
-          <select id="faaCouleur" onchange="filtrerAnnonces()"><option value="">Indifférente</option></select>
-        </div>
-        <div class="form-group">
-          <label>Terrasse</label>
-          <select id="faaTerrasse" onchange="filtrerAnnonces()">
-            <option value="">Indifférent</option><option value="oui">Oui</option><option value="non">Non</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Sol carrelé</label>
-          <select id="faaCarreaux" onchange="filtrerAnnonces()">
-            <option value="">Indifférent</option><option value="oui">Oui</option><option value="non">Non</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Prix min. (FCFA)</label>
-          <input type="number" id="faaPrixMin" min="0" oninput="filtrerAnnonces()">
-        </div>
-        <div class="form-group">
-          <label>Prix max. (FCFA)</label>
-          <input type="number" id="faaPrixMax" min="0" oninput="filtrerAnnonces()">
-        </div>
+      <div class="fa-admin-body">
+
+        <section class="fa-admin-section fa-admin-loc">
+          <h4>📍 Localisation</h4>
+          <div class="fa-admin-grid">
+            <div class="form-group">
+              <label>Quartier / rue</label>
+              <input type="text" id="faaTexteLoc" placeholder="Ex : Angondjé" oninput="filtrerAnnonces()">
+            </div>
+            <div class="form-group">
+              <label>Caractère de la zone</label>
+              <select id="faaZone" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+            </div>
+          </div>
+        </section>
+
+        <section class="fa-admin-section fa-admin-type">
+          <h4>🏠 Type &amp; capacités</h4>
+          <div class="fa-admin-grid">
+            <div class="form-group">
+              <label>Type de bien</label>
+              <select id="faaType" onchange="filtrerAnnonces()"><option value="">Tous</option></select>
+            </div>
+            <div class="form-group">
+              <label>Chambres (min.)</label>
+              <select id="faaChambres" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+            </div>
+            <div class="form-group">
+              <label>Salons (min.)</label>
+              <select id="faaSalons" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+            </div>
+            <div class="form-group">
+              <label>Douches (min.)</label>
+              <select id="faaDouches" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+            </div>
+            <div class="form-group">
+              <label>Cuisine</label>
+              <select id="faaCuisineType" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+            </div>
+            <div class="form-group">
+              <label>Douche (type)</label>
+              <select id="faaDoucheType" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+            </div>
+          </div>
+        </section>
+
+        <section class="fa-admin-section fa-admin-const">
+          <h4>🧱 Construction &amp; finitions</h4>
+          <div class="fa-admin-grid">
+            <div class="form-group">
+              <label>Matériau</label>
+              <select id="faaMateriau" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+            </div>
+            <div class="form-group">
+              <label>Couleur murale</label>
+              <select id="faaCouleur" onchange="filtrerAnnonces()"><option value="">Indifférente</option></select>
+            </div>
+            <div class="form-group">
+              <label>Terrasse</label>
+              <select id="faaTerrasse" onchange="filtrerAnnonces()">
+                <option value="">Indifférent</option><option value="oui">Oui</option><option value="non">Non</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Sol carrelé</label>
+              <select id="faaCarreaux" onchange="filtrerAnnonces()">
+                <option value="">Indifférent</option><option value="oui">Oui</option><option value="non">Non</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="fa-admin-section fa-admin-budget">
+          <h4>💰 Budget</h4>
+          <div class="fa-admin-grid">
+            <div class="form-group">
+              <label>Prix min. (FCFA)</label>
+              <input type="number" id="faaPrixMin" min="0" oninput="filtrerAnnonces()">
+            </div>
+            <div class="form-group">
+              <label>Prix max. (FCFA)</label>
+              <input type="number" id="faaPrixMax" min="0" oninput="filtrerAnnonces()">
+            </div>
+          </div>
+        </section>
+
       </div>
-      <div class="modal-actions">
+      <div class="fa-admin-footer">
         <button class="btn-outline" type="button" onclick="reinitialiserFiltresAvancesAdmin()">Réinitialiser</button>
       </div>
     </div>
@@ -467,7 +492,9 @@
   <div class="page" id="page-publier">
     <div class="page-header">
       <h1>Publier une annonce</h1>
-      <button class="btn-outline" onclick="showPage('annonces')">← Retour</button>
+      <div class="header-actions">
+        <button class="btn-outline" onclick="showPage('annonces')">← Retour</button>
+      </div>
     </div>
     <div class="card form-card">
       <div class="form-grid">
