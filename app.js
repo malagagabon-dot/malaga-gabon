@@ -317,13 +317,9 @@ function rendreListe(liste) {
         <span class="badge badge-disponible" style="position:absolute;top:8px;right:8px;">🟢 Disponible</span>
       </div>
       <div class="carte-info">
-        <h3>${a.titre}</h3>
+        <h3>${a.titre}<span class="type-tag">${a.type || ""}</span></h3>
         <div class="prix">${formatPrix(a.prix)}</div>
         <div class="localisation">📍 ${a.quartier || ""}${a.quartier ? " — " : ""}${a.arrondissement || ""}, ${a.commune || ""}</div>
-        <div class="desc-liste">
-          ${[a.chambres ? `🛏️ ${a.chambres}` : "", a.salons ? `🛋️ ${a.salons}` : "", a.surface ? `📐 ${a.surface} m²` : ""].filter(Boolean).join(" &nbsp;·&nbsp; ")}
-          ${a.description ? `<br>${a.description.slice(0, 110)}${a.description.length > 110 ? "…" : ""}` : ""}
-        </div>
       </div>
     `;
     carte.querySelector(".btn-favori").onclick = (e) => {
