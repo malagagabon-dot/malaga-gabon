@@ -467,6 +467,33 @@ function supprimerAnnonce(id) {
 }
 
 let annonceEnEdition = null;
+let modPhotosActuelles = [];
+
+function renderPhotosModif() {
+  const wrap = document.getElementById('modPhotosManager');
+  if (!wrap) return;
+  wrap.innerHTML = modPhotosActuelles.length
+    ? modPhotosActuelles.map((url, i) => `
+      <div class="photo-row" data-i="${i}">
+        <img src="${(url || '').replace(/"/g, '&quot;')}" alt="Photo ${i + 1}" onerror="this.style.visibility='hidden'" />
+        <input type="text" value="${(url || '').replace(/"/g, '&quot;')}"
+               placeholder="https://exemple.com/photo.jpg"
+               oninput="modPhotosActuelles[${i}] = this.value; document.querySelectorAll('.photo-row')[${i}].querySelector('img').src = this.value;" />
+        <button type="button" class="photo-remove" onclick="supprimerPhotoModif(${i})" title="Supprimer cette photo">✕</button>
+      </div>
+    `).join('')
+    : '<p class="photos-empty">Aucune photo pour l\'instant. Clique sur « Ajouter une photo » ci-dessous.</p>';
+}
+
+function ajouterPhotoModif() {
+  modPhotosActuelles.push('');
+  renderPhotosModif();
+}
+
+function supprimerPhotoModif(i) {
+  modPhotosActuelles.splice(i, 1);
+  renderPhotosModif();
+}
 
 function modifierAnnonce(id) {
   const a = annoncesData.find(x => x.id === id);
@@ -501,12 +528,16 @@ function modifierAnnonce(id) {
     cb.checked = equipementsActuels.includes(cb.value);
   });
 
+  modPhotosActuelles = Array.isArray(a.photos) ? [...a.photos] : [];
+  renderPhotosModif();
+
   document.getElementById('modalModifierAnnonce').classList.remove('hidden');
 }
 
 function fermerModalModifier() {
   document.getElementById('modalModifierAnnonce').classList.add('hidden');
   annonceEnEdition = null;
+  modPhotosActuelles = [];
 }
 
 function enregistrerModificationAnnonce() {
@@ -520,6 +551,7 @@ function enregistrerModificationAnnonce() {
   }
 
   const equipements = Array.from(document.querySelectorAll('#modTagsPicker input:checked')).map(el => el.value);
+  const photos = modPhotosActuelles.map(u => (u || '').trim()).filter(Boolean);
   const btn = document.getElementById('modBtnEnregistrer');
   btn.textContent = '⏳ Enregistrement...';
 
@@ -546,6 +578,7 @@ function enregistrerModificationAnnonce() {
     statut: document.getElementById('modStatut').value,
     description: document.getElementById('modDescription').value.trim(),
     equipements,
+    photos,
     proprietaireNom: document.getElementById('modProprioNom').value.trim(),
     proprietaireTel: document.getElementById('modProprioTel').value.trim(),
     dateModification: firebase.firestore.FieldValue.serverTimestamp()
@@ -567,7 +600,12 @@ function enregistrerModificationAnnonce() {
    annonces publiées par de vrais propriétaires.
 ══════════════════════════════════════════════════════════ */
 function annoncesDemoData() {
-  const photo = (seed) => [1, 2, 3].map(n => `https://picsum.photos/seed/${seed}-${n}/800/600`);
+  // Images thématiques (habitat/architecture) via LoremFlickr — plus adaptées
+  // au contexte "logement" que des photos aléatoires de nature.
+  // `lock` fige la même image à chaque rechargement pour une annonce donnée.
+  const photo = (mots, lock) => [0, 1, 2].map(n =>
+    `https://loremflickr.com/800/600/${encodeURIComponent(mots)}?lock=${lock + n}`
+  );
 
   return [
     // ── VILLA ─────────────────────────────────────────────
@@ -582,7 +620,7 @@ function annoncesDemoData() {
       eau: "Forage", electricite: "SEEG (réseau)", compteur: "Individuel",
       description: "Villa de standing en bord de mer avec piscine privée, grand jardin arboré, terrasse donnant sur la lagune, parking pour 2 véhicules et groupe électrogène de secours. Cadre exceptionnel, idéale pour une résidence de fonction.",
       equipements: ["Meublé", "Climatisé", "Piscine", "Jardin", "Parking", "Groupe électrogène", "Gardiennage"],
-      statut: "disponible", lat: 0.5320, lng: 9.3650, photos: photo("villa-esterias")
+      statut: "disponible", lat: 0.5320, lng: 9.3650, photos: photo("villa,house,exterior", 101)
     },
     // ── APPARTEMENT ───────────────────────────────────────
     {
@@ -596,7 +634,7 @@ function annoncesDemoData() {
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
       description: "Bel appartement lumineux au 2e étage, proche des commerces et des transports. Cuisine équipée, carrelage au sol dans toutes les pièces et balcon avec vue dégagée sur le quartier.",
       equipements: ["Climatisé", "Fibre optique", "Interphone"],
-      statut: "disponible", lat: 0.3912, lng: 9.4580, photos: photo("appart-cocotiers")
+      statut: "disponible", lat: 0.3912, lng: 9.4580, photos: photo("apartment,livingroom", 201)
     },
     // ── STUDIO ────────────────────────────────────────────
     {
@@ -610,7 +648,7 @@ function annoncesDemoData() {
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Commun",
       description: "Studio compact et fonctionnel, parfait pour un étudiant ou une personne seule. Coin cuisine intégré, sol carrelé, quartier calme et bien desservi par les taxis.",
       equipements: ["Meublé", "Climatisé", "Interphone"],
-      statut: "disponible", lat: 0.3830, lng: 9.4650, photos: photo("studio-akebe")
+      statut: "disponible", lat: 0.3830, lng: 9.4650, photos: photo("studio,apartment,interior", 301)
     },
     // ── CHAMBRE ───────────────────────────────────────────
     {
@@ -624,7 +662,7 @@ function annoncesDemoData() {
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Commun",
       description: "Chambre meublée avec cuisine et douche communes, dans une résidence sécurisée en bord de mer. Idéal petit budget, à deux pas du marché de Glass.",
       equipements: ["Meublé", "Gardiennage"],
-      statut: "disponible", lat: 0.3980, lng: 9.4470, photos: photo("chambre-glass")
+      statut: "disponible", lat: 0.3980, lng: 9.4470, photos: photo("bedroom,interior", 401)
     },
     // ── MAISON ────────────────────────────────────────────
     {
@@ -638,7 +676,7 @@ function annoncesDemoData() {
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
       description: "Maison spacieuse dans un quartier résidentiel calme, cour clôturée avec espace pour jardin potager et terrasse couverte. Proche des écoles et d'un forage de secours.",
       equipements: ["Clôturé", "Parking", "Forage", "Gardiennage"],
-      statut: "disponible", lat: 0.4790, lng: 9.4240, photos: photo("maison-angondje")
+      statut: "disponible", lat: 0.4790, lng: 9.4240, photos: photo("house,home,exterior", 501)
     },
     // ── BUREAU ────────────────────────────────────────────
     {
@@ -652,7 +690,7 @@ function annoncesDemoData() {
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
       description: "Espace de bureau climatisé, open-space modulable avec salle de réunion, idéal pour une PME. Parking visiteurs et connexion fibre optique disponibles.",
       equipements: ["Climatisé", "Parking", "Fibre optique"],
-      statut: "disponible", lat: 0.4210, lng: 9.4390, photos: photo("bureau-charbonnages")
+      statut: "disponible", lat: 0.4210, lng: 9.4390, photos: photo("office,workspace,interior", 601)
     },
     // ── LOCAL COMMERCIAL ──────────────────────────────────
     {
@@ -666,7 +704,7 @@ function annoncesDemoData() {
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
       description: "Local commercial bien situé à proximité immédiate du port, forte visibilité et passage. Grand espace de stockage, cour clôturée et gardiennée. Idéal commerce ou entrepôt.",
       equipements: ["Clôturé", "Parking", "Gardiennage"],
-      statut: "disponible", lat: 0.2940, lng: 9.5050, photos: photo("local-owendo")
+      statut: "disponible", lat: 0.2940, lng: 9.5050, photos: photo("shop,storefront,warehouse", 701)
     }
   ];
 }

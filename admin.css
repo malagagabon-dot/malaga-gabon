@@ -593,6 +593,75 @@ body {
 
 .tag-opt input { display: none; }
 
+/* ══════════════════════════════
+   GESTIONNAIRE DE PHOTOS (édition d'annonce)
+══════════════════════════════ */
+.photos-manager {
+  display: flex; flex-direction: column; gap: .6rem;
+  padding: .75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.photos-empty {
+  text-align: center;
+  color: var(--text-2);
+  font-size: .85rem;
+  padding: .5rem 0;
+  margin: 0;
+}
+
+.photo-row {
+  display: flex; align-items: center; gap: .6rem;
+}
+
+.photo-row img {
+  width: 48px; height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+.photo-row input {
+  flex: 1;
+  padding: .5rem .75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: .85rem;
+  font-family: var(--font);
+}
+
+.photo-remove {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--red);
+  font-size: .9rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border .2s, background .2s;
+}
+.photo-remove:hover { border-color: var(--red); background: var(--red-l); }
+
+.photos-add-row {
+  display: flex; justify-content: center;
+  margin-top: .6rem;
+}
+
+.photos-hint {
+  text-align: center;
+  font-size: .75rem;
+  color: var(--text-2);
+  margin-top: .5rem;
+}
+
 .ia-gen-zone {
   display: flex; align-items: center; gap: 1rem;
   flex-wrap: wrap;
