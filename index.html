@@ -116,7 +116,8 @@
   <!-- Panneau de filtre avancé — ouvert par défaut, en ligne sous la barre de filtres -->
   <section class="filtres-avances-panel" id="filtresAvancesPanel">
     <button type="button" class="fa-header" id="btnFiltresAvances" aria-expanded="true">
-      <h3>🎛️ Filtres avancés<span class="badge-filtres-actifs" id="badgeFiltresActifs" hidden>0</span></h3>
+      <span class="fa-spacer" aria-hidden="true"></span>
+      <h3>🎛️ Recherches avancées<span class="badge-filtres-actifs" id="badgeFiltresActifs" hidden>0</span></h3>
       <span class="fa-fleche" id="faFleche" aria-label="Réduire">▲</span>
     </button>
 
@@ -241,12 +242,13 @@
     .btn-outline{position:relative;}
     .badge-filtres-actifs{background:var(--jaune,#F2B90C);color:#000;font-size:11px;font-weight:800;border-radius:10px;padding:1px 7px;margin-left:6px;}
     .filtres-avances-panel{max-width:1200px;margin:0 auto 16px;padding:0 20px;}
-    .fa-header{display:flex;align-items:center;justify-content:space-between;width:100%;
+    .fa-header{display:flex;align-items:center;width:100%;
       background:linear-gradient(135deg,#0B3B2E 0%,var(--vert,#009E60) 100%);border:none;
       border-radius:14px;padding:14px 18px;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(0,62,40,.18);}
     .filtres-avances-panel.replie .fa-header{border-radius:14px;}
-    .fa-header h3{margin:0;font-family:'Playfair Display',serif;font-size:16.5px;font-weight:800;color:#fff;letter-spacing:.2px;display:flex;align-items:center;}
-    .fa-fleche{font-size:14px;color:var(--jaune,#F2B90C);transition:transform .2s ease;}
+    .fa-spacer{width:14px;flex-shrink:0;}
+    .fa-header h3{flex:1 1 auto;margin:0;font-family:'Playfair Display',serif;font-size:16.5px;font-weight:800;color:#fff;letter-spacing:.2px;display:flex;align-items:center;justify-content:center;text-align:center;}
+    .fa-fleche{font-size:14px;color:var(--jaune,#F2B90C);transition:transform .2s ease;flex-shrink:0;}
     .filtres-avances-panel.replie .fa-fleche{transform:rotate(180deg);}
     .fa-body{background:#fff;border:1.5px solid var(--gris-bordure,#e2e8f0);border-top:none;border-radius:0 0 14px 14px;
       padding:18px 18px 6px;overflow:hidden;max-height:2500px;transition:max-height .25s ease,padding .25s ease;}
