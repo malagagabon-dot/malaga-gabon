@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initCarte();
   initFiltres();
   initFiltresAvances();
+  initVueModes();
   ecouterAnnoncesTempsReel();
 
   document.getElementById("btnRechercher").onclick = () => {
@@ -196,14 +197,16 @@ function initFiltresAvances() {
     chip.addEventListener("click", () => chip.classList.toggle("actif"));
   });
 
-  const overlay = $("filtresAvancesOverlay");
+  // Panneau en ligne, ouvert par défaut — un clic sur l'en-tête le replie/déplie
   const panneau = $("filtresAvancesPanel");
-  const ouvrir = () => { overlay.classList.add("ouvert"); panneau.classList.add("ouvert"); panneau.setAttribute("aria-hidden", "false"); };
-  const fermer = () => { overlay.classList.remove("ouvert"); panneau.classList.remove("ouvert"); panneau.setAttribute("aria-hidden", "true"); };
-
-  $("btnFiltresAvances").onclick = ouvrir;
-  $("fermerFiltresAvances").onclick = fermer;
-  overlay.onclick = fermer;
+  const fleche = $("faFleche");
+  const basculer = () => {
+    const replie = panneau.classList.toggle("replie");
+    $("btnFiltresAvances").setAttribute("aria-expanded", String(!replie));
+    fleche.textContent = replie ? "▼" : "▲";
+    fleche.setAttribute("aria-label", replie ? "Déplier" : "Réduire");
+  };
+  $("btnFiltresAvances").onclick = basculer;
 
   $("faPresLocalisation").onchange = (e) => {
     if (e.target.checked && !positionUtilisateur && navigator.geolocation) {
@@ -234,7 +237,6 @@ function initFiltresAvances() {
 
     mettreAJourBadgeFiltres();
     rendreTout();
-    fermer();
   };
 
   $("btnReinitialiserFiltres").onclick = () => {
@@ -253,6 +255,26 @@ function initFiltresAvances() {
     mettreAJourBadgeFiltres();
     rendreTout();
   };
+}
+
+/* ══════════ MODE D'AFFICHAGE (grande / moyenne / compacte / liste) ══════════ */
+function initVueModes() {
+  const grille = document.getElementById("liste-annonces-grille");
+  const boutons = document.querySelectorAll("#vueModes button");
+  const modeSauvegarde = localStorage.getItem("malaga_vue_mode") || "moyenne";
+
+  const appliquerVue = (mode) => {
+    grille.classList.remove("vue-grande", "vue-moyenne", "vue-compacte", "vue-liste");
+    grille.classList.add(`vue-${mode}`);
+    grille.dataset.vueManuelle = "1";
+    grille.style.removeProperty("--tile-min");
+    grille.style.removeProperty("--tile-img-h");
+    boutons.forEach(b => b.classList.toggle("actif", b.dataset.vue === mode));
+    localStorage.setItem("malaga_vue_mode", mode);
+  };
+
+  boutons.forEach(b => b.addEventListener("click", () => appliquerVue(b.dataset.vue)));
+  appliquerVue(modeSauvegarde);
 }
 
 function mettreAJourBadgeFiltres() {
@@ -298,6 +320,10 @@ function rendreListe(liste) {
         <h3>${a.titre}</h3>
         <div class="prix">${formatPrix(a.prix)}</div>
         <div class="localisation">📍 ${a.quartier || ""}${a.quartier ? " — " : ""}${a.arrondissement || ""}, ${a.commune || ""}</div>
+        <div class="desc-liste">
+          ${[a.chambres ? `🛏️ ${a.chambres}` : "", a.salons ? `🛋️ ${a.salons}` : "", a.surface ? `📐 ${a.surface} m²` : ""].filter(Boolean).join(" &nbsp;·&nbsp; ")}
+          ${a.description ? `<br>${a.description.slice(0, 110)}${a.description.length > 110 ? "…" : ""}` : ""}
+        </div>
       </div>
     `;
     carte.querySelector(".btn-favori").onclick = (e) => {

@@ -66,6 +66,20 @@
       <input type="text" id="search-input" placeholder="Quartier, arrondissement, type de bien...">
       <button class="btn btn-jaune" id="btnRechercher">🔍 Rechercher</button>
     </div>
+
+    <!-- Portes d'entrée Propriétaire / Chercheur, visibles dès l'accueil -->
+    <div class="home-roles" id="homeRoles">
+      <a href="connexion.html?inscription=1&role=proprietaire" class="home-role-carte">
+        <div class="icone">🏠</div>
+        <div class="titre">Propriétaire</div>
+        <div class="desc">Je publie des logements à louer</div>
+      </a>
+      <a href="connexion.html?inscription=1&role=chercheur" class="home-role-carte">
+        <div class="icone">🔍</div>
+        <div class="titre">Chercheur</div>
+        <div class="desc">Je cherche un logement</div>
+      </a>
+    </div>
   </section>
 
   <!-- Stats -->
@@ -97,18 +111,16 @@
       <option value="400000">400 000 FCFA</option>
       <option value="1000000">1 000 000 FCFA</option>
     </select>
-    <button type="button" class="btn btn-outline" id="btnFiltresAvances">🎛️ Filtres avancés<span class="badge-filtres-actifs" id="badgeFiltresActifs" hidden>0</span></button>
   </div>
 
-  <!-- Panneau de filtre avancé (tiroir) -->
-  <div class="filtres-avances-overlay" id="filtresAvancesOverlay"></div>
-  <aside class="filtres-avances-panel" id="filtresAvancesPanel" aria-hidden="true">
-    <div class="fa-header">
-      <h3>Filtres avancés</h3>
-      <button type="button" class="fa-fermer" id="fermerFiltresAvances" aria-label="Fermer">✕</button>
-    </div>
+  <!-- Panneau de filtre avancé — ouvert par défaut, en ligne sous la barre de filtres -->
+  <section class="filtres-avances-panel" id="filtresAvancesPanel">
+    <button type="button" class="fa-header" id="btnFiltresAvances" aria-expanded="true">
+      <h3>🎛️ Filtres avancés<span class="badge-filtres-actifs" id="badgeFiltresActifs" hidden>0</span></h3>
+      <span class="fa-fleche" id="faFleche" aria-label="Réduire">▲</span>
+    </button>
 
-    <div class="fa-body">
+    <div class="fa-body" id="faBody">
       <section class="fa-section">
         <h4>📍 Localisation</h4>
         <div class="fa-champ">
@@ -213,20 +225,31 @@
       <button type="button" class="btn btn-outline" id="btnReinitialiserFiltres">Réinitialiser</button>
       <button type="button" class="btn btn-vert" id="btnAppliquerFiltres">Appliquer les filtres</button>
     </div>
-  </aside>
+  </section>
 
   <style>
+    /* ===== Portes d'entrée Propriétaire / Chercheur (accueil) ===== */
+    .home-roles{max-width:520px;margin:18px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .home-role-carte{background:rgba(255,255,255,.97);border:2px solid transparent;border-radius:14px;padding:16px 10px;text-align:center;text-decoration:none;color:inherit;transition:transform .15s,border-color .15s;}
+    .home-role-carte:hover{transform:translateY(-2px);border-color:var(--vert,#009E60);}
+    .home-role-carte .icone{font-size:26px;margin-bottom:6px;}
+    .home-role-carte .titre{font-weight:800;font-size:14px;color:#111;}
+    .home-role-carte .desc{font-size:11.5px;color:#666;margin-top:3px;}
+    @media(max-width:480px){.home-roles{padding:0 16px;}}
+
+    /* ===== Filtres avancés : panneau en ligne, ouvert par défaut ===== */
     .btn-outline{position:relative;}
     .badge-filtres-actifs{background:var(--jaune,#F2B90C);color:#000;font-size:11px;font-weight:800;border-radius:10px;padding:1px 7px;margin-left:6px;}
-    .filtres-avances-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:998;opacity:0;pointer-events:none;transition:opacity .2s;}
-    .filtres-avances-overlay.ouvert{opacity:1;pointer-events:auto;}
-    .filtres-avances-panel{position:fixed;top:0;right:0;height:100%;width:min(380px,92vw);background:#fff;z-index:999;
-      transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-6px 0 24px rgba(0,0,0,.15);}
-    .filtres-avances-panel.ouvert{transform:translateX(0);}
-    .fa-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #eee;flex-shrink:0;}
-    .fa-header h3{margin:0;font-size:16px;font-weight:800;}
-    .fa-fermer{background:#f2f2f2;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;}
-    .fa-body{flex:1;overflow-y:auto;padding:16px 18px;}
+    .filtres-avances-panel{max-width:1200px;margin:0 auto 16px;padding:0 20px;}
+    .fa-header{display:flex;align-items:center;justify-content:space-between;width:100%;background:#fff;border:1.5px solid var(--gris-bordure,#e2e8f0);
+      border-radius:12px;padding:12px 16px;cursor:pointer;font-family:inherit;}
+    .filtres-avances-panel.replie .fa-header{border-radius:12px;}
+    .fa-header h3{margin:0;font-size:14.5px;font-weight:800;display:flex;align-items:center;}
+    .fa-fleche{font-size:13px;color:var(--vert,#009E60);transition:transform .2s ease;}
+    .filtres-avances-panel.replie .fa-fleche{transform:rotate(180deg);}
+    .fa-body{background:#fff;border:1.5px solid var(--gris-bordure,#e2e8f0);border-top:none;border-radius:0 0 12px 12px;
+      padding:16px 18px;overflow:hidden;max-height:2000px;transition:max-height .25s ease,padding .25s ease;}
+    .filtres-avances-panel.replie .fa-body{max-height:0;padding-top:0;padding-bottom:0;border:none;}
     .fa-section{margin-bottom:22px;}
     .fa-section h4{font-size:13px;font-weight:800;color:var(--vert,#009E60);margin:0 0 10px;}
     .fa-champ{margin-bottom:12px;}
@@ -237,9 +260,23 @@
     .fa-chips{display:flex;flex-wrap:wrap;gap:8px;}
     .fa-chips .chip{padding:6px 12px;border:1px solid #ddd;border-radius:20px;font-size:12px;cursor:pointer;user-select:none;}
     .fa-chips .chip.actif{background:var(--vert,#009E60);color:#fff;border-color:var(--vert,#009E60);}
-    .fa-footer{display:flex;gap:10px;padding:14px 18px;border-top:1px solid #eee;flex-shrink:0;}
+    .fa-footer{display:flex;gap:10px;padding-top:14px;flex-shrink:0;}
     .fa-footer .btn{flex:1;text-align:center;}
     @media(max-width:480px){.fa-grille-2{grid-template-columns:1fr;}}
+
+    /* ===== Sélecteur de mode d'affichage des annonces ===== */
+    .vue-modes{display:flex;gap:6px;}
+    .vue-modes button{background:#f2f2f2;border:none;border-radius:8px;width:32px;height:32px;font-size:14px;cursor:pointer;transition:background .15s,color .15s;}
+    .vue-modes button.actif{background:var(--vert,#009E60);color:#fff;}
+    .grille-annonces.vue-grande{--tile-min:280px;--tile-img-h:190px;}
+    .grille-annonces.vue-moyenne{--tile-min:200px;--tile-img-h:130px;}
+    .grille-annonces.vue-compacte{--tile-min:130px;--tile-img-h:80px;}
+    .grille-annonces.vue-liste{grid-template-columns:1fr!important;}
+    .grille-annonces.vue-liste .carte-annonce{display:flex;flex-direction:row;}
+    .grille-annonces.vue-liste .carte-annonce .visuel{width:130px;height:110px;flex-shrink:0;}
+    .grille-annonces.vue-liste .carte-info{flex:1;display:flex;flex-direction:column;justify-content:center;}
+    .grille-annonces.vue-liste .carte-info .desc-liste{display:block;}
+    .carte-info .desc-liste{display:none;font-size:12px;color:#777;margin-top:4px;line-height:1.4;}
   </style>
 
   <!-- Contenu : liste + carte côte à côte -->
@@ -248,6 +285,14 @@
       <div class="section-header">
         <h2 id="liste-annonces">Annonces disponibles</h2>
         <span id="count-annonces">Chargement…</span>
+      </div>
+      <div class="section-header" style="margin-top:-8px;">
+        <div class="vue-modes" id="vueModes">
+          <button type="button" data-vue="liste" title="Liste détaillée">☰</button>
+          <button type="button" data-vue="compacte" title="Miniature">▪</button>
+          <button type="button" data-vue="moyenne" title="Moyenne">▦</button>
+          <button type="button" data-vue="grande" title="Grande">🔲</button>
+        </div>
       </div>
       <div id="liste-annonces-grille" class="grille-annonces">
         <div class="spinner">Chargement des annonces en temps réel…</div>

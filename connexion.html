@@ -44,6 +44,12 @@
       font-weight:600;
     }
     .mdp-oublie-wrap a:hover{ text-decoration:underline; }
+    .fa-check{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#333;cursor:pointer;}
+    .fa-grille-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    @media(max-width:480px){.fa-grille-2{grid-template-columns:1fr;}}
+    .secteur-bloc{margin-bottom:16px;}
+    .secteur-bloc .secteur-titre{font-size:12.5px;font-weight:700;color:#444;margin-bottom:6px;}
+    .secteur-bloc .upload-zone{padding:14px;}
   </style>
 </head>
 <body>
@@ -174,6 +180,85 @@
             <button type="button" class="btn-oeil" data-cible="inscriptionMdp" aria-label="Afficher le mot de passe">👁️</button>
           </div>
         </div>
+
+        <!-- ===== Compte Propriétaire complet : publier le premier bien dès l'inscription ===== -->
+        <div class="champ" id="proprioTogglePublier" style="display:none;">
+          <label class="fa-check">
+            <input type="checkbox" id="publierMaintenant" checked>
+            Publier mon premier bien dès maintenant
+          </label>
+        </div>
+
+        <div id="proprioExtra" style="display:none;">
+          <h3 style="font-size:14px;margin:18px 0 10px;color:var(--vert);">🏠 Votre bien à louer</h3>
+
+          <div class="champ">
+            <label>Titre de l'annonce *</label>
+            <input type="text" id="pTitre" placeholder="Ex : Belle villa meublée avec jardin">
+          </div>
+          <div class="grille-2">
+            <div class="champ">
+              <label>Type de bien *</label>
+              <select id="pType"></select>
+            </div>
+            <div class="champ">
+              <label>Loyer mensuel (FCFA) *</label>
+              <input type="number" id="pPrix" min="1000" placeholder="150000">
+            </div>
+          </div>
+          <div class="champ">
+            <label>Description</label>
+            <textarea id="pDescription" placeholder="Décrivez le logement, son environnement, ses atouts..."></textarea>
+          </div>
+          <div class="grille-2">
+            <div class="champ">
+              <label>Commune *</label>
+              <select id="pCommune"></select>
+            </div>
+            <div class="champ">
+              <label>Arrondissement *</label>
+              <select id="pArrondissement"></select>
+            </div>
+          </div>
+          <div class="champ">
+            <label>Quartier</label>
+            <input type="text" id="pQuartier" list="pListeQuartiers" placeholder="Ex : Angondjé">
+            <datalist id="pListeQuartiers"></datalist>
+          </div>
+          <div class="fa-grille-2">
+            <div class="fa-champ">
+              <label>Chambres</label>
+              <input type="number" id="pChambres" min="0" placeholder="2">
+            </div>
+            <div class="fa-champ">
+              <label>Salons</label>
+              <input type="number" id="pSalons" min="0" placeholder="1">
+            </div>
+          </div>
+          <div class="grille-2">
+            <div class="champ">
+              <label>Cuisine</label>
+              <select id="pCuisineType"></select>
+            </div>
+            <div class="champ">
+              <label>Douche</label>
+              <select id="pDoucheType"></select>
+            </div>
+          </div>
+          <div class="champ">
+            <label>Équipements</label>
+            <div class="chips" id="pEquipements"></div>
+          </div>
+          <div class="champ">
+            <label>Numéro WhatsApp de contact *</label>
+            <input type="tel" id="pWhatsapp" placeholder="+241 XX XX XX XX">
+          </div>
+
+          <h3 style="font-size:14px;margin:18px 0 10px;color:var(--vert);">📸 Photos par pièce</h3>
+          <p class="sous-titre" style="margin-top:-6px;">Ajoutez au moins une photo par secteur du logement.</p>
+          <div id="secteursPhotos"></div>
+        </div>
+
         <button type="submit" class="btn btn-vert btn-full" id="btnInscription">Créer mon compte</button>
       </form>
 
@@ -186,8 +271,83 @@
   </footer>
 
   <script type="module">
-    import { auth, onAuthStateChanged } from "./firebase-config.js";
+    import { auth, onAuthStateChanged, db, doc, collection, setDoc, serverTimestamp } from "./firebase-config.js";
     import { inscrire, connecter, messageErreurAuth, getProfil, reinitialiserMotDePasse } from "./auth.js";
+    import {
+      COMMUNES, ARRONDISSEMENTS, getQuartiers, TYPES_BIEN, EQUIPEMENTS,
+      CUISINE_TYPES, DOUCHE_TYPES
+    } from "./malaga-reference.js";
+
+    // --- Cloudinary (même configuration que publier.html) ---
+    const CLOUDINARY_CLOUD_NAME = "enpphgwu";
+    const CLOUDINARY_UPLOAD_PRESET = "malaga_photos";
+    async function uploaderVersCloudinary(fichier) {
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+      const formData = new FormData();
+      formData.append("file", fichier);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+      const reponse = await fetch(url, { method: "POST", body: formData });
+      if (!reponse.ok) throw new Error("Échec de l'envoi vers Cloudinary");
+      return (await reponse.json()).secure_url;
+    }
+    async function compresserImage(fichier, dimensionMax = 1600, qualite = 0.82) {
+      if (!fichier.type || !fichier.type.startsWith("image/") || fichier.type === "image/gif") return fichier;
+      try {
+        const bitmap = await createImageBitmap(fichier);
+        const ratio = Math.min(1, dimensionMax / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(bitmap.width * ratio);
+        canvas.height = Math.round(bitmap.height * ratio);
+        canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", qualite));
+        if (!blob || blob.size >= fichier.size) return fichier;
+        return new File([blob], fichier.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" });
+      } catch { return fichier; }
+    }
+
+    // --- Secteurs de pièces pour les photos (Propriétaire — compte complet) ---
+    const SECTEURS = [
+      { id: "salon", label: "🛋️ Salon" },
+      { id: "chambre", label: "🛏️ Chambre(s)" },
+      { id: "cuisine", label: "🍳 Cuisine" },
+      { id: "terrasse", label: "🌿 Terrasse / extérieur" },
+      { id: "sdb", label: "🚿 Salle de bain / douche" },
+      { id: "facade", label: "🏠 Façade / vue d'ensemble" }
+    ];
+    const photosParSecteur = {};
+    SECTEURS.forEach(s => photosParSecteur[s.id] = []);
+
+    const conteneurSecteurs = document.getElementById("secteursPhotos");
+    conteneurSecteurs.innerHTML = SECTEURS.map(s => `
+      <div class="secteur-bloc">
+        <div class="secteur-titre">${s.label}</div>
+        <div class="upload-zone" id="zone-${s.id}">
+          <div class="icone">📷</div>
+          <p>Cliquez pour ajouter des photos</p>
+        </div>
+        <input type="file" id="input-${s.id}" accept="image/*" multiple hidden>
+        <div class="previsu-grille" id="previsu-${s.id}"></div>
+      </div>
+    `).join("");
+
+    SECTEURS.forEach(s => {
+      const zone = document.getElementById(`zone-${s.id}`);
+      const input = document.getElementById(`input-${s.id}`);
+      const previsu = document.getElementById(`previsu-${s.id}`);
+      zone.onclick = () => input.click();
+      input.onchange = () => {
+        photosParSecteur[s.id] = [...photosParSecteur[s.id], ...Array.from(input.files)].slice(0, 6);
+        previsu.innerHTML = "";
+        photosParSecteur[s.id].forEach((f, i) => {
+          const item = document.createElement("div");
+          item.className = "previsu-item";
+          item.innerHTML = `<img src="${URL.createObjectURL(f)}"><button type="button" class="suppr">✕</button>`;
+          item.querySelector(".suppr").onclick = () => { photosParSecteur[s.id].splice(i, 1); input.dispatchEvent(new Event("change")); };
+          previsu.appendChild(item);
+        });
+        input.value = "";
+      };
+    });
 
     // Si déjà connecté, redirige directement
     onAuthStateChanged(auth, async (user) => {
@@ -272,15 +432,48 @@
       }
     });
 
-    // Choix du rôle
+    // Remplissage des listes déroulantes du bloc "Votre bien à louer"
+    const pType = document.getElementById("pType");
+    const pCommune = document.getElementById("pCommune");
+    const pArrondissement = document.getElementById("pArrondissement");
+    const pListeQuartiers = document.getElementById("pListeQuartiers");
+    pType.innerHTML = TYPES_BIEN.map(t => `<option>${t}</option>`).join("");
+    pCommune.innerHTML = '<option value="">Choisir…</option>' + COMMUNES.map(c => `<option>${c}</option>`).join("");
+    document.getElementById("pCuisineType").innerHTML = CUISINE_TYPES.map(c => `<option>${c}</option>`).join("");
+    document.getElementById("pDoucheType").innerHTML = DOUCHE_TYPES.map(d => `<option>${d}</option>`).join("");
+    document.getElementById("pEquipements").innerHTML = EQUIPEMENTS.map(e => `<div class="chip" data-val="${e}">${e}</div>`).join("");
+    document.querySelectorAll("#pEquipements .chip").forEach(chip => chip.addEventListener("click", () => chip.classList.toggle("actif")));
+
+    pCommune.onchange = () => {
+      const liste = ARRONDISSEMENTS[pCommune.value] || [];
+      pArrondissement.innerHTML = '<option value="">Choisir…</option>' + liste.map(a => `<option>${a}</option>`).join("");
+      pListeQuartiers.innerHTML = "";
+    };
+    pArrondissement.onchange = () => {
+      pListeQuartiers.innerHTML = getQuartiers(pCommune.value, pArrondissement.value).map(q => `<option value="${q}">`).join("");
+    };
+
+    // Choix du rôle — affiche/masque le bloc "compte Propriétaire complet"
+    const proprioToggleWrap = document.getElementById("proprioTogglePublier");
+    const proprioExtra = document.getElementById("proprioExtra");
+    const publierMaintenant = document.getElementById("publierMaintenant");
+    function rafraichirBlocProprio() {
+      const estProprio = roleChoisi === "proprietaire";
+      proprioToggleWrap.style.display = estProprio ? "block" : "none";
+      proprioExtra.style.display = (estProprio && publierMaintenant.checked) ? "block" : "none";
+    }
+    publierMaintenant.addEventListener("change", rafraichirBlocProprio);
+
     document.querySelectorAll(".role-carte").forEach(carte => {
       carte.addEventListener("click", () => {
         document.querySelectorAll(".role-carte").forEach(c => c.classList.remove("selectionne"));
         carte.classList.add("selectionne");
         roleChoisi = carte.dataset.role;
+        rafraichirBlocProprio();
       });
     });
     document.querySelector(`.role-carte[data-role="${roleChoisi}"]`).classList.add("selectionne");
+    rafraichirBlocProprio();
 
     // Connexion
     formConnexion.addEventListener("submit", async (e) => {
@@ -307,18 +500,85 @@
       e.preventDefault();
       erreurMsg.classList.remove("visible");
       const btn = document.getElementById("btnInscription");
+
+      // Compte Propriétaire complet : valider le bien avant de créer le compte
+      const publieUnBien = roleChoisi === "proprietaire" && publierMaintenant.checked;
+      if (publieUnBien) {
+        const totalPhotos = SECTEURS.reduce((n, s) => n + photosParSecteur[s.id].length, 0);
+        const champsManquants =
+          !document.getElementById("pTitre").value.trim() ||
+          !document.getElementById("pPrix").value ||
+          !pCommune.value || !pArrondissement.value ||
+          !document.getElementById("pWhatsapp").value.trim();
+        if (champsManquants) {
+          erreurMsg.textContent = "Complétez le titre, le loyer, la localisation et le WhatsApp de votre bien (ou décochez « Publier mon premier bien dès maintenant »).";
+          erreurMsg.classList.add("visible");
+          return;
+        }
+        if (totalPhotos === 0) {
+          erreurMsg.textContent = "Ajoutez au moins une photo dans un des secteurs (salon, chambre, cuisine...).";
+          erreurMsg.classList.add("visible");
+          return;
+        }
+      }
+
       btn.disabled = true; btn.textContent = "Création du compte…";
       try {
-        await inscrire({
+        const user = await inscrire({
           nom: document.getElementById("inscriptionNom").value.trim(),
           tel: document.getElementById("inscriptionTel").value.trim(),
           email: document.getElementById("inscriptionEmail").value.trim(),
           motDePasse: document.getElementById("inscriptionMdp").value,
           role: roleChoisi
         });
+
+        if (publieUnBien) {
+          btn.textContent = "Envoi des photos…";
+          const nouvelleRef = doc(collection(db, "annonces"));
+          const photosParSecteurUrls = {};
+          const toutesLesUrls = [];
+          for (const s of SECTEURS) {
+            photosParSecteurUrls[s.id] = [];
+            for (const fichier of photosParSecteur[s.id]) {
+              const optimisee = await compresserImage(fichier);
+              const url = await uploaderVersCloudinary(optimisee);
+              photosParSecteurUrls[s.id].push(url);
+              toutesLesUrls.push(url);
+            }
+          }
+          btn.textContent = "Publication de votre bien…";
+          const nomUtilisateur = document.getElementById("inscriptionNom").value.trim();
+          await setDoc(nouvelleRef, {
+            proprietaireId: user.uid,
+            proprietaireNom: nomUtilisateur,
+            proprietaireTel: document.getElementById("inscriptionTel").value.trim(),
+            proprietaireEmail: document.getElementById("inscriptionEmail").value.trim(),
+            whatsapp: document.getElementById("pWhatsapp").value.trim(),
+            titre: document.getElementById("pTitre").value.trim(),
+            type: pType.value,
+            prix: Number(document.getElementById("pPrix").value),
+            description: document.getElementById("pDescription").value.trim(),
+            commune: pCommune.value,
+            arrondissement: pArrondissement.value,
+            quartier: document.getElementById("pQuartier").value.trim(),
+            chambres: Number(document.getElementById("pChambres").value) || null,
+            salons: Number(document.getElementById("pSalons").value) || null,
+            cuisineType: document.getElementById("pCuisineType").value,
+            doucheType: document.getElementById("pDoucheType").value,
+            equipements: Array.from(document.querySelectorAll("#pEquipements .chip.actif")).map(c => c.dataset.val),
+            photos: toutesLesUrls,
+            photosParSecteur: photosParSecteurUrls,
+            statut: "disponible",
+            vues: 0,
+            dateCreation: serverTimestamp(),
+            dateModification: serverTimestamp()
+          });
+        }
+
         rediriger(roleChoisi);
       } catch (err) {
-        erreurMsg.textContent = messageErreurAuth(err.code);
+        console.error(err);
+        erreurMsg.textContent = messageErreurAuth(err.code) || "Une erreur est survenue. Réessayez.";
         erreurMsg.classList.add("visible");
         btn.disabled = false; btn.textContent = "Créer mon compte";
       }
