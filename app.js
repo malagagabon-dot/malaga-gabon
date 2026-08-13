@@ -4,15 +4,40 @@
 ═══════════════════════════════════════════ */
 
 import {
-  db,
-  collection, query, where, orderBy, onSnapshot, doc, updateDoc, increment
+  auth, db,
+  onAuthStateChanged,
+  collection, query, where, orderBy, onSnapshot, doc, updateDoc, addDoc, increment, serverTimestamp
 } from "./firebase-config.js";
+import { getProfil } from "./auth.js";
 import {
   COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, getIconeType, formatPrix,
   ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
   EQUIPEMENTS, PALIERS_PIECES
 } from "./malaga-reference.js";
 import { estFavori, toggleFavori } from "./nav.js";
+
+/* ══════════ RÉSERVATION DE VISITE — CONFIGURATION ══════════
+   ⚠️ À AJUSTER avant mise en ligne : numéros Mobile Money de réception
+   et montant des frais de réservation de visite. */
+const RESA_FRAIS = 2000; // FCFA — à ajuster selon votre politique
+const RESA_NUMERO_AIRTEL = "+241 XX XX XX XX"; // ⚠️ à remplacer par le vrai numéro Airtel Money
+const RESA_NUMERO_MOOV = "+241 XX XX XX XX";   // ⚠️ à remplacer par le vrai numéro Moov Money
+
+let utilisateurCourant = null;
+let profilCourant = null;
+let mesDemandesVisite = []; // demandesVisite de l'utilisateur connecté, par annonceId
+
+onAuthStateChanged(auth, async (user) => {
+  utilisateurCourant = user;
+  profilCourant = user ? await getProfil(user.uid) : null;
+  if (user) {
+    onSnapshot(query(collection(db, "demandesVisite"), where("chercheurId", "==", user.uid)), (snap) => {
+      mesDemandesVisite = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    });
+  } else {
+    mesDemandesVisite = [];
+  }
+});
 
 let toutesLesAnnonces = [];
 let filtres = {
@@ -33,6 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initFiltres();
   initFiltresAvances();
   initVueModes();
+  initReservationVisite();
   ecouterAnnoncesTempsReel();
 
   document.getElementById("btnRechercher").onclick = () => {
@@ -418,6 +444,8 @@ function afficherDetail(a) {
           </div>
         </div>` : ""}
 
+      <div style="background:#f5f5f5;padding:16px;border-radius:12px;margin-bottom:16px;" id="blocReservationVisite"></div>
+
       <div style="background:#f5f5f5;padding:16px;border-radius:12px;">
         <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;">Contacter le propriétaire</h3>
         <div style="font-size:13px;margin-bottom:10px;"><strong>${a.proprietaireNom || ""}</strong></div>
@@ -432,9 +460,128 @@ function afficherDetail(a) {
   modal.classList.add("ouverte");
   document.getElementById("fermerModal").onclick = () => modal.classList.remove("ouverte");
   modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("ouverte"); };
+  rendreBlocReservation(a);
 
   // Comptage des vues, best-effort (n'empêche pas l'affichage si ça échoue)
   updateDoc(doc(db, "annonces", a.id), { vues: increment(1) }).catch(() => {});
+}
+
+/* ══════════ RÉSERVATION DE VISITE (avec preuve de transfert Mobile Money) ══════════ */
+function rendreBlocReservation(a) {
+  const bloc = document.getElementById("blocReservationVisite");
+  if (!bloc) return;
+
+  if (a.statutReservation === "reserve") {
+    bloc.innerHTML = `
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">📅 Visite</h3>
+      <p style="font-size:13px;color:#666;">Ce bien fait déjà l'objet d'une visite programmée. Réessayez plus tard s'il redevient disponible.</p>`;
+    return;
+  }
+
+  const demandeExistante = mesDemandesVisite.find(d => d.annonceId === a.id && ["en_attente", "confirmee"].includes(d.statut));
+  if (demandeExistante) {
+    const labels = { en_attente: "🟡 En attente de validation", confirmee: "🔵 Visite programmée" };
+    bloc.innerHTML = `
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">📅 Votre demande de visite</h3>
+      <p style="font-size:13px;color:#444;">${labels[demandeExistante.statut]}</p>
+      <p style="font-size:12px;color:#666;margin-top:4px;">Suivez son statut dans votre <a href="profil.html" style="color:var(--vert);font-weight:700;">profil</a>.</p>`;
+    return;
+  }
+
+  bloc.innerHTML = `
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">📅 Réserver une visite</h3>
+    <p style="font-size:12.5px;color:#666;margin-bottom:10px;">Réservez votre créneau en versant des frais de réservation de ${formatPrix(RESA_FRAIS)} par Mobile Money — remboursés ou déduits selon les conditions convenues avec le propriétaire.</p>
+    <button type="button" class="btn btn-jaune" id="btnOuvrirReservation" style="width:100%;">📅 Réserver une visite</button>
+  `;
+  document.getElementById("btnOuvrirReservation").onclick = () => ouvrirModalReservation(a);
+}
+
+function ouvrirModalReservation(a) {
+  if (!utilisateurCourant) {
+    if (confirm("Vous devez être connecté pour réserver une visite. Aller à la page de connexion ?")) {
+      window.location.href = "connexion.html";
+    }
+    return;
+  }
+
+  document.getElementById("resaAnnonceTitre").textContent = a.titre;
+  document.getElementById("resaMontantIndicatif").textContent = formatPrix(RESA_FRAIS);
+  document.getElementById("formReservation").reset();
+  document.getElementById("resaErreur").classList.remove("visible");
+  document.getElementById("resaSucces").classList.remove("visible");
+  document.getElementById("formReservation").style.display = "block";
+  majNumeroDestinataire();
+
+  document.getElementById("reservationModal").classList.add("ouverte");
+  document.getElementById("reservationModal").dataset.annonceId = a.id;
+  document.getElementById("reservationModal").dataset.annonceTitre = a.titre;
+}
+
+function majNumeroDestinataire() {
+  const operateur = document.querySelector('input[name="resaOperateur"]:checked')?.value;
+  const el = document.getElementById("resaNumeroDestinataire");
+  if (!operateur) { el.textContent = "—"; return; }
+  el.textContent = operateur === "airtel" ? RESA_NUMERO_AIRTEL : RESA_NUMERO_MOOV;
+}
+
+function initReservationVisite() {
+  document.getElementById("fermerReservation")?.addEventListener("click", () => {
+    document.getElementById("reservationModal").classList.remove("ouverte");
+  });
+  document.getElementById("reservationModal")?.addEventListener("click", (e) => {
+    if (e.target.id === "reservationModal") document.getElementById("reservationModal").classList.remove("ouverte");
+  });
+  document.querySelectorAll('input[name="resaOperateur"]').forEach(r => r.addEventListener("change", majNumeroDestinataire));
+
+  document.getElementById("formReservation")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const erreurEl = document.getElementById("resaErreur");
+    const succesEl = document.getElementById("resaSucces");
+    erreurEl.classList.remove("visible");
+    succesEl.classList.remove("visible");
+
+    const operateur = document.querySelector('input[name="resaOperateur"]:checked')?.value;
+    const montant = document.getElementById("resaMontant").value;
+    const numeroEnvoi = document.getElementById("resaNumeroEnvoi").value.trim();
+
+    if (!operateur || !montant || !numeroEnvoi) {
+      erreurEl.textContent = "❌ Merci de remplir tous les champs.";
+      erreurEl.classList.add("visible");
+      return;
+    }
+
+    const modal = document.getElementById("reservationModal");
+    const annonceId = modal.dataset.annonceId;
+    const annonceTitre = modal.dataset.annonceTitre;
+    const btn = document.getElementById("resaBtn");
+    btn.disabled = true; btn.textContent = "⏳ Envoi...";
+
+    try {
+      await addDoc(collection(db, "demandesVisite"), {
+        chercheurId: utilisateurCourant.uid,
+        chercheurNom: profilCourant?.nom || "",
+        chercheurTel: profilCourant?.tel || "",
+        annonceId,
+        annonceTitre,
+        operateur,
+        montant: Number(montant),
+        numeroEnvoi,
+        statut: "en_attente",
+        dateCreation: serverTimestamp()
+      });
+
+      succesEl.textContent = "✅ Demande envoyée ! Elle sera vérifiée puis confirmée sous peu. Suivez son statut dans votre profil.";
+      succesEl.classList.add("visible");
+      document.getElementById("formReservation").style.display = "none";
+      setTimeout(() => modal.classList.remove("ouverte"), 2200);
+    } catch (err) {
+      console.error("Erreur envoi demande de visite :", err);
+      erreurEl.textContent = "❌ Une erreur est survenue. Réessayez.";
+      erreurEl.classList.add("visible");
+    } finally {
+      btn.disabled = false; btn.textContent = "Confirmer ma demande";
+    }
+  });
 }
 
 /* ══════════ STATISTIQUES ══════════ */
