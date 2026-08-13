@@ -197,13 +197,12 @@ function initFiltresAvances() {
     chip.addEventListener("click", () => chip.classList.toggle("actif"));
   });
 
-  // Panneau en ligne, ouvert par défaut — un clic sur l'en-tête le replie/déplie
+  // Panneau en ligne, replié par défaut — un clic sur l'en-tête le déplie/replie
   const panneau = $("filtresAvancesPanel");
   const fleche = $("faFleche");
   const basculer = () => {
     const replie = panneau.classList.toggle("replie");
     $("btnFiltresAvances").setAttribute("aria-expanded", String(!replie));
-    fleche.textContent = replie ? "▼" : "▲";
     fleche.setAttribute("aria-label", replie ? "Déplier" : "Réduire");
   };
   $("btnFiltresAvances").onclick = basculer;

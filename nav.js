@@ -98,11 +98,47 @@ function initAuthUI() {
   });
 }
 
+/* ══════════ FLÈCHES DE SCROLL (haut / bas) — discrètes, dynamiques, sur toute l'app ══════════ */
+function initScrollNav() {
+  if (document.getElementById("scrollNav")) return;
+
+  const nav = document.createElement("div");
+  nav.className = "scroll-nav";
+  nav.id = "scrollNav";
+  nav.innerHTML = `
+    <button type="button" class="scroll-btn" id="scrollHaut" aria-label="Remonter en haut">▲</button>
+    <button type="button" class="scroll-btn" id="scrollBas" aria-label="Aller en bas">▼</button>
+  `;
+  document.body.appendChild(nav);
+
+  const btnHaut = document.getElementById("scrollHaut");
+  const btnBas = document.getElementById("scrollBas");
+
+  const majVisibilite = () => {
+    const y = window.scrollY;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const prochePied = maxScroll - y < 80;
+
+    // Flèche du haut : visible seulement après un léger scroll vers le bas
+    btnHaut.classList.toggle("visible", y > 220);
+    // Flèche du bas : visible tant qu'on n'a pas atteint (presque) le bas de page
+    btnBas.classList.toggle("visible", maxScroll > 220 && !prochePied);
+  };
+
+  btnHaut.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  btnBas.addEventListener("click", () => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }));
+
+  window.addEventListener("scroll", majVisibilite, { passive: true });
+  window.addEventListener("resize", majVisibilite);
+  majVisibilite();
+}
+
 /* ══════════ INITIALISATION GÉNÉRALE ══════════ */
 document.addEventListener("DOMContentLoaded", () => {
   initDrawer();
   initAuthUI();
   majBadgeFavoris();
+  initScrollNav();
 
   // Marque l'onglet actif de la barre basse selon la page courante
   const page = location.pathname.split("/").pop() || "index.html";
