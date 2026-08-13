@@ -70,6 +70,12 @@ export async function getProfil(uid) {
   return snap.exists() ? snap.data() : null;
 }
 
+/* ══════════ MISE À JOUR DU PROFIL ══════════
+   Met à jour tout ou partie du document /users/{uid} (nom, tel, photoURL...). */
+export async function majProfil(uid, donnees) {
+  await setDoc(doc(db, "users", uid), donnees, { merge: true });
+}
+
 /* ══════════ PROTECTION DE PAGE ══════════
    À utiliser sur les pages réservées aux utilisateurs connectés
    (ex. publier.html, mes-annonces.html).

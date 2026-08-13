@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon profil — MALAGA</title>
+  <meta name="theme-color" content="#009E60">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ===== En-tête profil ===== */
+    .profil-hero{max-width:1000px;margin:0 auto;padding:24px 20px 4px;}
+    .profil-carte{background:linear-gradient(135deg,var(--vert) 0%,var(--vert-fonce) 100%);border-radius:18px;
+      padding:22px 20px;color:#fff;display:flex;align-items:center;gap:16px;box-shadow:0 6px 20px rgba(0,62,40,.18);position:relative;}
+    .profil-avatar-wrap{position:relative;flex-shrink:0;}
+    .profil-avatar{width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,.18);
+      display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;
+      overflow:hidden;border:3px solid rgba(255,255,255,.4);}
+    .profil-avatar img{width:100%;height:100%;object-fit:cover;}
+    .profil-btn-photo{position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;border-radius:50%;
+      background:var(--jaune);color:#1A2332;border:2px solid #fff;font-size:12px;display:flex;
+      align-items:center;justify-content:center;cursor:pointer;}
+    .profil-infos{min-width:0;flex:1;}
+    .profil-nom{font-size:18px;font-weight:800;font-family:'Playfair Display',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .profil-role{display:inline-block;margin-top:4px;font-size:11px;font-weight:800;background:rgba(255,255,255,.2);
+      padding:3px 10px;border-radius:20px;letter-spacing:.3px;}
+    .profil-contact{margin-top:8px;font-size:12.5px;opacity:.92;line-height:1.7;}
+    .profil-btn-modifier{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.18);border:none;
+      color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;cursor:pointer;}
+
+    /* ===== Stats rapides ===== */
+    .profil-stats{max-width:1000px;margin:16px auto 0;padding:0 20px;display:grid;
+      grid-template-columns:repeat(3,1fr);gap:10px;}
+    .stat-carte{background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;padding:14px 8px;text-align:center;}
+    .stat-carte .n{font-size:19px;font-weight:800;color:var(--vert);}
+    .stat-carte .l{font-size:10.5px;color:var(--gris-clair);margin-top:2px;font-weight:600;}
+
+    /* ===== Sections ===== */
+    .profil-section{max-width:1000px;margin:26px auto 0;padding:0 20px;}
+    .profil-section h2{font-size:15.5px;font-weight:800;color:var(--texte);margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+
+    /* Cartes annonces compactes (favoris) */
+    .mini-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+    .mini-carte{background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;overflow:hidden;cursor:pointer;
+      transition:box-shadow .15s ease;}
+    .mini-carte:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);}
+    .mini-carte .img{height:110px;background:var(--gris-fond);display:flex;align-items:center;justify-content:center;font-size:28px;}
+    .mini-carte .img img{width:100%;height:100%;object-fit:cover;}
+    .mini-carte .corps{padding:10px 12px 12px;}
+    .mini-carte h4{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:4px;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .mini-carte .prix{font-size:13px;font-weight:800;color:var(--vert);}
+    .mini-carte .meta{font-size:10.5px;color:var(--gris-clair);margin-top:2px;}
+
+    /* Demandes de visite / RDV */
+    .rdv-carte{background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
+    .rdv-haut{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
+    .rdv-titre{font-size:13.5px;font-weight:700;}
+    .rdv-date{font-size:11px;color:var(--gris-clair);margin-top:2px;}
+    .badge-rdv{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+    .badge-rdv.en_attente{background:#FEF3C7;color:#92400E;}
+    .badge-rdv.confirmee{background:#DBEAFE;color:#1D4ED8;}
+    .badge-rdv.refusee{background:#FEE2E2;color:#B91C1C;}
+    .badge-rdv.expiree{background:#F3F4F6;color:#6B7280;}
+    .rdv-detail{font-size:11.5px;color:var(--gris-clair);margin-top:4px;}
+
+    .chips-onglets{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;}
+    .chip-onglet{flex-shrink:0;font-size:12px;font-weight:700;padding:7px 14px;border-radius:20px;
+      background:var(--gris-fond);color:var(--gris-clair);cursor:pointer;border:1px solid var(--gris-bordure);}
+    .chip-onglet.actif{background:var(--vert);color:#fff;border-color:var(--vert);}
+
+    .lien-gerer{display:flex;align-items:center;justify-content:space-between;background:#fff;
+      border:1px solid var(--gris-bordure);border-radius:14px;padding:16px 18px;text-decoration:none;color:var(--texte);}
+    .lien-gerer .txt strong{font-size:14px;} .lien-gerer .txt p{font-size:12px;color:var(--gris-clair);margin-top:2px;}
+    .lien-gerer .fleche{font-size:18px;color:var(--vert);}
+
+    /* Modal édition profil */
+    .champ-photo-edit{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+    .champ-photo-edit .apercu{width:64px;height:64px;border-radius:50%;background:var(--gris-fond);
+      display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--vert);overflow:hidden;flex-shrink:0;}
+    .champ-photo-edit .apercu img{width:100%;height:100%;object-fit:cover;}
+
+    .btn-deconnexion{width:100%;margin-top:26px;background:transparent;border:1.5px solid var(--rouge);
+      color:var(--rouge);font-weight:700;}
+  </style>
+</head>
+<body>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-header">
+      <img src="img/logo.png" alt="MALAGA" class="drawer-logo">
+      <button class="drawer-close" id="fermerDrawer">✕</button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="index.html" class="drawer-link">🏠 Accueil</a>
+      <a href="profil.html" class="drawer-link actif">🙍 Mon profil</a>
+      <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;">🏘️ Gérer mes annonces</a>
+      <div class="drawer-sep"></div>
+      <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
+      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
+      <a href="mailto:malagagabon@gmail.com" class="drawer-link">✉️ Nous écrire</a>
+      <div class="drawer-sep"></div>
+      <a href="connexion.html" class="drawer-link" id="drawerConnexion">🚪 Se déconnecter</a>
+    </nav>
+    <div class="drawer-footer">MALAGA 🇬🇦 — Libreville, Gabon</div>
+  </aside>
+
+  <header class="header">
+    <div class="header-inner">
+      <button class="icon-btn" id="btnMenu" aria-label="Menu">☰</button>
+      <a href="index.html" class="logo-link">
+        <img src="img/logo.png" alt="MALAGA" class="logo-img">
+        <span class="logo-text-wrap">
+          <span class="logo-text">MALAGA</span>
+          <span class="slogan">Maison à louer au Gabon 🇬🇦</span>
+        </span>
+      </a>
+      <a href="index.html" class="icon-btn" aria-label="Accueil">🏠</a>
+    </div>
+  </header>
+
+  <nav class="bottom-nav">
+    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span>Accueil</span></a>
+    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span>Carte</span></a>
+    <a href="connexion.html?inscription=1&role=proprietaire" class="bn-item bn-central"><span class="bn-icon">➕</span></a>
+    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span>Favoris</span></a>
+    <a href="profil.html" class="bn-item actif" id="bnProfil" data-page="profil.html"><span class="bn-icon">👤</span><span id="bnProfilLabel">Profil</span></a>
+  </nav>
+
+  <!-- ===== EN-TÊTE PROFIL ===== -->
+  <div class="profil-hero">
+    <div class="profil-carte">
+      <button type="button" class="profil-btn-modifier" id="btnModifierProfil">✏️ Modifier</button>
+      <div class="profil-avatar-wrap">
+        <div class="profil-avatar" id="profilAvatar">?</div>
+      </div>
+      <div class="profil-infos">
+        <div class="profil-nom" id="profilNom">Chargement…</div>
+        <span class="profil-role" id="profilRole"></span>
+        <div class="profil-contact" id="profilContact"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STATS ===== -->
+  <div class="profil-stats" id="profilStats">
+    <div class="stat-carte"><div class="n" id="statFavoris">0</div><div class="l">❤️ Favoris</div></div>
+    <div class="stat-carte"><div class="n" id="statRdv">0</div><div class="l">📅 Demandes visite</div></div>
+    <div class="stat-carte" id="statAnnoncesWrap" style="display:none;"><div class="n" id="statAnnonces">0</div><div class="l">🏘️ Annonces</div></div>
+  </div>
+
+  <!-- ===== SECTION PROPRIÉTAIRE : accès rapide à Mes annonces ===== -->
+  <div class="profil-section" id="sectionProprio" style="display:none;">
+    <h2>🏘️ Mes annonces</h2>
+    <a href="mes-annonces.html" class="lien-gerer">
+      <div class="txt"><strong>Gérer mes annonces publiées</strong><p>Disponibilité, modifications, suppression…</p></div>
+      <span class="fleche">→</span>
+    </a>
+  </div>
+
+  <!-- ===== SECTION FAVORIS ===== -->
+  <div class="profil-section">
+    <h2>❤️ Annonces likées</h2>
+    <div class="mini-grille" id="listeFavoris">
+      <div class="spinner">Chargement…</div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION DEMANDES DE VISITE / RDV ===== -->
+  <div class="profil-section">
+    <h2>📅 Mes demandes de visite</h2>
+    <div class="chips-onglets" id="ongletsRdv">
+      <div class="chip-onglet actif" data-statut="en_attente">🟡 En attente</div>
+      <div class="chip-onglet" data-statut="confirmee">🔵 Programmées</div>
+      <div class="chip-onglet" data-statut="refusee">🚫 Refusées</div>
+      <div class="chip-onglet" data-statut="expiree">⌛ Expirées</div>
+    </div>
+    <div id="listeRdv">
+      <div class="spinner">Chargement…</div>
+    </div>
+  </div>
+
+  <div class="profil-section" style="padding-bottom:30px;">
+    <button type="button" class="btn btn-deconnexion" id="btnDeconnexion">🚪 Se déconnecter</button>
+  </div>
+
+  <!-- ===== MODAL MODIFICATION PROFIL ===== -->
+  <div class="modal-overlay" id="modalProfil">
+    <div class="modal-panneau">
+      <div class="form-card">
+        <h2>Modifier mon profil</h2>
+        <p class="sous-titre">Votre photo, votre nom et votre téléphone</p>
+
+        <div class="champ-photo-edit">
+          <div class="apercu" id="apercuPhoto">?</div>
+          <div>
+            <input type="file" id="inputPhoto" accept="image/*" hidden>
+            <button type="button" class="btn btn-outline" id="btnChoisirPhoto" style="padding:8px 14px;font-size:12.5px;">📷 Changer la photo</button>
+          </div>
+        </div>
+
+        <form id="formProfil">
+          <div class="champ"><label>Nom complet</label><input type="text" id="editNom" required></div>
+          <div class="champ"><label>Téléphone</label><input type="tel" id="editTel" required></div>
+          <div class="champ"><label>Email</label><input type="email" id="editEmail" disabled style="opacity:.6;"></div>
+          <div style="display:flex;gap:10px;margin-top:6px;">
+            <button type="button" class="btn btn-blanc" id="btnAnnulerProfil" style="flex:1;">Annuler</button>
+            <button type="submit" class="btn btn-vert" id="btnEnregistrerProfil" style="flex:1;">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db, doc, getDoc, collection, query, where, orderBy, onSnapshot, serverTimestamp } from "./firebase-config.js";
+    import { protegerPage, majProfil, deconnecter } from "./auth.js";
+    import { getFavoris } from "./nav.js";
+    import { getIconeType, formatPrix } from "./malaga-reference.js";
+
+    // --- Cloudinary (même configuration que connexion.html / publier.html) ---
+    const CLOUDINARY_CLOUD_NAME = "enpphgwu";
+    const CLOUDINARY_UPLOAD_PRESET = "malaga_photos";
+    async function uploaderVersCloudinary(fichier) {
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+      const formData = new FormData();
+      formData.append("file", fichier);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+      const reponse = await fetch(url, { method: "POST", body: formData });
+      if (!reponse.ok) throw new Error("Échec de l'envoi vers Cloudinary");
+      return (await reponse.json()).secure_url;
+    }
+    async function compresserImage(fichier, dimensionMax = 600, qualite = 0.85) {
+      if (!fichier.type || !fichier.type.startsWith("image/") || fichier.type === "image/gif") return fichier;
+      try {
+        const bitmap = await createImageBitmap(fichier);
+        const ratio = Math.min(1, dimensionMax / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(bitmap.width * ratio);
+        canvas.height = Math.round(bitmap.height * ratio);
+        canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", qualite));
+        if (!blob || blob.size >= fichier.size) return fichier;
+        return new File([blob], fichier.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" });
+      } catch { return fichier; }
+    }
+
+    function initiales(nom) {
+      if (!nom) return "?";
+      const parts = nom.trim().split(/\s+/);
+      return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || nom[0].toUpperCase();
+    }
+
+    let uidCourant = null;
+    let profilCourant = null;
+    let photoEnAttente = null; // fichier choisi mais pas encore enregistré
+
+    protegerPage((user) => {
+      uidCourant = user.uid;
+      chargerProfil(user);
+      chargerFavoris();
+      chargerRdv(user.uid);
+    });
+
+    async function chargerProfil(user) {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      profilCourant = snap.exists() ? snap.data() : { nom: "", tel: "", email: user.email, role: "chercheur" };
+      afficherProfil();
+    }
+
+    function afficherProfil() {
+      const p = profilCourant;
+      document.getElementById("profilNom").textContent = p.nom || "Utilisateur MALAGA";
+      document.getElementById("profilRole").textContent = p.role === "proprietaire" ? "🏠 Propriétaire" : "🔍 Chercheur de logement";
+      document.getElementById("profilContact").innerHTML = `📞 ${p.tel || "—"} &nbsp;·&nbsp; ✉️ ${p.email || ""}`;
+
+      const avatar = document.getElementById("profilAvatar");
+      avatar.innerHTML = p.photoURL ? `<img src="${p.photoURL}" alt="">` : initiales(p.nom);
+
+      document.getElementById("sectionProprio").style.display = p.role === "proprietaire" ? "block" : "none";
+      document.getElementById("statAnnoncesWrap").style.display = p.role === "proprietaire" ? "block" : "none";
+      if (p.role === "proprietaire") chargerNbAnnonces();
+
+      // Pré-remplir la modale d'édition
+      document.getElementById("editNom").value = p.nom || "";
+      document.getElementById("editTel").value = p.tel || "";
+      document.getElementById("editEmail").value = p.email || "";
+      document.getElementById("apercuPhoto").innerHTML = p.photoURL ? `<img src="${p.photoURL}" alt="">` : initiales(p.nom);
+    }
+
+    async function chargerNbAnnonces() {
+      const q = query(collection(db, "annonces"), where("proprietaireId", "==", uidCourant));
+      onSnapshot(q, (snap) => { document.getElementById("statAnnonces").textContent = snap.size; });
+    }
+
+    /* ══════════ FAVORIS ══════════ */
+    async function chargerFavoris() {
+      const ids = getFavoris();
+      const container = document.getElementById("listeFavoris");
+      document.getElementById("statFavoris").textContent = ids.length;
+
+      if (ids.length === 0) {
+        container.innerHTML = `<div class="etat-vide" style="grid-column:1/-1;"><div class="icone">🤍</div><p>Aucune annonce likée pour le moment.</p></div>`;
+        return;
+      }
+
+      const annonces = (await Promise.all(ids.map(async (id) => {
+        try {
+          const snap = await getDoc(doc(db, "annonces", id));
+          return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+        } catch { return null; }
+      }))).filter(Boolean);
+
+      document.getElementById("statFavoris").textContent = annonces.length;
+
+      if (annonces.length === 0) {
+        container.innerHTML = `<div class="etat-vide" style="grid-column:1/-1;"><div class="icone">🤍</div><p>Vos annonces likées ne sont plus disponibles.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = annonces.map(a => `
+        <div class="mini-carte" data-whatsapp="${a.whatsapp || ""}" data-titre="${a.titre || ""}">
+          <div class="img">${a.photos?.[0] ? `<img src="${a.photos[0]}" alt="">` : getIconeType(a.type)}</div>
+          <div class="corps">
+            <h4>${a.titre || "Annonce"}</h4>
+            <div class="prix">${formatPrix(a.prix)}</div>
+            <div class="meta">📍 ${a.quartier || ""}${a.commune ? ", " + a.commune : ""} · ${a.statut === "disponible" ? "🟢 Disponible" : "🔴 Occupé"}</div>
+          </div>
+        </div>
+      `).join("");
+
+      container.querySelectorAll(".mini-carte").forEach(carte => {
+        carte.addEventListener("click", () => {
+          const numero = (carte.dataset.whatsapp || "").replace(/[^\d]/g, "");
+          if (numero) window.open(`https://wa.me/${numero}?text=${encodeURIComponent("Bonjour, votre annonce \"" + carte.dataset.titre + "\" sur MALAGA m'intéresse.")}`, "_blank");
+        });
+      });
+    }
+
+    /* ══════════ DEMANDES DE VISITE (RDV) ══════════ */
+    let toutesLesRdv = [];
+    let filtreRdv = "en_attente";
+
+    function chargerRdv(uid) {
+      const q = query(collection(db, "demandesVisite"), where("chercheurId", "==", uid), orderBy("dateCreation", "desc"));
+      onSnapshot(q, (snap) => {
+        toutesLesRdv = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        document.getElementById("statRdv").textContent = toutesLesRdv.length;
+        rendreRdv();
+      }, () => {
+        document.getElementById("listeRdv").innerHTML = `<p class="etat-vide">Impossible de charger vos demandes de visite.</p>`;
+      });
+    }
+
+    function tempsEcoule(timestamp) {
+      if (!timestamp?.toMillis) return "";
+      const minutes = Math.round((Date.now() - timestamp.toMillis()) / 60000);
+      if (minutes < 1) return "à l'instant";
+      if (minutes < 60) return `il y a ${minutes} min`;
+      if (minutes < 1440) return `il y a ${Math.round(minutes / 60)} h`;
+      return `il y a ${Math.round(minutes / 1440)} j`;
+    }
+
+    const LABEL_STATUT = { en_attente: "🟡 En attente", confirmee: "🔵 Visite programmée", refusee: "🚫 Refusée", expiree: "⌛ Expirée" };
+
+    function rendreRdv() {
+      const container = document.getElementById("listeRdv");
+      const demandes = toutesLesRdv.filter(d => d.statut === filtreRdv);
+
+      if (demandes.length === 0) {
+        const messages = {
+          en_attente: "Aucune demande en attente.",
+          confirmee: "Aucune visite programmée pour le moment.",
+          refusee: "Aucune demande refusée.",
+          expiree: "Aucune demande expirée."
+        };
+        container.innerHTML = `<div class="etat-vide"><div class="icone">📅</div><p>${messages[filtreRdv]}</p></div>`;
+        return;
+      }
+
+      container.innerHTML = demandes.map(d => `
+        <div class="rdv-carte">
+          <div class="rdv-haut">
+            <div>
+              <div class="rdv-titre">${d.annonceTitre || "Annonce"}</div>
+              <div class="rdv-date">${tempsEcoule(d.dateCreation)}</div>
+            </div>
+            <span class="badge-rdv ${d.statut}">${LABEL_STATUT[d.statut] || d.statut}</span>
+          </div>
+          ${d.montant ? `<div class="rdv-detail">💰 ${Number(d.montant).toLocaleString("fr-FR")} FCFA envoyé${d.operateur ? " · " + (d.operateur === "airtel" ? "Airtel Money" : "Moov Money") : ""}</div>` : ""}
+        </div>
+      `).join("");
+    }
+
+    document.querySelectorAll(".chip-onglet").forEach(chip => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll(".chip-onglet").forEach(c => c.classList.remove("actif"));
+        chip.classList.add("actif");
+        filtreRdv = chip.dataset.statut;
+        rendreRdv();
+      });
+    });
+
+    /* ══════════ MODIFICATION DU PROFIL ══════════ */
+    const modal = document.getElementById("modalProfil");
+    document.getElementById("btnModifierProfil").onclick = () => modal.classList.add("ouverte");
+    document.getElementById("btnAnnulerProfil").onclick = () => { modal.classList.remove("ouverte"); photoEnAttente = null; };
+
+    document.getElementById("btnChoisirPhoto").onclick = () => document.getElementById("inputPhoto").click();
+    document.getElementById("inputPhoto").addEventListener("change", (e) => {
+      const fichier = e.target.files[0];
+      if (!fichier) return;
+      photoEnAttente = fichier;
+      const lecteur = new FileReader();
+      lecteur.onload = (ev) => { document.getElementById("apercuPhoto").innerHTML = `<img src="${ev.target.result}" alt="">`; };
+      lecteur.readAsDataURL(fichier);
+    });
+
+    document.getElementById("formProfil").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btnEnregistrerProfil");
+      btn.disabled = true; btn.textContent = "Enregistrement…";
+      try {
+        const donnees = {
+          nom: document.getElementById("editNom").value.trim(),
+          tel: document.getElementById("editTel").value.trim()
+        };
+        if (photoEnAttente) {
+          btn.textContent = "Envoi de la photo…";
+          const optimisee = await compresserImage(photoEnAttente);
+          donnees.photoURL = await uploaderVersCloudinary(optimisee);
+        }
+        await majProfil(uidCourant, donnees);
+        profilCourant = { ...profilCourant, ...donnees };
+        afficherProfil();
+        modal.classList.remove("ouverte");
+        photoEnAttente = null;
+      } catch (err) {
+        alert("Impossible d'enregistrer les modifications. Réessayez.");
+      } finally {
+        btn.disabled = false; btn.textContent = "Enregistrer";
+      }
+    });
+
+    document.getElementById("btnDeconnexion").onclick = () => deconnecter();
+  </script>
+
+  <footer class="footer">
+    <div class="brand">MALAGA 🇬🇦</div>
+  </footer>
+  <script type="module" src="nav.js"></script>
+</body>
+</html>

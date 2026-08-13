@@ -86,15 +86,20 @@ function initAuthUI() {
     const profil = await getProfil(user.uid);
     const nom = profil?.nom || "Mon compte";
     if (avatar) {
-      avatar.textContent = initiales(nom);
-      avatar.classList.add("avatar-initiales");
-      avatar.href = profil?.role === "proprietaire" ? "mes-annonces.html" : "index.html";
+      if (profil?.photoURL) {
+        avatar.innerHTML = `<img src="${profil.photoURL}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        avatar.classList.remove("avatar-initiales");
+      } else {
+        avatar.textContent = initiales(nom);
+        avatar.classList.add("avatar-initiales");
+      }
+      avatar.href = "profil.html";
     }
     if (drawerConnexion) { drawerConnexion.textContent = "🚪 Se déconnecter"; drawerConnexion.href = "#"; drawerConnexion.onclick = (e) => { e.preventDefault(); signOut(auth); }; }
     if (drawerProprio) drawerProprio.style.display = profil?.role === "proprietaire" ? "block" : "none";
     if (drawerAdmin) drawerAdmin.style.display = user.email === ADMIN_EMAIL ? "block" : "none";
     if (bnProfilLabel) bnProfilLabel.textContent = nom.split(" ")[0];
-    if (bnProfilLien) bnProfilLien.href = profil?.role === "proprietaire" ? "mes-annonces.html" : "connexion.html";
+    if (bnProfilLien) bnProfilLien.href = "profil.html";
   });
 }
 
