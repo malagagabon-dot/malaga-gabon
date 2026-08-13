@@ -441,32 +441,25 @@
       <div class="form-card mini-modal-body">
         <p style="font-size:13px;color:#444;margin-bottom:4px;"><strong id="resaAnnonceTitre"></strong></p>
         <p style="font-size:12.5px;color:#666;margin-bottom:14px;">
-          Envoyez <strong id="resaMontantIndicatif"></strong> par Mobile Money au numéro ci-dessous, puis indiquez les détails de votre transfert pour validation par notre équipe.
+          C'est gratuit. Indiquez la date et l'heure souhaitées : votre demande est envoyée au propriétaire par WhatsApp, avec un lien pour qu'il accepte ou refuse directement le rendez-vous.
         </p>
 
         <form id="formReservation">
           <div class="champ">
-            <label>Opérateur *</label>
-            <div style="display:flex;gap:16px;margin-top:4px;">
-              <label class="fa-check"><input type="radio" name="resaOperateur" value="airtel" required> 📱 Airtel Money</label>
-              <label class="fa-check"><input type="radio" name="resaOperateur" value="moov" required> 📱 Moov Money</label>
-            </div>
+            <label>Date souhaitée *</label>
+            <input type="date" id="resaDate" required>
           </div>
           <div class="champ">
-            <label>Numéro à créditer</label>
-            <div id="resaNumeroDestinataire" style="font-weight:800;font-size:15px;color:var(--vert);">—</div>
+            <label>Heure souhaitée *</label>
+            <input type="time" id="resaHeure" required>
           </div>
           <div class="champ">
-            <label>Montant envoyé (FCFA) *</label>
-            <input type="number" id="resaMontant" required placeholder="Ex : 2000">
-          </div>
-          <div class="champ">
-            <label>Numéro depuis lequel vous avez envoyé *</label>
-            <input type="tel" id="resaNumeroEnvoi" required placeholder="+241 6 XX XX XX">
+            <label>Message (optionnel)</label>
+            <textarea id="resaMessage" rows="3" placeholder="Précisions, questions sur le loyer ou les modalités de paiement..."></textarea>
           </div>
           <div class="erreur-msg" id="resaErreur"></div>
           <div class="succes-msg" id="resaSucces"></div>
-          <button type="submit" class="btn btn-vert" style="width:100%;" id="resaBtn">Confirmer ma demande</button>
+          <button type="submit" class="btn btn-vert" style="width:100%;" id="resaBtn">📲 Envoyer via WhatsApp</button>
         </form>
       </div>
     </div>

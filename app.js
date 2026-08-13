@@ -16,13 +16,6 @@ import {
 } from "./malaga-reference.js";
 import { estFavori, toggleFavori } from "./nav.js";
 
-/* ══════════ RÉSERVATION DE VISITE — CONFIGURATION ══════════
-   ⚠️ À AJUSTER avant mise en ligne : numéros Mobile Money de réception
-   et montant des frais de réservation de visite. */
-const RESA_FRAIS = 2000; // FCFA — à ajuster selon votre politique
-const RESA_NUMERO_AIRTEL = "+241 XX XX XX XX"; // ⚠️ à remplacer par le vrai numéro Airtel Money
-const RESA_NUMERO_MOOV = "+241 XX XX XX XX";   // ⚠️ à remplacer par le vrai numéro Moov Money
-
 let utilisateurCourant = null;
 let profilCourant = null;
 let mesDemandesVisite = []; // demandesVisite de l'utilisateur connecté, par annonceId
@@ -395,6 +388,9 @@ function afficherDetail(a) {
   const modal = document.getElementById("detailModal");
   const panneau = document.getElementById("detailPanneau");
   const numeroWhatsApp = (a.whatsapp || a.tel || "").replace(/[^\d]/g, "");
+  const texteWhatsAppContact = encodeURIComponent(
+    `Bonjour${a.proprietaireNom ? " " + a.proprietaireNom : ""}, je suis intéressé(e) par votre annonce "${a.titre}" (${formatPrix(a.prix)}) sur MALAGA. Pouvez-vous me préciser les modalités de paiement du loyer ?`
+  );
 
   panneau.innerHTML = `
     <div style="background:linear-gradient(135deg,var(--vert) 0%,var(--vert-fonce) 100%);padding:24px 20px;color:#fff;position:relative;">
@@ -450,7 +446,7 @@ function afficherDetail(a) {
         <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;">Contacter le propriétaire</h3>
         <div style="font-size:13px;margin-bottom:10px;"><strong>${a.proprietaireNom || ""}</strong></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          ${numeroWhatsApp ? `<a href="https://wa.me/${numeroWhatsApp}" target="_blank" class="btn btn-vert">💬 WhatsApp</a>` : ""}
+          ${numeroWhatsApp ? `<a href="https://wa.me/${numeroWhatsApp}?text=${texteWhatsAppContact}" target="_blank" class="btn btn-vert">💬 WhatsApp</a>` : ""}
           ${a.proprietaireTel ? `<a href="tel:${a.proprietaireTel}" class="btn btn-bleu">📞 Appeler</a>` : ""}
           ${a.proprietaireEmail ? `<a href="mailto:${a.proprietaireEmail}" class="btn btn-outline">✉️ Email</a>` : ""}
         </div>
@@ -466,7 +462,10 @@ function afficherDetail(a) {
   updateDoc(doc(db, "annonces", a.id), { vues: increment(1) }).catch(() => {});
 }
 
-/* ══════════ RÉSERVATION DE VISITE (avec preuve de transfert Mobile Money) ══════════ */
+/* ══════════ RÉSERVATION DE VISITE (gratuite, via WhatsApp) ══════════
+   Le chercheur propose une date/heure ; la demande est écrite dans Firestore
+   (demandesVisite) ET envoyée par WhatsApp au propriétaire avec un lien vers
+   son panneau accepter/refuser sur profil.html. */
 function rendreBlocReservation(a) {
   const bloc = document.getElementById("blocReservationVisite");
   if (!bloc) return;
@@ -480,7 +479,7 @@ function rendreBlocReservation(a) {
 
   const demandeExistante = mesDemandesVisite.find(d => d.annonceId === a.id && ["en_attente", "confirmee"].includes(d.statut));
   if (demandeExistante) {
-    const labels = { en_attente: "🟡 En attente de validation", confirmee: "🔵 Visite programmée" };
+    const labels = { en_attente: "🟡 En attente de réponse du propriétaire", confirmee: "🔵 Visite programmée" };
     bloc.innerHTML = `
       <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">📅 Votre demande de visite</h3>
       <p style="font-size:13px;color:#444;">${labels[demandeExistante.statut]}</p>
@@ -490,7 +489,7 @@ function rendreBlocReservation(a) {
 
   bloc.innerHTML = `
     <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">📅 Réserver une visite</h3>
-    <p style="font-size:12.5px;color:#666;margin-bottom:10px;">Réservez votre créneau en versant des frais de réservation de ${formatPrix(RESA_FRAIS)} par Mobile Money — remboursés ou déduits selon les conditions convenues avec le propriétaire.</p>
+    <p style="font-size:12.5px;color:#666;margin-bottom:10px;">C'est gratuit. Proposez une date et une heure : votre demande part directement au propriétaire par WhatsApp.</p>
     <button type="button" class="btn btn-jaune" id="btnOuvrirReservation" style="width:100%;">📅 Réserver une visite</button>
   `;
   document.getElementById("btnOuvrirReservation").onclick = () => ouvrirModalReservation(a);
@@ -505,23 +504,21 @@ function ouvrirModalReservation(a) {
   }
 
   document.getElementById("resaAnnonceTitre").textContent = a.titre;
-  document.getElementById("resaMontantIndicatif").textContent = formatPrix(RESA_FRAIS);
   document.getElementById("formReservation").reset();
   document.getElementById("resaErreur").classList.remove("visible");
   document.getElementById("resaSucces").classList.remove("visible");
   document.getElementById("formReservation").style.display = "block";
-  majNumeroDestinataire();
+  const champDate = document.getElementById("resaDate");
+  if (champDate) champDate.min = new Date().toISOString().split("T")[0];
 
-  document.getElementById("reservationModal").classList.add("ouverte");
-  document.getElementById("reservationModal").dataset.annonceId = a.id;
-  document.getElementById("reservationModal").dataset.annonceTitre = a.titre;
-}
-
-function majNumeroDestinataire() {
-  const operateur = document.querySelector('input[name="resaOperateur"]:checked')?.value;
-  const el = document.getElementById("resaNumeroDestinataire");
-  if (!operateur) { el.textContent = "—"; return; }
-  el.textContent = operateur === "airtel" ? RESA_NUMERO_AIRTEL : RESA_NUMERO_MOOV;
+  const modal = document.getElementById("reservationModal");
+  modal.classList.add("ouverte");
+  modal.dataset.annonceId = a.id;
+  modal.dataset.annonceTitre = a.titre;
+  modal.dataset.annoncePrix = a.prix ?? "";
+  modal.dataset.proprietaireId = a.proprietaireId || "";
+  modal.dataset.proprietaireNom = a.proprietaireNom || "";
+  modal.dataset.proprietaireWhatsapp = (a.whatsapp || a.tel || "").replace(/[^\d]/g, "");
 }
 
 function initReservationVisite() {
@@ -531,7 +528,6 @@ function initReservationVisite() {
   document.getElementById("reservationModal")?.addEventListener("click", (e) => {
     if (e.target.id === "reservationModal") document.getElementById("reservationModal").classList.remove("ouverte");
   });
-  document.querySelectorAll('input[name="resaOperateur"]').forEach(r => r.addEventListener("change", majNumeroDestinataire));
 
   document.getElementById("formReservation")?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -540,46 +536,58 @@ function initReservationVisite() {
     erreurEl.classList.remove("visible");
     succesEl.classList.remove("visible");
 
-    const operateur = document.querySelector('input[name="resaOperateur"]:checked')?.value;
-    const montant = document.getElementById("resaMontant").value;
-    const numeroEnvoi = document.getElementById("resaNumeroEnvoi").value.trim();
+    const dateSouhaitee = document.getElementById("resaDate").value;
+    const heureSouhaitee = document.getElementById("resaHeure").value;
+    const message = document.getElementById("resaMessage").value.trim();
 
-    if (!operateur || !montant || !numeroEnvoi) {
-      erreurEl.textContent = "❌ Merci de remplir tous les champs.";
+    if (!dateSouhaitee || !heureSouhaitee) {
+      erreurEl.textContent = "❌ Merci d'indiquer une date et une heure.";
       erreurEl.classList.add("visible");
       return;
     }
 
     const modal = document.getElementById("reservationModal");
-    const annonceId = modal.dataset.annonceId;
-    const annonceTitre = modal.dataset.annonceTitre;
+    const { annonceId, annonceTitre, annoncePrix, proprietaireId, proprietaireNom, proprietaireWhatsapp } = modal.dataset;
     const btn = document.getElementById("resaBtn");
     btn.disabled = true; btn.textContent = "⏳ Envoi...";
 
     try {
-      await addDoc(collection(db, "demandesVisite"), {
+      const ref = await addDoc(collection(db, "demandesVisite"), {
         chercheurId: utilisateurCourant.uid,
         chercheurNom: profilCourant?.nom || "",
         chercheurTel: profilCourant?.tel || "",
+        proprietaireId: proprietaireId || "",
         annonceId,
         annonceTitre,
-        operateur,
-        montant: Number(montant),
-        numeroEnvoi,
+        dateSouhaitee,
+        heureSouhaitee,
+        message,
         statut: "en_attente",
         dateCreation: serverTimestamp()
       });
 
-      succesEl.textContent = "✅ Demande envoyée ! Elle sera vérifiée puis confirmée sous peu. Suivez son statut dans votre profil.";
+      succesEl.textContent = proprietaireWhatsapp
+        ? "✅ Demande envoyée ! Ouverture de WhatsApp pour prévenir le propriétaire…"
+        : "✅ Demande envoyée ! Suivez sa réponse dans votre profil.";
       succesEl.classList.add("visible");
       document.getElementById("formReservation").style.display = "none";
+
+      if (proprietaireWhatsapp) {
+        const lienReponse = `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, "")}profil.html?demande=${ref.id}`;
+        const dateLisible = new Date(`${dateSouhaitee}T${heureSouhaitee}`).toLocaleString("fr-FR", {
+          weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit"
+        });
+        const texte = `Bonjour${proprietaireNom ? " " + proprietaireNom : ""}, je suis intéressé(e) par votre annonce "${annonceTitre}"${annoncePrix ? " (" + formatPrix(Number(annoncePrix)) + ")" : ""} sur MALAGA.\n📅 Je souhaite une visite le ${dateLisible}.${message ? "\n📝 " + message : ""}\n\n👉 Merci de confirmer ou refuser ce rendez-vous ici : ${lienReponse}`;
+        window.open(`https://wa.me/${proprietaireWhatsapp}?text=${encodeURIComponent(texte)}`, "_blank");
+      }
+
       setTimeout(() => modal.classList.remove("ouverte"), 2200);
     } catch (err) {
       console.error("Erreur envoi demande de visite :", err);
       erreurEl.textContent = "❌ Une erreur est survenue. Réessayez.";
       erreurEl.classList.add("visible");
     } finally {
-      btn.disabled = false; btn.textContent = "Confirmer ma demande";
+      btn.disabled = false; btn.textContent = "📲 Envoyer via WhatsApp";
     }
   });
 }

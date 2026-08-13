@@ -159,6 +159,14 @@
     </a>
   </div>
 
+  <!-- ===== SECTION DEMANDES REÇUES (propriétaire) ===== -->
+  <div class="profil-section" id="sectionDemandesRecues" style="display:none;">
+    <h2>📥 Demandes de visite reçues</h2>
+    <div id="listeDemandesRecues">
+      <div class="spinner">Chargement…</div>
+    </div>
+  </div>
+
   <!-- ===== SECTION FAVORIS ===== -->
   <div class="profil-section">
     <h2>❤️ Annonces likées</h2>
@@ -214,7 +222,7 @@
   </div>
 
   <script type="module">
-    import { auth, db, doc, getDoc, collection, query, where, orderBy, onSnapshot, serverTimestamp } from "./firebase-config.js";
+    import { auth, db, doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, serverTimestamp } from "./firebase-config.js";
     import { protegerPage, majProfil, deconnecter } from "./auth.js";
     import { getFavoris } from "./nav.js";
     import { getIconeType, formatPrix } from "./malaga-reference.js";
@@ -280,7 +288,10 @@
 
       document.getElementById("sectionProprio").style.display = p.role === "proprietaire" ? "block" : "none";
       document.getElementById("statAnnoncesWrap").style.display = p.role === "proprietaire" ? "block" : "none";
-      if (p.role === "proprietaire") chargerNbAnnonces();
+      if (p.role === "proprietaire") {
+        chargerNbAnnonces();
+        chargerDemandesRecues(uidCourant);
+      }
 
       // Pré-remplir la modale d'édition
       document.getElementById("editNom").value = p.nom || "";
@@ -388,9 +399,94 @@
             </div>
             <span class="badge-rdv ${d.statut}">${LABEL_STATUT[d.statut] || d.statut}</span>
           </div>
-          ${d.montant ? `<div class="rdv-detail">💰 ${Number(d.montant).toLocaleString("fr-FR")} FCFA envoyé${d.operateur ? " · " + (d.operateur === "airtel" ? "Airtel Money" : "Moov Money") : ""}</div>` : ""}
+          ${d.dateSouhaitee ? `<div class="rdv-detail">📅 Créneau demandé : ${new Date(`${d.dateSouhaitee}T${d.heureSouhaitee || "00:00"}`).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</div>` : ""}
+          ${d.message ? `<div class="rdv-detail">📝 ${d.message}</div>` : ""}
         </div>
       `).join("");
+    }
+
+    /* ══════════ DEMANDES DE VISITE REÇUES (côté propriétaire) ══════════
+       Ouvert depuis le lien WhatsApp envoyé au chercheur (?demande=ID) : la carte
+       correspondante est mise en évidence et amenée à l'écran. */
+    let toutesLesDemandesRecues = [];
+
+    function chargerDemandesRecues(uid) {
+      document.getElementById("sectionDemandesRecues").style.display = "block";
+      const q = query(collection(db, "demandesVisite"), where("proprietaireId", "==", uid), orderBy("dateCreation", "desc"));
+      onSnapshot(q, (snap) => {
+        toutesLesDemandesRecues = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        rendreDemandesRecues();
+        const idCible = new URLSearchParams(location.search).get("demande");
+        if (idCible) {
+          setTimeout(() => document.getElementById(`demande-${idCible}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+        }
+      }, () => {
+        document.getElementById("listeDemandesRecues").innerHTML = `<p class="etat-vide">Impossible de charger les demandes reçues.</p>`;
+      });
+    }
+
+    function formatDateHeure(dateStr, heureStr) {
+      if (!dateStr) return "";
+      try {
+        return new Date(`${dateStr}T${heureStr || "00:00"}`).toLocaleString("fr-FR", {
+          weekday: "long", day: "numeric", month: "long",
+          ...(heureStr ? { hour: "2-digit", minute: "2-digit" } : {})
+        });
+      } catch { return dateStr; }
+    }
+
+    function messageReponse(d, nouveauStatut) {
+      return nouveauStatut === "confirmee"
+        ? `Bonjour ${d.chercheurNom || ""}, votre visite pour "${d.annonceTitre}" est confirmée le ${formatDateHeure(d.dateSouhaitee, d.heureSouhaitee)}. À bientôt !`
+        : `Bonjour ${d.chercheurNom || ""}, désolé, je ne suis pas disponible pour votre visite pour "${d.annonceTitre}" à ce créneau. N'hésitez pas à proposer une autre date.`;
+    }
+
+    function rendreDemandesRecues() {
+      const container = document.getElementById("listeDemandesRecues");
+      const idCible = new URLSearchParams(location.search).get("demande");
+
+      if (toutesLesDemandesRecues.length === 0) {
+        container.innerHTML = `<div class="etat-vide"><div class="icone">📥</div><p>Aucune demande de visite reçue pour le moment.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = toutesLesDemandesRecues.map(d => {
+        const numero = (d.chercheurTel || "").replace(/[^\d]/g, "");
+        const enAttente = d.statut === "en_attente";
+        return `
+        <div class="rdv-carte" id="demande-${d.id}" style="${d.id === idCible ? "outline:2px solid var(--jaune);" : ""}">
+          <div class="rdv-haut">
+            <div>
+              <div class="rdv-titre">${d.annonceTitre || "Annonce"}</div>
+              <div class="rdv-date">${d.chercheurNom || "Un chercheur"} · ${formatDateHeure(d.dateSouhaitee, d.heureSouhaitee)}</div>
+            </div>
+            <span class="badge-rdv ${d.statut}">${LABEL_STATUT[d.statut] || d.statut}</span>
+          </div>
+          ${d.message ? `<div class="rdv-detail">📝 ${d.message}</div>` : ""}
+          ${enAttente ? `
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <button type="button" class="btn btn-vert" style="flex:1;padding:8px;font-size:12.5px;" data-action="confirmee" data-id="${d.id}">✅ Accepter</button>
+              <button type="button" class="btn btn-outline" style="flex:1;padding:8px;font-size:12.5px;" data-action="refusee" data-id="${d.id}">✕ Refuser</button>
+            </div>` : (numero ? `
+            <a href="https://wa.me/${numero}?text=${encodeURIComponent(messageReponse(d, d.statut))}" target="_blank" class="btn btn-outline" style="margin-top:10px;width:100%;padding:8px;font-size:12.5px;">💬 Prévenir par WhatsApp</a>` : "")}
+        </div>`;
+      }).join("");
+
+      container.querySelectorAll("[data-action]").forEach(btn => {
+        btn.addEventListener("click", () => repondreDemande(btn.dataset.id, btn.dataset.action));
+      });
+    }
+
+    async function repondreDemande(id, nouveauStatut) {
+      const d = toutesLesDemandesRecues.find(x => x.id === id);
+      if (!d) return;
+      try {
+        await updateDoc(doc(db, "demandesVisite", id), { statut: nouveauStatut });
+        const numero = (d.chercheurTel || "").replace(/[^\d]/g, "");
+        if (numero) window.open(`https://wa.me/${numero}?text=${encodeURIComponent(messageReponse(d, nouveauStatut))}`, "_blank");
+      } catch (err) {
+        alert("Impossible d'enregistrer la réponse. Réessayez.");
+      }
     }
 
     document.querySelectorAll(".chip-onglet").forEach(chip => {
