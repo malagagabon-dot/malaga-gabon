@@ -358,7 +358,8 @@
     });
 
     function rediriger(role) {
-      window.location.href = role === "proprietaire" ? "mes-annonces.html" : "index.html";
+      const retour = new URLSearchParams(window.location.search).get("retour");
+      window.location.href = retour ? decodeURIComponent(retour) : (role === "proprietaire" ? "mes-annonces.html" : "index.html");
     }
 
     const params = new URLSearchParams(window.location.search);
