@@ -446,17 +446,17 @@ body { padding-bottom: 68px; }
 .footer .brand { font-size: 16px; font-weight: 800; color: var(--jaune); letter-spacing: 2px; margin-bottom: 6px; }
 
 /* ===== BOUTONS DE SCROLL (haut / bas) — discrets et dynamiques ===== */
-.scroll-nav { position: fixed; right: 14px; bottom: 84px; z-index: 750;
-  display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.scroll-nav { position: fixed; right: 12px; bottom: 84px; z-index: 750;
+  display: flex; flex-direction: column; gap: 7px; pointer-events: none; }
 .scroll-btn {
-  width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+  width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer;
   background: rgba(11,59,46,.72); color: #fff; backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center; font-size: 16px;
-  box-shadow: 0 3px 12px rgba(0,0,0,.18);
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.16);
   opacity: 0; transform: translateY(8px) scale(.85); pointer-events: none;
   transition: opacity .28s ease, transform .28s ease, background .2s ease;
 }
-.scroll-btn.visible { opacity: .8; transform: translateY(0) scale(1); pointer-events: auto; }
+.scroll-btn.visible { opacity: .75; transform: translateY(0) scale(1); pointer-events: auto; }
 .scroll-btn:hover, .scroll-btn:active { opacity: 1; background: var(--vert); }
 @media (min-width: 960px) { .scroll-nav { bottom: 28px; } }
 
