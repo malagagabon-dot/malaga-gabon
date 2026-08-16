@@ -28,6 +28,20 @@ function champ(obj, ...cles) {
 function texte(obj, ...cles) { return champ(obj, ...cles) ?? '—'; }
 function nombre(obj, ...cles) { const v = champ(obj, ...cles); return typeof v === 'number' ? v : (parseInt(v) || 0); }
 
+/* ══════════ SÉCURITÉ : échappement HTML ══════════
+   Empêche l'injection de code (XSS) via des données saisies par les
+   utilisateurs (titres d'annonces, noms, messages...) puis affichées
+   avec innerHTML. Utiliser sur TOUTE valeur d'origine utilisateur avant
+   de l'insérer dans un template HTML. Exposée sur window pour être
+   utilisable aussi par reservations-admin.js (script classique, même
+   portée globale). */
+function escapeHTML(valeur) {
+  const div = document.createElement('div');
+  div.textContent = valeur === undefined || valeur === null ? '' : String(valeur);
+  return div.innerHTML;
+}
+window.escapeHTML = escapeHTML;
+
 let currentUser = null;
 let annoncesData = [];       // alimenté en temps réel depuis Firestore "annonces"
 let usersData = [];          // alimenté en temps réel depuis Firestore "users"
@@ -329,10 +343,10 @@ function loadDashboard() {
       const titre = texte(a, 'titre', 'title');
       return `
         <tr>
-          <td style="font-weight:700;">${String(titre).substring(0, 30)}</td>
-          <td>${texte(a, 'commune', 'ville')}</td>
+          <td style="font-weight:700;">${escapeHTML(String(titre).substring(0, 30))}</td>
+          <td>${escapeHTML(texte(a, 'commune', 'ville'))}</td>
           <td>${nombre(a, 'prix', 'prixMensuel', 'loyer').toLocaleString()}</td>
-          <td><span style="background:#D1FAE5;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;">${texte(a, 'statut', 'disponibilite')}</span></td>
+          <td><span style="background:#D1FAE5;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;">${escapeHTML(texte(a, 'statut', 'disponibilite'))}</span></td>
           <td><button onclick="voirAnnonce('${a.id}')" style="padding:6px 10px;background:#009E60;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;">Voir</button></td>
         </tr>
       `;
@@ -345,8 +359,8 @@ function loadDashboard() {
   } else {
     sigDiv.innerHTML = signalementsData.slice(0, 3).map(s => `
       <div style="padding:12px;border-bottom:1px solid #eee;font-size:13px;">
-        <strong>${s.type}</strong> - ${s.date}
-        <p style="color:#888;margin:4px 0 0 0;font-size:12px;">${s.desc}</p>
+        <strong>${escapeHTML(s.type)}</strong> - ${escapeHTML(s.date)}
+        <p style="color:#888;margin:4px 0 0 0;font-size:12px;">${escapeHTML(s.desc)}</p>
       </div>
     `).join('');
   }
@@ -369,12 +383,12 @@ function loadAnnonces(liste) {
     return `
       <tr>
         <td style="font-size:11px;color:#888;">${a.id}</td>
-        <td style="font-weight:600;">${String(titre).substring(0, 20)}</td>
-        <td>${texte(a, 'proprietaireNom', 'proprio', 'nomProprietaire')}</td>
-        <td>${texte(a, 'commune', 'ville')}</td>
+        <td style="font-weight:600;">${escapeHTML(String(titre).substring(0, 20))}</td>
+        <td>${escapeHTML(texte(a, 'proprietaireNom', 'proprio', 'nomProprietaire'))}</td>
+        <td>${escapeHTML(texte(a, 'commune', 'ville'))}</td>
         <td>${nombre(a, 'prix', 'prixMensuel', 'loyer').toLocaleString()}</td>
         <td>${nombre(a, 'vues').toLocaleString()}</td>
-        <td><span style="background:#D1FAE5;padding:3px 8px;border-radius:6px;font-size:11px;">${texte(a, 'statut', 'disponibilite')}</span></td>
+        <td><span style="background:#D1FAE5;padding:3px 8px;border-radius:6px;font-size:11px;">${escapeHTML(texte(a, 'statut', 'disponibilite'))}</span></td>
         <td>
           <button onclick="voirAnnonce('${a.id}')" style="padding:4px 8px;background:#3A75C4;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">Voir</button>
           <button onclick="modifierAnnonce('${a.id}')" style="padding:4px 8px;background:#F59E0B;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">✏️ Modifier</button>
@@ -768,11 +782,11 @@ function loadUsers(liste) {
     const date = formaterDate(champ(u, 'dateCreation', 'date'));
     return `
       <tr>
-        <td style="font-weight:600;">${texte(u, 'nom')}</td>
-        <td>${texte(u, 'email')}</td>
-        <td>${texte(u, 'tel')}</td>
-        <td><span style="background:#DBEAFE;padding:2px 8px;border-radius:6px;font-size:11px;color:#1E40AF;">${role}</span></td>
-        <td>${date}</td>
+        <td style="font-weight:600;">${escapeHTML(texte(u, 'nom'))}</td>
+        <td>${escapeHTML(texte(u, 'email'))}</td>
+        <td>${escapeHTML(texte(u, 'tel'))}</td>
+        <td><span style="background:#DBEAFE;padding:2px 8px;border-radius:6px;font-size:11px;color:#1E40AF;">${escapeHTML(role)}</span></td>
+        <td>${escapeHTML(date)}</td>
         <td><button onclick="supprimerUtilisateur('${u.id}')" style="padding:4px 8px;background:#EF4444;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">Supprimer</button></td>
       </tr>
     `;
@@ -832,11 +846,11 @@ function loadSignalements() {
   }
   tbody.innerHTML = signalementsData.map(s => `
     <tr>
-      <td style="font-size:12px;">${formaterDate(champ(s, 'dateCreation', 'date'))}</td>
-      <td style="font-weight:600;">${texte(s, 'type')}</td>
-      <td>${texte(s, 'annonceTitre', 'annonce')}</td>
-      <td>${texte(s, 'signalePar')}</td>
-      <td style="font-size:12px;">${texte(s, 'desc', 'description')}</td>
+      <td style="font-size:12px;">${escapeHTML(formaterDate(champ(s, 'dateCreation', 'date')))}</td>
+      <td style="font-weight:600;">${escapeHTML(texte(s, 'type'))}</td>
+      <td>${escapeHTML(texte(s, 'annonceTitre', 'annonce'))}</td>
+      <td>${escapeHTML(texte(s, 'signalePar'))}</td>
+      <td style="font-size:12px;">${escapeHTML(texte(s, 'desc', 'description'))}</td>
       <td>
         <button onclick="marquerTraite('${s.id}')" style="padding:4px 8px;background:${s.traite ? '#9CA3AF' : '#009E60'};color:#fff;border:none;border-radius:5px;cursor:${s.traite ? 'default' : 'pointer'};font-size:11px;" ${s.traite ? 'disabled' : ''}>
           ${s.traite ? '✓ Traité' : 'Traiter'}
@@ -865,11 +879,11 @@ function loadMessages() {
     const msg = texte(m, 'msg', 'message');
     return `
       <tr style="${m.lu ? '' : 'font-weight:600;'}">
-        <td style="font-size:12px;">${formaterDate(champ(m, 'dateCreation', 'date'))}</td>
-        <td>${texte(m, 'nom')}</td>
-        <td>${texte(m, 'tel')}</td>
-        <td>${texte(m, 'sujet')}</td>
-        <td style="font-size:12px;max-width:200px;">${String(msg).substring(0, 50)}${msg.length > 50 ? '...' : ''}</td>
+        <td style="font-size:12px;">${escapeHTML(formaterDate(champ(m, 'dateCreation', 'date')))}</td>
+        <td>${escapeHTML(texte(m, 'nom'))}</td>
+        <td>${escapeHTML(texte(m, 'tel'))}</td>
+        <td>${escapeHTML(texte(m, 'sujet'))}</td>
+        <td style="font-size:12px;max-width:200px;">${escapeHTML(String(msg).substring(0, 50) + (msg.length > 50 ? '...' : ''))}</td>
         <td><button onclick="lireMessage('${m.id}')" style="padding:4px 8px;background:#3A75C4;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">Lire</button></td>
       </tr>
     `;

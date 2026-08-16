@@ -12,7 +12,7 @@ import { getProfil } from "./auth.js";
 import {
   COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, getIconeType, formatPrix,
   ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
-  EQUIPEMENTS, PALIERS_PIECES
+  EQUIPEMENTS, PALIERS_PIECES, escapeHTML
 } from "./malaga-reference.js";
 import { estFavori, toggleFavori } from "./nav.js";
 
@@ -330,14 +330,14 @@ function rendreListe(liste) {
     const photo = a.photos && a.photos[0];
     carte.innerHTML = `
       <div class="visuel">
-        ${photo ? `<img src="${photo}" alt="${a.titre}" loading="lazy">` : getIconeType(a.type)}
+        ${photo ? `<img src="${escapeHTML(photo)}" alt="${escapeHTML(a.titre)}" loading="lazy">` : getIconeType(a.type)}
         <button class="btn-favori ${estFavori(a.id) ? "actif" : ""}" data-id="${a.id}" aria-label="Ajouter aux favoris">${estFavori(a.id) ? "❤️" : "🤍"}</button>
         <span class="badge badge-disponible" style="position:absolute;top:8px;right:8px;">🟢 Disponible</span>
       </div>
       <div class="carte-info">
-        <h3>${a.titre}<span class="type-tag">${a.type || ""}</span></h3>
+        <h3>${escapeHTML(a.titre)}<span class="type-tag">${escapeHTML(a.type || "")}</span></h3>
         <div class="prix">${formatPrix(a.prix)}</div>
-        <div class="localisation">📍 ${a.quartier || ""}${a.quartier ? " — " : ""}${a.arrondissement || ""}, ${a.commune || ""}</div>
+        <div class="localisation">📍 ${escapeHTML(a.quartier || "")}${a.quartier ? " — " : ""}${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
       </div>
     `;
     carte.querySelector(".btn-favori").onclick = (e) => {
@@ -364,9 +364,9 @@ function rendreMarqueurs(liste) {
     const marker = L.marker([a.lat, a.lng], { icon: iconMarqueur(a) }).addTo(map);
     marker.bindPopup(`
       <div class="popup-annonce">
-        <h4>${a.titre}</h4>
+        <h4>${escapeHTML(a.titre)}</h4>
         <div class="prix">${formatPrix(a.prix)}</div>
-        <div style="font-size:11px;color:#888;">📍 ${a.quartier || ""} — ${a.arrondissement || ""}, ${a.commune || ""}</div>
+        <div style="font-size:11px;color:#888;">📍 ${escapeHTML(a.quartier || "")} — ${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
       </div>
     `);
     marker.on("click", () => afficherDetail(a));
@@ -396,16 +396,16 @@ function afficherDetail(a) {
     <div style="background:linear-gradient(135deg,var(--vert) 0%,var(--vert-fonce) 100%);padding:24px 20px;color:#fff;position:relative;">
       <button id="fermerModal" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.25);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
       <div style="font-size:44px;margin-bottom:6px;">${getIconeType(a.type)}</div>
-      <h2 style="font-size:18px;font-weight:800;padding-right:36px;">${a.titre}</h2>
+      <h2 style="font-size:18px;font-weight:800;padding-right:36px;">${escapeHTML(a.titre)}</h2>
       <div style="font-size:21px;font-weight:900;color:var(--jaune);margin-top:4px;">${formatPrix(a.prix)}</div>
-      <div style="opacity:.9;font-size:13px;margin-top:2px;">📍 ${a.quartier || ""} — ${a.arrondissement || ""}, ${a.commune || ""}</div>
+      <div style="opacity:.9;font-size:13px;margin-top:2px;">📍 ${escapeHTML(a.quartier || "")} — ${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
     </div>
     <div style="padding:20px;">
       ${a.photos && a.photos.length ? `
         <div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;">
-          ${a.photos.map(p => `<img src="${p}" style="height:130px;border-radius:10px;flex-shrink:0;">`).join("")}
+          ${a.photos.map(p => `<img src="${escapeHTML(p)}" style="height:130px;border-radius:10px;flex-shrink:0;">`).join("")}
         </div>` : ""}
-      ${a.video ? `<video src="${a.video}" controls style="width:100%;border-radius:10px;margin-bottom:16px;"></video>` : ""}
+      ${a.video ? `<video src="${escapeHTML(a.video)}" controls style="width:100%;border-radius:10px;margin-bottom:16px;"></video>` : ""}
 
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
         ${a.chambres ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">🛏️ ${a.chambres}</div><div style="font-size:11px;color:#666;">Chambres</div></div>` : ""}
@@ -416,27 +416,27 @@ function afficherDetail(a) {
 
       <div style="margin-bottom:16px;">
         <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">Description</h3>
-        <p style="font-size:13px;color:#666;">${a.description || "Aucune description."}</p>
+        <p style="font-size:13px;color:#666;">${escapeHTML(a.description || "Aucune description.")}</p>
       </div>
 
       <div style="margin-bottom:16px;font-size:13px;color:#444;line-height:1.9;">
-        ${a.cloture ? "✓ Clôturé &nbsp;" : ""}${a.eau ? `✓ Eau : ${a.eau} &nbsp;` : ""}${a.electricite ? `✓ Électricité : ${a.electricite}` : ""}
-        ${a.compteur ? `<br>✓ Compteur ${a.compteur}` : ""}
-        ${a.etat ? `<br>✓ État du bâtiment : ${a.etat}` : ""}
-        ${a.materiau ? `<br>✓ Matériau : ${a.materiau}` : ""}
-        ${a.couleurMurale ? ` &nbsp;✓ Peinture murale : ${a.couleurMurale}` : ""}
-        ${a.cuisineType ? `<br>✓ Cuisine ${a.cuisineType.toLowerCase()}` : ""}
-        ${a.doucheType ? ` &nbsp;✓ Douche ${a.doucheType.toLowerCase()}` : ""}
+        ${a.cloture ? "✓ Clôturé &nbsp;" : ""}${a.eau ? `✓ Eau : ${escapeHTML(a.eau)} &nbsp;` : ""}${a.electricite ? `✓ Électricité : ${escapeHTML(a.electricite)}` : ""}
+        ${a.compteur ? `<br>✓ Compteur ${escapeHTML(a.compteur)}` : ""}
+        ${a.etat ? `<br>✓ État du bâtiment : ${escapeHTML(a.etat)}` : ""}
+        ${a.materiau ? `<br>✓ Matériau : ${escapeHTML(a.materiau)}` : ""}
+        ${a.couleurMurale ? ` &nbsp;✓ Peinture murale : ${escapeHTML(a.couleurMurale)}` : ""}
+        ${a.cuisineType ? `<br>✓ Cuisine ${escapeHTML(a.cuisineType.toLowerCase())}` : ""}
+        ${a.doucheType ? ` &nbsp;✓ Douche ${escapeHTML(a.doucheType.toLowerCase())}` : ""}
         ${a.terrasse ? "<br>✓ Terrasse" : ""}${a.carreaux ? " &nbsp;✓ Sol carrelé" : ""}
-        ${a.zoneCaractere ? `<br>✓ Zone : ${a.zoneCaractere}` : ""}
-        ${a.pointRepere ? `<br>✓ Repère : ${a.pointRepere}` : ""}
+        ${a.zoneCaractere ? `<br>✓ Zone : ${escapeHTML(a.zoneCaractere)}` : ""}
+        ${a.pointRepere ? `<br>✓ Repère : ${escapeHTML(a.pointRepere)}` : ""}
       </div>
 
       ${a.equipements && a.equipements.length ? `
         <div style="margin-bottom:16px;">
           <h3 style="font-size:14px;font-weight:700;margin-bottom:8px;">Équipements</h3>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            ${a.equipements.map(e => `<span style="background:#E8F5EE;color:var(--vert);padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">✓ ${e}</span>`).join("")}
+            ${a.equipements.map(e => `<span style="background:#E8F5EE;color:var(--vert);padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">✓ ${escapeHTML(e)}</span>`).join("")}
           </div>
         </div>` : ""}
 
@@ -444,11 +444,11 @@ function afficherDetail(a) {
 
       <div style="background:#f5f5f5;padding:16px;border-radius:12px;">
         <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;">Contacter le propriétaire</h3>
-        <div style="font-size:13px;margin-bottom:10px;"><strong>${a.proprietaireNom || ""}</strong></div>
+        <div style="font-size:13px;margin-bottom:10px;"><strong>${escapeHTML(a.proprietaireNom || "")}</strong></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${numeroWhatsApp ? `<a href="https://wa.me/${numeroWhatsApp}?text=${texteWhatsAppContact}" target="_blank" class="btn btn-vert">💬 WhatsApp</a>` : ""}
-          ${a.proprietaireTel ? `<a href="tel:${a.proprietaireTel}" class="btn btn-bleu">📞 Appeler</a>` : ""}
-          ${a.proprietaireEmail ? `<a href="mailto:${a.proprietaireEmail}" class="btn btn-outline">✉️ Email</a>` : ""}
+          ${a.proprietaireTel ? `<a href="tel:${escapeHTML(a.proprietaireTel)}" class="btn btn-bleu">📞 Appeler</a>` : ""}
+          ${a.proprietaireEmail ? `<a href="mailto:${escapeHTML(a.proprietaireEmail)}" class="btn btn-outline">✉️ Email</a>` : ""}
         </div>
       </div>
     </div>

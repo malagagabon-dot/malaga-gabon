@@ -6,6 +6,7 @@
 
 import { auth, onAuthStateChanged, signOut } from "./firebase-config.js";
 import { getProfil } from "./auth.js";
+import { escapeHTML } from "./malaga-reference.js";
 
 /* ══════════ FAVORIS (stockage local) ══════════ */
 const CLE_FAVORIS = "malaga_favoris";
@@ -87,7 +88,7 @@ function initAuthUI() {
     const nom = profil?.nom || "Mon compte";
     if (avatar) {
       if (profil?.photoURL) {
-        avatar.innerHTML = `<img src="${profil.photoURL}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        avatar.innerHTML = `<img src="${escapeHTML(profil.photoURL)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
         avatar.classList.remove("avatar-initiales");
       } else {
         avatar.textContent = initiales(nom);

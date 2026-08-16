@@ -225,7 +225,7 @@
     import { auth, db, doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, serverTimestamp } from "./firebase-config.js";
     import { protegerPage, majProfil, deconnecter } from "./auth.js";
     import { getFavoris } from "./nav.js";
-    import { getIconeType, formatPrix } from "./malaga-reference.js";
+    import { getIconeType, formatPrix, escapeHTML } from "./malaga-reference.js";
 
     // --- Cloudinary (même configuration que connexion.html / publier.html) ---
     const CLOUDINARY_CLOUD_NAME = "enpphgwu";
@@ -281,10 +281,10 @@
       const p = profilCourant;
       document.getElementById("profilNom").textContent = p.nom || "Utilisateur MALAGA";
       document.getElementById("profilRole").textContent = p.role === "proprietaire" ? "🏠 Propriétaire" : "🔍 Chercheur de logement";
-      document.getElementById("profilContact").innerHTML = `📞 ${p.tel || "—"} &nbsp;·&nbsp; ✉️ ${p.email || ""}`;
+      document.getElementById("profilContact").innerHTML = `📞 ${escapeHTML(p.tel || "—")} &nbsp;·&nbsp; ✉️ ${escapeHTML(p.email || "")}`;
 
       const avatar = document.getElementById("profilAvatar");
-      avatar.innerHTML = p.photoURL ? `<img src="${p.photoURL}" alt="">` : initiales(p.nom);
+      avatar.innerHTML = p.photoURL ? `<img src="${escapeHTML(p.photoURL)}" alt="">` : initiales(p.nom);
 
       document.getElementById("sectionProprio").style.display = p.role === "proprietaire" ? "block" : "none";
       document.getElementById("statAnnoncesWrap").style.display = p.role === "proprietaire" ? "block" : "none";
@@ -297,7 +297,7 @@
       document.getElementById("editNom").value = p.nom || "";
       document.getElementById("editTel").value = p.tel || "";
       document.getElementById("editEmail").value = p.email || "";
-      document.getElementById("apercuPhoto").innerHTML = p.photoURL ? `<img src="${p.photoURL}" alt="">` : initiales(p.nom);
+      document.getElementById("apercuPhoto").innerHTML = p.photoURL ? `<img src="${escapeHTML(p.photoURL)}" alt="">` : initiales(p.nom);
     }
 
     async function chargerNbAnnonces() {
@@ -331,12 +331,12 @@
       }
 
       container.innerHTML = annonces.map(a => `
-        <div class="mini-carte" data-whatsapp="${a.whatsapp || ""}" data-titre="${a.titre || ""}">
-          <div class="img">${a.photos?.[0] ? `<img src="${a.photos[0]}" alt="">` : getIconeType(a.type)}</div>
+        <div class="mini-carte" data-whatsapp="${escapeHTML(a.whatsapp || "")}" data-titre="${escapeHTML(a.titre || "")}">
+          <div class="img">${a.photos?.[0] ? `<img src="${escapeHTML(a.photos[0])}" alt="">` : getIconeType(a.type)}</div>
           <div class="corps">
-            <h4>${a.titre || "Annonce"}</h4>
+            <h4>${escapeHTML(a.titre || "Annonce")}</h4>
             <div class="prix">${formatPrix(a.prix)}</div>
-            <div class="meta">📍 ${a.quartier || ""}${a.commune ? ", " + a.commune : ""} · ${a.statut === "disponible" ? "🟢 Disponible" : "🔴 Occupé"}</div>
+            <div class="meta">📍 ${escapeHTML(a.quartier || "")}${a.commune ? ", " + escapeHTML(a.commune) : ""} · ${a.statut === "disponible" ? "🟢 Disponible" : "🔴 Occupé"}</div>
           </div>
         </div>
       `).join("");
@@ -394,13 +394,13 @@
         <div class="rdv-carte">
           <div class="rdv-haut">
             <div>
-              <div class="rdv-titre">${d.annonceTitre || "Annonce"}</div>
-              <div class="rdv-date">${tempsEcoule(d.dateCreation)}</div>
+              <div class="rdv-titre">${escapeHTML(d.annonceTitre || "Annonce")}</div>
+              <div class="rdv-date">${escapeHTML(tempsEcoule(d.dateCreation))}</div>
             </div>
-            <span class="badge-rdv ${d.statut}">${LABEL_STATUT[d.statut] || d.statut}</span>
+            <span class="badge-rdv ${d.statut}">${escapeHTML(LABEL_STATUT[d.statut] || d.statut)}</span>
           </div>
           ${d.dateSouhaitee ? `<div class="rdv-detail">📅 Créneau demandé : ${new Date(`${d.dateSouhaitee}T${d.heureSouhaitee || "00:00"}`).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</div>` : ""}
-          ${d.message ? `<div class="rdv-detail">📝 ${d.message}</div>` : ""}
+          ${d.message ? `<div class="rdv-detail">📝 ${escapeHTML(d.message)}</div>` : ""}
         </div>
       `).join("");
     }
@@ -457,12 +457,12 @@
         <div class="rdv-carte" id="demande-${d.id}" style="${d.id === idCible ? "outline:2px solid var(--jaune);" : ""}">
           <div class="rdv-haut">
             <div>
-              <div class="rdv-titre">${d.annonceTitre || "Annonce"}</div>
-              <div class="rdv-date">${d.chercheurNom || "Un chercheur"} · ${formatDateHeure(d.dateSouhaitee, d.heureSouhaitee)}</div>
+              <div class="rdv-titre">${escapeHTML(d.annonceTitre || "Annonce")}</div>
+              <div class="rdv-date">${escapeHTML(d.chercheurNom || "Un chercheur")} · ${formatDateHeure(d.dateSouhaitee, d.heureSouhaitee)}</div>
             </div>
-            <span class="badge-rdv ${d.statut}">${LABEL_STATUT[d.statut] || d.statut}</span>
+            <span class="badge-rdv ${d.statut}">${escapeHTML(LABEL_STATUT[d.statut] || d.statut)}</span>
           </div>
-          ${d.message ? `<div class="rdv-detail">📝 ${d.message}</div>` : ""}
+          ${d.message ? `<div class="rdv-detail">📝 ${escapeHTML(d.message)}</div>` : ""}
           ${enAttente ? `
             <div style="display:flex;gap:8px;margin-top:10px;">
               <button type="button" class="btn btn-vert" style="flex:1;padding:8px;font-size:12.5px;" data-action="confirmee" data-id="${d.id}">✅ Accepter</button>

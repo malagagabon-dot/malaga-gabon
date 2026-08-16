@@ -152,19 +152,19 @@ function carteReservationHTML(d) {
     <div style="border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.75rem;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:.5rem;">
         <div>
-          <div style="font-weight:700;font-size:.95rem;">${d.annonceTitre || 'Annonce'}</div>
-          <div style="font-size:.78rem;color:var(--text-3);">${tempsEcouleRes(d.dateCreation)}</div>
+          <div style="font-weight:700;font-size:.95rem;">${escapeHTML(d.annonceTitre || 'Annonce')}</div>
+          <div style="font-size:.78rem;color:var(--text-3);">${escapeHTML(tempsEcouleRes(d.dateCreation))}</div>
         </div>
-        <span class="badge ${BADGE_STATUT[d.statut]}">${LABEL_STATUT[d.statut]}</span>
+        <span class="badge ${BADGE_STATUT[d.statut]}">${escapeHTML(LABEL_STATUT[d.statut])}</span>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem 1rem;background:var(--bg);border-radius:8px;padding:.75rem 1rem;margin-bottom:.75rem;font-size:.83rem;">
-        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Chercheur</div><strong>${d.chercheurNom || '—'}</strong></div>
-        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Téléphone</div><strong>${d.chercheurTel || '—'}</strong></div>
+        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Chercheur</div><strong>${escapeHTML(d.chercheurNom || '—')}</strong></div>
+        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Téléphone</div><strong>${escapeHTML(d.chercheurTel || '—')}</strong></div>
         <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Opérateur</div><strong>${operateurLabel}</strong></div>
         <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Montant envoyé</div><strong>${d.montant ? Number(d.montant).toLocaleString('fr-FR') + ' FCFA' : '—'}</strong></div>
-        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Numéro d'envoi</div><strong>${d.numeroEnvoi || '—'}</strong></div>
-        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Bien (ID)</div><strong>${d.annonceId || '—'}</strong></div>
+        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Numéro d'envoi</div><strong>${escapeHTML(d.numeroEnvoi || '—')}</strong></div>
+        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Bien (ID)</div><strong>${escapeHTML(d.annonceId || '—')}</strong></div>
       </div>
 
       <div style="display:flex;gap:.5rem;flex-wrap:wrap;">

@@ -153,3 +153,14 @@ export function getIconeType(type) {
 export function formatPrix(prix) {
   return Number(prix).toLocaleString("fr-FR") + " FCFA/mois";
 }
+
+/* ══════════ SÉCURITÉ : échappement HTML ══════════
+   Empêche l'injection de code (XSS) via des données saisies par les
+   utilisateurs (titre d'annonce, quartier, message...) puis affichées
+   avec innerHTML. À utiliser sur TOUTE valeur d'origine utilisateur
+   avant de l'insérer dans un template HTML. */
+export function escapeHTML(valeur) {
+  const div = document.createElement("div");
+  div.textContent = valeur === undefined || valeur === null ? "" : String(valeur);
+  return div.innerHTML;
+}
