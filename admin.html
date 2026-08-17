@@ -128,28 +128,28 @@
 
     <!-- KPI Cards -->
     <div class="kpi-grid">
-      <div class="kpi-card">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="allerVersKpi('annonces')" onkeydown="if(event.key==='Enter'){allerVersKpi('annonces')}">
         <div class="kpi-icon green">🏠</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiAnnonces">—</div>
           <div class="kpi-label">Annonces actives</div>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="allerVersKpi('utilisateurs')" onkeydown="if(event.key==='Enter'){allerVersKpi('utilisateurs')}">
         <div class="kpi-icon blue">👥</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiUsers">—</div>
           <div class="kpi-label">Utilisateurs</div>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="allerVersKpi('stats')" onkeydown="if(event.key==='Enter'){allerVersKpi('stats')}">
         <div class="kpi-icon yellow">👁️</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiVues">—</div>
           <div class="kpi-label">Vues totales</div>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="allerVersKpi('signalements')" onkeydown="if(event.key==='Enter'){allerVersKpi('signalements')}">
         <div class="kpi-icon red">🚨</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiSignal">—</div>
@@ -383,28 +383,28 @@
 
     <!-- KPI Cards -->
     <div class="kpi-grid">
-      <div class="kpi-card">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerEntreprisesParStatut('')" onkeydown="if(event.key==='Enter'){filtrerEntreprisesParStatut('')}">
         <div class="kpi-icon blue">🏢</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiEntreprisesTotal">—</div>
           <div class="kpi-label">Comptes professionnels</div>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerEntreprisesParStatut('attente')" onkeydown="if(event.key==='Enter'){filtrerEntreprisesParStatut('attente')}">
         <div class="kpi-icon yellow">⏳</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiEntreprisesAttente">—</div>
           <div class="kpi-label">En attente de vérification</div>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerEntreprisesParStatut('verifie')" onkeydown="if(event.key==='Enter'){filtrerEntreprisesParStatut('verifie')}">
         <div class="kpi-icon green">✅</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiEntreprisesVerifiees">—</div>
           <div class="kpi-label">Vérifiés</div>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerEntreprisesParStatut('suspendu')" onkeydown="if(event.key==='Enter'){filtrerEntreprisesParStatut('suspendu')}">
         <div class="kpi-icon red">⛔</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiEntreprisesSuspendues">—</div>
@@ -479,21 +479,21 @@
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi-card">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerReservationsParStatut('en_attente')" onkeydown="if(event.key==='Enter'){filtrerReservationsParStatut('en_attente')}">
         <div class="kpi-icon yellow">🟡</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiResAttente">0</div>
           <div class="kpi-label">En attente</div>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerReservationsParStatut('confirmee')" onkeydown="if(event.key==='Enter'){filtrerReservationsParStatut('confirmee')}">
         <div class="kpi-icon blue">🔵</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiResProgrammees">0</div>
           <div class="kpi-label">Visites programmées</div>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerReservationsParStatut('__aujourdhui__')" onkeydown="if(event.key==='Enter'){filtrerReservationsParStatut('__aujourdhui__')}">
         <div class="kpi-icon green">📅</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiResJour">0</div>

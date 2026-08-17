@@ -378,6 +378,41 @@ function showPage(pageId) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   TUILES KPI CLIQUABLES — redirection vers les données du décompte
+══════════════════════════════════════════════════════════ */
+function allerVersKpi(pageId) {
+  showPage(pageId);
+  // Petit scroll en haut de la page ciblée, utile sur mobile
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function filtrerEntreprisesParStatut(statut) {
+  showPage('entreprises');
+  const select = document.getElementById('filterStatutEntreprise');
+  if (select) {
+    select.value = statut;
+    filtrerEntreprises();
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function filtrerReservationsParStatut(statut) {
+  showPage('reservations');
+  const select = document.getElementById('filterResStatut');
+  if (select) {
+    // "__aujourdhui__" : pas de statut Firestore dédié, on affiche simplement
+    // la liste complète (déjà utilisée pour calculer le compteur du jour).
+    if (statut !== '__aujourdhui__') {
+      select.value = statut;
+    }
+    select.dispatchEvent(new Event('change'));
+  }
+  if (typeof filtrerReservations === 'function') filtrerReservations();
+  else if (window.chargerReservations) window.chargerReservations();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ══════════════════════════════════════════════════════════
    PUBLIER — mini-carte de géolocalisation (obligatoire)
    Initialisée à la demande (au premier affichage de la page)
    pour que Leaflet mesure correctement un conteneur visible.

@@ -310,6 +310,10 @@ body {
   transition: transform .2s;
 }
 .kpi-card:hover { transform: translateY(-2px); }
+.kpi-card.clickable { cursor: pointer; }
+.kpi-card.clickable:hover { box-shadow: 0 6px 18px rgba(0,0,0,.12); border-color: var(--primary, #009E60); }
+.kpi-card.clickable:active { transform: translateY(0); }
+.kpi-card.clickable:focus-visible { outline: 2px solid var(--primary, #009E60); outline-offset: 2px; }
 
 .kpi-icon {
   width: 48px; height: 48px;
