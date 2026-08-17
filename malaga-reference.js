@@ -93,13 +93,24 @@ export const CENTRES = {
 };
 
 export const TYPES_BIEN = [
-  "Maison", "Appartement", "Studio", "Chambre", "Villa", "Bureau", "Local commercial"
+  "Maison", "Appartement", "Studio", "Chambre", "Villa", "Bureau", "Local commercial", "Box"
 ];
 
 export const EQUIPEMENTS = [
   "Meublé", "Climatisé", "Clôturé", "Parking", "Jardin", "Piscine",
   "Fibre optique", "Groupe électrogène", "Forage", "Gardiennage", "Interphone"
 ];
+
+/* ═══════════════════════════════════════════════════════════
+   COMPTES PROFESSIONNELS (agences / entreprises)
+═══════════════════════════════════════════════════════════ */
+export const TYPES_ENTREPRISE = ["Agence immobilière", "Société privée"];
+
+export const STATUTS_ENTREPRISE = {
+  attente: { label: "⏳ En attente de vérification", badge: "badge-yellow" },
+  verifie: { label: "✅ Vérifié", badge: "badge-green" },
+  suspendu: { label: "⛔ Suspendu", badge: "badge-red" }
+};
 
 export const EAU_OPTIONS = ["SEEG (réseau)", "Forage", "Aucune"];
 export const ELECTRICITE_OPTIONS = ["SEEG (réseau)", "Groupe électrogène", "Aucune"];
@@ -145,7 +156,7 @@ export const LIBREVILLE_CENTER = { lat: 0.3924, lng: 9.4536 };
 export function getIconeType(type) {
   const icons = {
     Villa: "🏡", Appartement: "🏢", Studio: "🛏️", Maison: "🏠",
-    Chambre: "🚪", Bureau: "🏗️", "Local commercial": "🏪"
+    Chambre: "🚪", Bureau: "🏗️", "Local commercial": "🏪", Box: "📦"
   };
   return icons[type] || "🏠";
 }

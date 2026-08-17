@@ -276,8 +276,14 @@ function demarrerEcouteUtilisateurs() {
   window.dbAdmin.collection('users').onSnapshot((snap) => {
     usersData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     document.getElementById('badgeUsers').textContent = usersData.length;
+
+    const enAttente = usersData.filter(u => u.compteType === 'entreprise' && u.statutEntreprise === 'attente').length;
+    const badgeEnt = document.getElementById('badgeEntreprisesAttente');
+    if (badgeEnt) badgeEnt.textContent = enAttente;
+
     if (pageActuelle === 'dashboard') loadDashboard();
     if (pageActuelle === 'utilisateurs') filtrerUsers();
+    if (pageActuelle === 'entreprises') filtrerEntreprises();
   }, (err) => {
     console.error('Erreur de synchronisation des utilisateurs :', err);
     const tbody = document.getElementById('usersTableBody');
@@ -347,6 +353,7 @@ function showPage(pageId) {
     'dashboard': 'Tableau de bord',
     'annonces': 'Gestion des annonces',
     'utilisateurs': 'Utilisateurs',
+    'entreprises': '🏢 Comptes professionnels',
     'signalements': 'Signalements',
     'reservations': 'Demandes de visite',
     'messages': 'Messages',
@@ -358,6 +365,7 @@ function showPage(pageId) {
   if (pageId === 'dashboard') loadDashboard();
   else if (pageId === 'annonces') filtrerAnnonces();
   else if (pageId === 'utilisateurs') filtrerUsers();
+  else if (pageId === 'entreprises') filtrerEntreprises();
   else if (pageId === 'signalements') loadSignalements();
   else if (pageId === 'reservations' && window.chargerReservations) window.chargerReservations();
   else if (pageId === 'messages') loadMessages();
@@ -865,6 +873,137 @@ function supprimerUtilisateur(id) {
   };
   document.getElementById('modalConfirm').classList.remove('hidden');
 }
+
+/* ══════════════════════════════════════════════════════════
+   ENTREPRISES (comptes professionnels)
+   Dérivé de usersData (pas de nouvelle écoute Firestore requise) :
+   un compte professionnel est un document "users" avec compteType
+   === 'entreprise'. Le nombre de biens publiés est calculé depuis
+   annoncesData (proprietaireId === uid du compte entreprise).
+══════════════════════════════════════════════════════════ */
+const LABEL_STATUT_ENTREPRISE = {
+  attente: { texte: '⏳ En attente', classe: 'badge-yellow' },
+  verifie: { texte: '✅ Vérifié', classe: 'badge-green' },
+  suspendu: { texte: '⛔ Suspendu', classe: 'badge-red' }
+};
+
+function entreprisesData() {
+  return usersData.filter(u => u.compteType === 'entreprise');
+}
+
+function nbBiensEntreprise(uid) {
+  return annoncesData.filter(a => champ(a, 'proprietaireId') === uid).length;
+}
+
+function loadEntreprises(liste) {
+  const tbody = document.getElementById('entreprisesTableBody');
+  const data = liste || entreprisesData();
+
+  const tous = entreprisesData();
+  document.getElementById('kpiEntreprisesTotal').textContent = tous.length;
+  document.getElementById('kpiEntreprisesAttente').textContent = tous.filter(u => u.statutEntreprise === 'attente').length;
+  document.getElementById('kpiEntreprisesVerifiees').textContent = tous.filter(u => u.statutEntreprise === 'verifie').length;
+  document.getElementById('kpiEntreprisesSuspendues').textContent = tous.filter(u => u.statutEntreprise === 'suspendu').length;
+
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Aucun compte professionnel ne correspond</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(u => {
+    const statut = LABEL_STATUT_ENTREPRISE[u.statutEntreprise] || LABEL_STATUT_ENTREPRISE.attente;
+    const date = formaterDate(champ(u, 'dateCreation'));
+    const nbBiens = nbBiensEntreprise(u.id);
+
+    let actions = '';
+    if (typeof u.entrepriseLat === 'number' && typeof u.entrepriseLng === 'number') {
+      actions += `<a href="https://www.google.com/maps?q=${u.entrepriseLat},${u.entrepriseLng}" target="_blank" rel="noopener" style="padding:4px 8px;background:#3B82F6;color:#fff;border-radius:5px;font-size:11px;margin-right:4px;text-decoration:none;display:inline-block;">📍 Carte</a>`;
+    }
+    if (u.statutEntreprise !== 'verifie') {
+      actions += `<button onclick="verifierEntreprise('${u.id}')" style="padding:4px 8px;background:#009E60;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">✅ Vérifier</button>`;
+    }
+    if (u.statutEntreprise !== 'suspendu') {
+      actions += `<button onclick="suspendreEntreprise('${u.id}')" style="padding:4px 8px;background:#EF4444;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">⛔ Suspendre</button>`;
+    } else {
+      actions += `<button onclick="reactiverEntreprise('${u.id}')" style="padding:4px 8px;background:#3B82F6;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">↩️ Réactiver</button>`;
+    }
+
+    return `
+      <tr>
+        <td style="font-weight:700;display:flex;align-items:center;gap:8px;">
+          ${u.logoUrl ? `<img src="${escapeHTML(u.logoUrl)}" alt="" style="width:26px;height:26px;border-radius:6px;object-fit:cover;">` : '🏢'}
+          ${escapeHTML(texte(u, 'raisonSociale', 'nom'))}
+        </td>
+        <td>${escapeHTML(texte(u, 'typeEntreprise'))}</td>
+        <td>${escapeHTML(texte(u, 'entrepriseTel', 'tel'))}${u.entrepriseEmail ? '<br><span style="color:#888;font-size:11px;">' + escapeHTML(u.entrepriseEmail) + '</span>' : ''}</td>
+        <td style="text-align:center;font-weight:700;">${nbBiens}</td>
+        <td><span class="badge ${statut.classe}">${statut.texte}</span></td>
+        <td>${escapeHTML(date)}</td>
+        <td>${actions}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filtrerEntreprises() {
+  const texteRecherche = (document.getElementById('filterEntreprise')?.value || '').toLowerCase().trim();
+  const statut = document.getElementById('filterStatutEntreprise')?.value || '';
+
+  const filtres = entreprisesData().filter(u => {
+    const raison = String(texte(u, 'raisonSociale', 'nom')).toLowerCase();
+    const correspondTexte = !texteRecherche || raison.includes(texteRecherche);
+    const correspondStatut = !statut || u.statutEntreprise === statut;
+    return correspondTexte && correspondStatut;
+  });
+
+  loadEntreprises(filtres);
+}
+
+function verifierEntreprise(id) {
+  const u = usersData.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('modalTitle').textContent = 'Vérifier ce compte professionnel ?';
+  document.getElementById('modalMsg').textContent = `« ${texte(u, 'raisonSociale', 'nom')} » obtiendra le badge « 🏢 Professionnel vérifié » et son logo s'affichera sur ses annonces.`;
+  const btn = document.getElementById('modalConfirmBtn');
+  btn.textContent = 'Vérifier';
+  btn.onclick = () => {
+    window.dbAdmin.collection('users').doc(id).update({ statutEntreprise: 'verifie' })
+      .then(() => toast('✅ Compte professionnel vérifié'))
+      .catch((err) => { console.error(err); toast('❌ Erreur lors de la vérification'); });
+    fermerModal();
+  };
+  document.getElementById('modalConfirm').classList.remove('hidden');
+}
+
+function suspendreEntreprise(id) {
+  const u = usersData.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('modalTitle').textContent = 'Suspendre ce compte professionnel ?';
+  document.getElementById('modalMsg').textContent = `« ${texte(u, 'raisonSociale', 'nom')} » perdra son badge professionnel. Ses annonces restent visibles mais sans mise en avant.`;
+  const btn = document.getElementById('modalConfirmBtn');
+  btn.textContent = 'Suspendre';
+  btn.onclick = () => {
+    const motif = window.prompt('Motif de la suspension (optionnel, visible en interne uniquement) :', '') || '';
+    window.dbAdmin.collection('users').doc(id).update({ statutEntreprise: 'suspendu', motifSuspension: motif })
+      .then(() => toast('⛔ Compte professionnel suspendu'))
+      .catch((err) => { console.error(err); toast('❌ Erreur lors de la suspension'); });
+    fermerModal();
+  };
+  document.getElementById('modalConfirm').classList.remove('hidden');
+}
+
+function reactiverEntreprise(id) {
+  const u = usersData.find(x => x.id === id);
+  if (!u) return;
+  window.dbAdmin.collection('users').doc(id).update({ statutEntreprise: 'attente', motifSuspension: '' })
+    .then(() => toast('↩️ Compte réactivé — en attente de nouvelle vérification'))
+    .catch((err) => { console.error(err); toast('❌ Erreur lors de la réactivation'); });
+}
+
+window.filtrerEntreprises = filtrerEntreprises;
+window.verifierEntreprise = verifierEntreprise;
+window.suspendreEntreprise = suspendreEntreprise;
+window.reactiverEntreprise = reactiverEntreprise;
 
 function formaterDate(valeur) {
   if (!valeur) return '—';

@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#009E60">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     .champ-mdp-wrap{
       position:relative;
@@ -50,6 +51,29 @@
     .secteur-bloc{margin-bottom:16px;}
     .secteur-bloc .secteur-titre{font-size:12.5px;font-weight:700;color:#444;margin-bottom:6px;}
     .secteur-bloc .upload-zone{padding:14px;}
+
+    /* ===== Sous-choix Particulier / Agence-Entreprise ===== */
+    .compte-type-choix{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 18px;}
+    @media(max-width:480px){.compte-type-choix{grid-template-columns:1fr;}}
+    .compte-type-carte{border:1.5px solid var(--gris-bordure,#e2e8f0);border-radius:12px;padding:12px 14px;
+      cursor:pointer;text-align:center;transition:border-color .15s,background .15s;}
+    .compte-type-carte .icone{font-size:20px;margin-bottom:4px;}
+    .compte-type-carte .titre{font-size:13px;font-weight:700;}
+    .compte-type-carte .desc{font-size:11px;color:#888;margin-top:2px;}
+    .compte-type-carte.selectionne{border-color:var(--vert);background:rgba(0,158,96,.06);}
+
+    .champ-logo-edit{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+    .champ-logo-edit .apercu{width:64px;height:64px;border-radius:12px;background:var(--gris-fond,#f3f4f6);
+      display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0;
+      border:1.5px dashed var(--gris-bordure,#e2e8f0);}
+    .champ-logo-edit .apercu img{width:100%;height:100%;object-fit:cover;}
+
+    /* ===== Localisation du siège / bureaux ===== */
+    .geoloc-zone{border:1.5px solid var(--gris-bordure,#e2e8f0);border-radius:12px;padding:14px;margin-bottom:16px;}
+    .geoloc-statut{font-size:12px;font-weight:600;color:#888;margin-bottom:10px;}
+    .geoloc-statut.ok{color:var(--vert);}
+    .geoloc-carte{width:100%;height:200px;border-radius:10px;overflow:hidden;background:#eef2f0;margin-top:10px;display:none;}
+    .geoloc-hint{font-size:11px;color:#888;margin-top:8px;}
   </style>
 </head>
 <body>
@@ -161,6 +185,81 @@
           </div>
         </div>
 
+        <!-- ===== Sous-choix (uniquement pour un compte Propriétaire) : Particulier ou Agence/Entreprise ===== -->
+        <div id="compteTypeWrap" style="display:none;">
+          <label style="font-size:12.5px;font-weight:700;color:#444;display:block;margin-bottom:8px;">Vous publiez en tant que...</label>
+          <div class="compte-type-choix">
+            <div class="compte-type-carte" data-compte-type="particulier">
+              <div class="icone">🙍</div>
+              <div class="titre">Particulier</div>
+              <div class="desc">Je loue mon propre bien</div>
+            </div>
+            <div class="compte-type-carte" data-compte-type="entreprise">
+              <div class="icone">🏢</div>
+              <div class="titre">Agence / Entreprise</div>
+              <div class="desc">Je gère un catalogue de biens</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Champs additionnels : profil Agence / Entreprise ===== -->
+        <div id="entrepriseExtra" style="display:none;">
+          <h3 style="font-size:14px;margin:0 0 10px;color:var(--vert);">🏢 Profil de votre agence / entreprise</h3>
+
+          <div class="champ-logo-edit">
+            <div class="apercu" id="apercuLogo">🏢</div>
+            <div>
+              <input type="file" id="inputLogo" accept="image/*" hidden>
+              <button type="button" class="btn btn-outline" id="btnChoisirLogo" style="padding:8px 14px;font-size:12.5px;">📷 Ajouter le logo</button>
+            </div>
+          </div>
+
+          <div class="champ">
+            <label>Raison sociale *</label>
+            <input type="text" id="entRaisonSociale" placeholder="Ex : Gabon Immo Services">
+          </div>
+          <div class="champ">
+            <label>Slogan</label>
+            <input type="text" id="entSlogan" placeholder="Ex : Votre partenaire immobilier de confiance">
+          </div>
+          <div class="champ">
+            <label>Type de structure *</label>
+            <select id="entType">
+              <option value="Agence immobilière">Agence immobilière</option>
+              <option value="Société privée">Société privée</option>
+            </select>
+          </div>
+          <div class="grille-2">
+            <div class="champ">
+              <label>Téléphone du service commercial *</label>
+              <input type="tel" id="entTel" placeholder="+241 XX XX XX XX">
+            </div>
+            <div class="champ">
+              <label>Email du service commercial</label>
+              <input type="email" id="entEmail" placeholder="contact@entreprise.ga">
+            </div>
+          </div>
+          <div class="champ">
+            <label>Adresse du service commercial</label>
+            <input type="text" id="entAdresse" placeholder="Ex : Immeuble X, Centre-ville, Libreville">
+          </div>
+
+          <div class="champ">
+            <label>📍 Localisation du siège / bureaux *</label>
+            <div class="geoloc-zone">
+              <div class="geoloc-statut" id="geolocStatut">Aucune localisation enregistrée</div>
+              <button type="button" class="btn btn-outline" id="btnGeolocaliser" style="width:100%;">🛰️ Utiliser ma position GPS actuelle</button>
+              <div class="geoloc-carte" id="geolocCarte"></div>
+              <p class="geoloc-hint">Une fois localisé, vous pouvez affiner en glissant le repère sur la carte. Cette position sera visible publiquement pour permettre aux visiteurs de venir jusqu'à vos bureaux (Google Maps, itinéraire, WhatsApp).</p>
+            </div>
+          </div>
+
+          <p class="sous-titre" style="margin-top:-6px;">
+            ℹ️ Votre compte entreprise sera visible dès la publication de vos annonces. Le badge
+            « 🏢 Professionnel vérifié » et votre logo s'afficheront une fois votre profil validé par l'équipe MALAGA.
+          </p>
+        </div>
+
         <div class="champ">
           <label>Nom complet</label>
           <input type="text" id="inscriptionNom" required placeholder="Ex : Jean Mbadinga">
@@ -270,12 +369,13 @@
     <p>📞 +241 60 14 19 24 &nbsp;|&nbsp; ✉️ malagagabon@gmail.com</p>
   </footer>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module">
     import { auth, onAuthStateChanged, db, doc, collection, setDoc, serverTimestamp } from "./firebase-config.js";
     import { inscrire, connecter, messageErreurAuth, getProfil, reinitialiserMotDePasse } from "./auth.js";
     import {
       COMMUNES, ARRONDISSEMENTS, getQuartiers, TYPES_BIEN, EQUIPEMENTS,
-      CUISINE_TYPES, DOUCHE_TYPES
+      CUISINE_TYPES, DOUCHE_TYPES, LIBREVILLE_CENTER
     } from "./malaga-reference.js";
 
     // --- Cloudinary (même configuration que publier.html) ---
@@ -316,6 +416,69 @@
     ];
     const photosParSecteur = {};
     SECTEURS.forEach(s => photosParSecteur[s.id] = []);
+
+    // --- Logo entreprise (upload Cloudinary, même pipeline que les photos d'annonces) ---
+    let logoFichier = null;
+    let logoUrlEnAttente = "";
+    document.getElementById("btnChoisirLogo").onclick = () => document.getElementById("inputLogo").click();
+    document.getElementById("inputLogo").addEventListener("change", (e) => {
+      const fichier = e.target.files[0];
+      if (!fichier) return;
+      logoFichier = fichier;
+      const lecteur = new FileReader();
+      lecteur.onload = (ev) => { document.getElementById("apercuLogo").innerHTML = `<img src="${ev.target.result}" alt="">`; };
+      lecteur.readAsDataURL(fichier);
+    });
+
+    // --- Localisation du siège / bureaux (GPS + carte Leaflet avec repère déplaçable) ---
+    let geolocLat = null, geolocLng = null;
+    let geolocCarteLeaflet = null, geolocMarqueur = null;
+    const geolocStatutEl = document.getElementById("geolocStatut");
+    const geolocCarteEl = document.getElementById("geolocCarte");
+
+    function afficherGeoloc(lat, lng) {
+      geolocLat = lat; geolocLng = lng;
+      geolocStatutEl.textContent = `✅ Position enregistrée : ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      geolocStatutEl.classList.add("ok");
+      geolocCarteEl.style.display = "block";
+
+      if (!geolocCarteLeaflet) {
+        geolocCarteLeaflet = L.map(geolocCarteEl).setView([lat, lng], 15);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap" }).addTo(geolocCarteLeaflet);
+        geolocMarqueur = L.marker([lat, lng], { draggable: true }).addTo(geolocCarteLeaflet);
+        geolocMarqueur.on("dragend", () => {
+          const pos = geolocMarqueur.getLatLng();
+          geolocLat = pos.lat; geolocLng = pos.lng;
+          geolocStatutEl.textContent = `✅ Position enregistrée : ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
+        });
+        geolocCarteLeaflet.on("click", (e) => {
+          geolocLat = e.latlng.lat; geolocLng = e.latlng.lng;
+          geolocMarqueur.setLatLng(e.latlng);
+          geolocStatutEl.textContent = `✅ Position enregistrée : ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+        });
+        setTimeout(() => geolocCarteLeaflet.invalidateSize(), 150);
+      } else {
+        geolocCarteLeaflet.setView([lat, lng], 15);
+        geolocMarqueur.setLatLng([lat, lng]);
+        geolocCarteLeaflet.invalidateSize();
+      }
+    }
+
+    document.getElementById("btnGeolocaliser").addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        geolocStatutEl.textContent = "❌ La géolocalisation n'est pas disponible sur cet appareil.";
+        return;
+      }
+      geolocStatutEl.textContent = "📡 Localisation en cours…";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => afficherGeoloc(pos.coords.latitude, pos.coords.longitude),
+        () => {
+          geolocStatutEl.textContent = "❌ Position refusée ou indisponible. Cliquez directement sur la carte ci-dessous pour placer votre siège.";
+          if (!geolocCarteLeaflet) afficherGeoloc(LIBREVILLE_CENTER.lat, LIBREVILLE_CENTER.lng);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
 
     const conteneurSecteurs = document.getElementById("secteursPhotos");
     conteneurSecteurs.innerHTML = SECTEURS.map(s => `
@@ -458,10 +621,16 @@
     const proprioToggleWrap = document.getElementById("proprioTogglePublier");
     const proprioExtra = document.getElementById("proprioExtra");
     const publierMaintenant = document.getElementById("publierMaintenant");
+    const compteTypeWrap = document.getElementById("compteTypeWrap");
+    const entrepriseExtra = document.getElementById("entrepriseExtra");
+    let compteTypeChoisi = "particulier";
+
     function rafraichirBlocProprio() {
       const estProprio = roleChoisi === "proprietaire";
       proprioToggleWrap.style.display = estProprio ? "block" : "none";
       proprioExtra.style.display = (estProprio && publierMaintenant.checked) ? "block" : "none";
+      compteTypeWrap.style.display = estProprio ? "block" : "none";
+      entrepriseExtra.style.display = (estProprio && compteTypeChoisi === "entreprise") ? "block" : "none";
     }
     publierMaintenant.addEventListener("change", rafraichirBlocProprio);
 
@@ -474,6 +643,17 @@
       });
     });
     document.querySelector(`.role-carte[data-role="${roleChoisi}"]`).classList.add("selectionne");
+
+    document.querySelectorAll(".compte-type-carte").forEach(carte => {
+      carte.addEventListener("click", () => {
+        document.querySelectorAll(".compte-type-carte").forEach(c => c.classList.remove("selectionne"));
+        carte.classList.add("selectionne");
+        compteTypeChoisi = carte.dataset.compteType;
+        rafraichirBlocProprio();
+      });
+    });
+    document.querySelector('.compte-type-carte[data-compte-type="particulier"]').classList.add("selectionne");
+
     rafraichirBlocProprio();
 
     // Connexion
@@ -502,6 +682,24 @@
       erreurMsg.classList.remove("visible");
       const btn = document.getElementById("btnInscription");
 
+      // Compte Agence/Entreprise : valider les champs obligatoires du profil pro
+      const estEntreprise = roleChoisi === "proprietaire" && compteTypeChoisi === "entreprise";
+      if (estEntreprise) {
+        const champsEntrepriseManquants =
+          !document.getElementById("entRaisonSociale").value.trim() ||
+          !document.getElementById("entTel").value.trim();
+        if (champsEntrepriseManquants) {
+          erreurMsg.textContent = "Complétez la raison sociale et le téléphone du service commercial de votre entreprise.";
+          erreurMsg.classList.add("visible");
+          return;
+        }
+        if (geolocLat === null || geolocLng === null) {
+          erreurMsg.textContent = "Indiquez la localisation de votre siège / bureaux (bouton GPS ou clic sur la carte).";
+          erreurMsg.classList.add("visible");
+          return;
+        }
+      }
+
       // Compte Propriétaire complet : valider le bien avant de créer le compte
       const publieUnBien = roleChoisi === "proprietaire" && publierMaintenant.checked;
       if (publieUnBien) {
@@ -525,12 +723,31 @@
 
       btn.disabled = true; btn.textContent = "Création du compte…";
       try {
+        if (estEntreprise && logoFichier) {
+          btn.textContent = "Envoi du logo…";
+          const logoOptimise = await compresserImage(logoFichier, 600, 0.88);
+          logoUrlEnAttente = await uploaderVersCloudinary(logoOptimise);
+        }
+
+        btn.textContent = "Création du compte…";
         const user = await inscrire({
           nom: document.getElementById("inscriptionNom").value.trim(),
           tel: document.getElementById("inscriptionTel").value.trim(),
           email: document.getElementById("inscriptionEmail").value.trim(),
           motDePasse: document.getElementById("inscriptionMdp").value,
-          role: roleChoisi
+          role: roleChoisi,
+          compteType: estEntreprise ? "entreprise" : "particulier",
+          entreprise: estEntreprise ? {
+            raisonSociale: document.getElementById("entRaisonSociale").value.trim(),
+            slogan: document.getElementById("entSlogan").value.trim(),
+            typeEntreprise: document.getElementById("entType").value,
+            entrepriseTel: document.getElementById("entTel").value.trim(),
+            entrepriseEmail: document.getElementById("entEmail").value.trim(),
+            entrepriseAdresse: document.getElementById("entAdresse").value.trim(),
+            entrepriseLat: geolocLat,
+            entrepriseLng: geolocLng,
+            logoUrl: logoUrlEnAttente
+          } : undefined
         });
 
         if (publieUnBien) {

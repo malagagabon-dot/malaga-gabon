@@ -69,6 +69,10 @@
       <span class="nav-icon">👥</span> Utilisateurs
       <span class="nav-badge" id="badgeUsers">0</span>
     </a>
+    <a class="nav-item" onclick="showPage('entreprises')" data-page="entreprises">
+      <span class="nav-icon">🏢</span> Entreprises
+      <span class="nav-badge danger" id="badgeEntreprisesAttente">0</span>
+    </a>
     <a class="nav-item" onclick="showPage('signalements')" data-page="signalements">
       <span class="nav-icon">🚨</span> Signalements
       <span class="nav-badge danger" id="badgeSignal">0</span>
@@ -363,6 +367,77 @@
           </thead>
           <tbody id="usersTableBody">
             <tr><td colspan="6" class="table-empty">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE : ENTREPRISES ═══ -->
+  <div class="page" id="page-entreprises">
+    <div class="page-header">
+      <h1>🏢 Comptes professionnels</h1>
+      <p>Agences et entreprises inscrites — vérification et suivi de leur catalogue</p>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon blue">🏢</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiEntreprisesTotal">—</div>
+          <div class="kpi-label">Comptes professionnels</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon yellow">⏳</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiEntreprisesAttente">—</div>
+          <div class="kpi-label">En attente de vérification</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon green">✅</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiEntreprisesVerifiees">—</div>
+          <div class="kpi-label">Vérifiés</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon red">⛔</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiEntreprisesSuspendues">—</div>
+          <div class="kpi-label">Suspendus</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <input type="text" class="filter-input" id="filterEntreprise" placeholder="🔍 Rechercher une entreprise..." oninput="filtrerEntreprises()" />
+      <select class="filter-select" id="filterStatutEntreprise" onchange="filtrerEntreprises()">
+        <option value="">Tous les statuts</option>
+        <option value="attente">⏳ En attente</option>
+        <option value="verifie">✅ Vérifié</option>
+        <option value="suspendu">⛔ Suspendu</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Entreprise</th>
+              <th>Type</th>
+              <th>Contact commercial</th>
+              <th>Biens publiés</th>
+              <th>Statut</th>
+              <th>Inscrit le</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="entreprisesTableBody">
+            <tr><td colspan="7" class="table-empty">Chargement...</td></tr>
           </tbody>
         </table>
       </div>
