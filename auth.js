@@ -42,9 +42,15 @@ export async function deconnecter() {
   await signOut(auth);
 }
 
-/* ══════════ RÉINITIALISATION DU MOT DE PASSE ══════════ */
+/* ══════════ RÉINITIALISATION DU MOT DE PASSE ══════════
+   L'URL personnalisée est indiquée ici, directement dans le code — elle
+   s'applique à chaque envoi, sans dépendre du réglage "Personnaliser
+   l'URL d'action" de la console Firebase (qui peut échouer selon les
+   comptes/domaines). */
+const URL_REINITIALISATION = "https://malagagabon-dot.github.io/malaga-gabon/reinitialiser.html";
+
 export async function reinitialiserMotDePasse(email) {
-  await sendPasswordResetEmail(auth, email);
+  await sendPasswordResetEmail(auth, email, { url: URL_REINITIALISATION });
 }
 
 /* ══════════ MESSAGES D'ERREUR AUTH (en français) ══════════ */
