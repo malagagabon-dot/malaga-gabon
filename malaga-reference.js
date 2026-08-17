@@ -147,6 +147,26 @@ export const COULEURS_MURALES = [
 // Options binaires affichées en toggle Oui / Non / Indifférent (formulaires + filtre)
 export const OPTIONS_OUI_NON = ["Oui", "Non"];
 
+/* ═══════════════════════════════════════════════════════════
+   DÉTAILS ENRICHIS — repérage précis du logement
+   Utile surtout pour les agences/entreprises qui gèrent plusieurs
+   biens dans un même immeuble ou une même résidence (numéro de
+   villa/porte, étage, vue). Restent optionnels pour un particulier
+   qui loue un bien unique.
+═══════════════════════════════════════════════════════════ */
+
+// Vue depuis le logement — valorise les biens en hauteur ou bord de mer/forêt
+export const VUES = [
+  "Non précisé", "Vue mer", "Vue lagune", "Vue forêt", "Vue jardin",
+  "Vue sur la ville", "Vue dégagée", "Vue cour intérieure"
+];
+
+// Étage — jusqu'au 20e, avec rez-de-chaussée et sous-sol en options spéciales
+export const ETAGES = [
+  "Non précisé", "Rez-de-chaussée", "Sous-sol",
+  ...Array.from({ length: 20 }, (_, i) => `${i + 1}${i === 0 ? "er" : "e"} étage`)
+];
+
 // Paliers utilisés par les sélecteurs "au moins N" du filtre avancé (chambres, salons, douches)
 export const PALIERS_PIECES = [1, 2, 3, 4, 5];
 

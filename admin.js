@@ -86,6 +86,10 @@ function initListesReference() {
   remplir('modDoucheType', ref.DOUCHE_TYPES);
   remplir('modMateriau', ref.MATERIAUX);
   remplir('modCouleurMurale', ref.COULEURS_MURALES);
+  remplir('modEtage', ref.ETAGES);
+  remplir('modVue', ref.VUES);
+  remplir('pubEtage', ref.ETAGES);
+  remplir('pubVue', ref.VUES);
 
   // Filtres avancés (page Annonces)
   remplir('faaZone', ref.ZONES_CARACTERE, 'Indifférent');
@@ -370,6 +374,42 @@ function showPage(pageId) {
   else if (pageId === 'reservations' && window.chargerReservations) window.chargerReservations();
   else if (pageId === 'messages') loadMessages();
   else if (pageId === 'stats') loadStats();
+  else if (pageId === 'publier') initPubMiniMap();
+}
+
+/* ══════════════════════════════════════════════════════════
+   PUBLIER — mini-carte de géolocalisation (obligatoire)
+   Initialisée à la demande (au premier affichage de la page)
+   pour que Leaflet mesure correctement un conteneur visible.
+══════════════════════════════════════════════════════════ */
+let pubMiniMap = null;
+let pubMarqueur = null;
+function initPubMiniMap() {
+  if (!pubMiniMap && window.L) {
+    pubMiniMap = L.map('pubMiniMap').setView([0.3924, 9.4536], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(pubMiniMap);
+    pubMiniMap.on('click', (e) => placerPubMarqueur(e.latlng.lat, e.latlng.lng));
+    document.getElementById('pubBtnMaPosition')?.addEventListener('click', () => {
+      if (!navigator.geolocation) { alert("La géolocalisation n'est pas disponible sur cet appareil."); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => placerPubMarqueur(pos.coords.latitude, pos.coords.longitude),
+        () => alert('Impossible de récupérer la position. Placez le repère manuellement sur la carte.')
+      );
+    });
+  }
+  setTimeout(() => pubMiniMap?.invalidateSize(), 150);
+}
+function placerPubMarqueur(lat, lng) {
+  if (pubMarqueur) pubMiniMap.removeLayer(pubMarqueur);
+  pubMarqueur = L.marker([lat, lng], { draggable: true }).addTo(pubMiniMap);
+  pubMarqueur.on('dragend', () => {
+    const p = pubMarqueur.getLatLng();
+    document.getElementById('pubLat').value = p.lat;
+    document.getElementById('pubLng').value = p.lng;
+  });
+  pubMiniMap.setView([lat, lng], 15);
+  document.getElementById('pubLat').value = lat;
+  document.getElementById('pubLng').value = lng;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -572,6 +612,9 @@ function modifierAnnonce(id) {
   document.getElementById('modChambres').value = champ(a, 'chambres') || '';
   document.getElementById('modSalons').value = champ(a, 'salons') || '';
   document.getElementById('modSdb').value = champ(a, 'sdb') || '';
+  document.getElementById('modNumeroBien').value = champ(a, 'numeroBien') || '';
+  document.getElementById('modEtage').value = champ(a, 'etage') || 'Non précisé';
+  document.getElementById('modVue').value = champ(a, 'vue') || 'Non précisé';
   document.getElementById('modCuisineType').value = champ(a, 'cuisineType') || '';
   document.getElementById('modDoucheType').value = champ(a, 'doucheType') || '';
   document.getElementById('modMateriau').value = champ(a, 'materiau') || '';
@@ -629,6 +672,9 @@ function enregistrerModificationAnnonce() {
     salons: parseInt(document.getElementById('modSalons').value) || null,
     sdb: parseInt(document.getElementById('modSdb').value) || null,
     douches: parseInt(document.getElementById('modSdb').value) || null,
+    numeroBien: document.getElementById('modNumeroBien').value.trim(),
+    etage: document.getElementById('modEtage').value,
+    vue: document.getElementById('modVue').value,
     cuisineType: document.getElementById('modCuisineType').value,
     doucheType: document.getElementById('modDoucheType').value,
     materiau: document.getElementById('modMateriau').value,
@@ -1092,9 +1138,15 @@ function publierAnnonce() {
   const arrondissement = document.getElementById('pubArrondissement').value.trim();
   const prix = document.getElementById('pubPrix').value;
   const tel = document.getElementById('pubTel').value.trim();
+  const lat = parseFloat(document.getElementById('pubLat').value);
+  const lng = parseFloat(document.getElementById('pubLng').value);
 
   if (!titre || !type || !commune || !quartier || !prix || !tel) {
     alert('⚠️ Remplissez tous les champs obligatoires (*)');
+    return;
+  }
+  if (isNaN(lat) || isNaN(lng)) {
+    alert('📍 Placez la position exacte du bien sur la carte : chaque annonce doit être géolocalisée.');
     return;
   }
 
@@ -1104,15 +1156,15 @@ function publierAnnonce() {
   const btn = document.getElementById('pubBtnText');
   btn.textContent = '⏳ Publication...';
 
-  const lat = parseFloat(document.getElementById('pubLat').value);
-  const lng = parseFloat(document.getElementById('pubLng').value);
-
   const nouvelleAnnonce = {
     titre, type, commune, quartier, arrondissement,
     prix: parseInt(prix) || 0,
     surface: parseInt(document.getElementById('pubSurface').value) || 0,
     chambres: parseInt(document.getElementById('pubChambres').value) || 0,
     sdb: parseInt(document.getElementById('pubSdb').value) || 0,
+    numeroBien: document.getElementById('pubNumeroBien').value.trim(),
+    etage: document.getElementById('pubEtage').value,
+    vue: document.getElementById('pubVue').value,
     description: document.getElementById('pubDesc').value.trim(),
     equipements,
     statut: document.getElementById('pubStatut').value || 'disponible',
@@ -1120,10 +1172,10 @@ function publierAnnonce() {
     proprietaireTel: tel,
     proprietaireEmail: document.getElementById('pubProprioEmail').value.trim() || null,
     whatsapp: tel,
+    lat, lng,
     vues: 0,
     dateCreation: firebase.firestore.FieldValue.serverTimestamp()
   };
-  if (!isNaN(lat) && !isNaN(lng)) { nouvelleAnnonce.lat = lat; nouvelleAnnonce.lng = lng; }
 
   window.dbAdmin.collection('annonces').add(nouvelleAnnonce)
     .then(() => {
@@ -1154,6 +1206,10 @@ function resetForm() {
   document.getElementById('pubProprioEmail').value = '';
   document.getElementById('pubLat').value = '';
   document.getElementById('pubLng').value = '';
+  document.getElementById('pubNumeroBien').value = '';
+  document.getElementById('pubEtage').value = 'Non précisé';
+  document.getElementById('pubVue').value = 'Non précisé';
+  if (pubMarqueur && pubMiniMap) { pubMiniMap.removeLayer(pubMarqueur); pubMarqueur = null; }
   document.querySelectorAll('#tagsPicker input:checked').forEach(el => el.checked = false);
 }
 

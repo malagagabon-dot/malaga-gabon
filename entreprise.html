@@ -224,6 +224,7 @@
               <h4>${escapeHTML(b.titre || "Annonce")}</h4>
               <div class="prix">${formatPrix(b.prix)}</div>
               <div class="meta">📍 ${escapeHTML(b.quartier || "")}${b.commune ? ", " + escapeHTML(b.commune) : ""} · ${b.statut === "disponible" ? "🟢 Disponible" : "🔴 Occupé"}</div>
+              <div class="meta">${b.numeroBien ? "🏷️ " + escapeHTML(b.numeroBien) + " · " : ""}${b.etage && b.etage !== "Non précisé" ? "🪜 " + escapeHTML(b.etage) + " · " : ""}${b.vue && b.vue !== "Non précisé" ? "🌅 " + escapeHTML(b.vue) : ""}</div>
             </div>
           </div>
         `).join("");

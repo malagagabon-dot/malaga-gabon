@@ -154,6 +154,22 @@
           <select id="etat"></select>
         </div>
 
+        <div class="grille-2">
+          <div class="champ">
+            <label>N° de villa / porte / appartement</label>
+            <input type="text" id="numeroBien" placeholder="Ex : Villa B12, Appt 4, Porte 3">
+          </div>
+          <div class="champ">
+            <label>Étage</label>
+            <select id="etage"></select>
+          </div>
+        </div>
+        <div class="champ">
+          <label>Vue</label>
+          <select id="vue"></select>
+          <div class="aide">Précisez si le logement offre une vue mer, forêt, ville…</div>
+        </div>
+
         <div class="champ">
           <label>Terrain clôturé ?</label>
           <div class="toggle-oui-non" id="toggleCloture">
@@ -309,7 +325,7 @@
     import {
       COMMUNES, ARRONDISSEMENTS, getQuartiers, CENTRES, TYPES_BIEN, EQUIPEMENTS,
       EAU_OPTIONS, ELECTRICITE_OPTIONS, COMPTEUR_OPTIONS, ETAT_BATIMENT, LIBREVILLE_CENTER,
-      ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES
+      ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES, VUES, ETAGES
     } from "./malaga-reference.js";
 
     let utilisateurCourant = null;
@@ -326,6 +342,8 @@
     // Remplissage des listes déroulantes
     document.getElementById("type").innerHTML = TYPES_BIEN.map(t => `<option>${t}</option>`).join("");
     document.getElementById("etat").innerHTML = ETAT_BATIMENT.map(e => `<option>${e}</option>`).join("");
+    document.getElementById("etage").innerHTML = ETAGES.map(e => `<option>${e}</option>`).join("");
+    document.getElementById("vue").innerHTML = VUES.map(v => `<option>${v}</option>`).join("");
 
     // Commune → Arrondissement → Quartier (données réelles en cascade)
     const selectCommune = document.getElementById("commune");
@@ -535,6 +553,9 @@
           cuisineType: document.getElementById("cuisineType").value,
           doucheType: document.getElementById("doucheType").value,
           etat: document.getElementById("etat").value,
+          numeroBien: document.getElementById("numeroBien").value.trim(),
+          etage: document.getElementById("etage").value,
+          vue: document.getElementById("vue").value,
           cloture: clotureVal === "oui",
           materiau: document.getElementById("materiau").value,
           terrasse: terrasseVal === "oui",

@@ -12,6 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="admin.css?v=2" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     .logo-img-login { height: 64px; width: auto; display: block; margin: 0 auto 12px; }
     .logo-img-sidebar { height: 36px; width: auto; display: block; }
@@ -611,6 +612,10 @@
           <input type="text" id="pubQuartier" placeholder="Ex: Akanda, Batterie IV..." />
         </div>
         <div class="form-group">
+          <label>Arrondissement</label>
+          <input type="text" id="pubArrondissement" placeholder="Ex: 2e arrondissement" />
+        </div>
+        <div class="form-group">
           <label>Prix mensuel (FCFA) *</label>
           <input type="number" id="pubPrix" placeholder="Ex: 150000" />
         </div>
@@ -627,8 +632,28 @@
           <input type="number" id="pubSdb" placeholder="Ex: 1" min="0" />
         </div>
         <div class="form-group">
-          <label>Téléphone propriétaire *</label>
+          <label>WhatsApp du propriétaire *</label>
           <input type="tel" id="pubTel" placeholder="+241 6 XX XX XX" />
+        </div>
+        <div class="form-group">
+          <label>Nom du propriétaire / de l'agence</label>
+          <input type="text" id="pubProprioNom" placeholder="Ex: Agence Malaga Immo" />
+        </div>
+        <div class="form-group">
+          <label>Email du propriétaire</label>
+          <input type="email" id="pubProprioEmail" placeholder="proprietaire@exemple.com" />
+        </div>
+        <div class="form-group">
+          <label>N° de villa / porte / appartement</label>
+          <input type="text" id="pubNumeroBien" placeholder="Ex : Villa B12, Appt 4" />
+        </div>
+        <div class="form-group">
+          <label>Étage</label>
+          <select id="pubEtage"></select>
+        </div>
+        <div class="form-group">
+          <label>Vue</label>
+          <select id="pubVue"></select>
         </div>
         <div class="form-group full-col">
           <label>Titre de l'annonce *</label>
@@ -662,6 +687,13 @@
             <option value="réservé">🟡 Réservé</option>
             <option value="masqué">⚫ Masqué</option>
           </select>
+        </div>
+        <div class="form-group full-col">
+          <label>Position exacte sur la carte * <span style="font-weight:400;color:#888;">(obligatoire — chaque annonce doit être géolocalisée)</span></label>
+          <button type="button" class="btn-outline" id="pubBtnMaPosition" style="margin-bottom:8px;">📍 Utiliser ma position actuelle</button>
+          <div id="pubMiniMap" style="width:100%;height:240px;border-radius:10px;overflow:hidden;border:1px solid #ddd;"></div>
+          <input type="hidden" id="pubLat" />
+          <input type="hidden" id="pubLng" />
         </div>
       </div>
 
@@ -745,6 +777,18 @@
       <div class="form-group">
         <label>Salles de bain / douches</label>
         <input type="number" id="modSdb" min="0" />
+      </div>
+      <div class="form-group">
+        <label>N° de villa / porte / appartement</label>
+        <input type="text" id="modNumeroBien" placeholder="Ex : Villa B12, Appt 4" />
+      </div>
+      <div class="form-group">
+        <label>Étage</label>
+        <select id="modEtage"></select>
+      </div>
+      <div class="form-group">
+        <label>Vue</label>
+        <select id="modVue"></select>
       </div>
       <div class="form-group">
         <label>Cuisine</label>
@@ -850,13 +894,14 @@
 <script type="module">
   import {
     ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
-    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES
+    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES
   } from "./malaga-reference.js";
   window.MALAGA_REF = {
     ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
-    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES
+    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES
   };
 </script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>

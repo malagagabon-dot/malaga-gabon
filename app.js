@@ -338,6 +338,8 @@ function rendreListe(liste) {
         <h3>${escapeHTML(a.titre)}<span class="type-tag">${escapeHTML(a.type || "")}</span></h3>
         <div class="prix">${formatPrix(a.prix)}</div>
         <div class="localisation">📍 ${escapeHTML(a.quartier || "")}${a.quartier ? " — " : ""}${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
+        ${(a.etage && a.etage !== "Non précisé") || (a.vue && a.vue !== "Non précisé") ? `
+        <div class="localisation" style="margin-top:2px;">${a.etage && a.etage !== "Non précisé" ? "🪜 " + escapeHTML(a.etage) : ""}${a.etage && a.etage !== "Non précisé" && a.vue && a.vue !== "Non précisé" ? " · " : ""}${a.vue && a.vue !== "Non précisé" ? "🌅 " + escapeHTML(a.vue) : ""}</div>` : ""}
       </div>
     `;
     carte.querySelector(".btn-favori").onclick = (e) => {
@@ -430,6 +432,9 @@ function afficherDetail(a) {
         ${a.terrasse ? "<br>✓ Terrasse" : ""}${a.carreaux ? " &nbsp;✓ Sol carrelé" : ""}
         ${a.zoneCaractere ? `<br>✓ Zone : ${escapeHTML(a.zoneCaractere)}` : ""}
         ${a.pointRepere ? `<br>✓ Repère : ${escapeHTML(a.pointRepere)}` : ""}
+        ${a.numeroBien ? `<br>✓ Repérage : ${escapeHTML(a.numeroBien)}` : ""}
+        ${a.etage && a.etage !== "Non précisé" ? `<br>✓ Étage : ${escapeHTML(a.etage)}` : ""}
+        ${a.vue && a.vue !== "Non précisé" ? `<br>✓ Vue : ${escapeHTML(a.vue)}` : ""}
       </div>
 
       ${a.equipements && a.equipements.length ? `
@@ -439,6 +444,20 @@ function afficherDetail(a) {
             ${a.equipements.map(e => `<span style="background:#E8F5EE;color:var(--vert);padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">✓ ${escapeHTML(e)}</span>`).join("")}
           </div>
         </div>` : ""}
+
+      ${typeof a.lat === "number" && typeof a.lng === "number" ? `
+        <div style="margin-bottom:16px;">
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:8px;">📍 Localisation</h3>
+          <div id="detailMiniMap" style="width:100%;height:200px;border-radius:12px;overflow:hidden;border:1px solid #eee;margin-bottom:10px;"></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+            <a href="https://www.google.com/maps?q=${a.lat},${a.lng}" target="_blank" rel="noopener" style="text-align:center;background:#fff;border:1.5px solid #eee;border-radius:10px;padding:10px 4px;font-size:11.5px;font-weight:700;text-decoration:none;color:#222;">🗺️<br>Google Maps</a>
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${a.lat},${a.lng}" target="_blank" rel="noopener" style="text-align:center;background:#fff;border:1.5px solid #eee;border-radius:10px;padding:10px 4px;font-size:11.5px;font-weight:700;text-decoration:none;color:#222;">🧭<br>Itinéraire</a>
+            ${numeroWhatsApp ? `<a href="https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(`Bonjour, voici la position exacte de l'annonce "${a.titre}" sur MALAGA : https://www.google.com/maps?q=${a.lat},${a.lng}`)}" target="_blank" rel="noopener" style="text-align:center;background:#fff;border:1.5px solid #eee;border-radius:10px;padding:10px 4px;font-size:11.5px;font-weight:700;text-decoration:none;color:#222;">💬<br>Partager</a>` : `<div></div>`}
+          </div>
+        </div>` : `
+        <div style="margin-bottom:16px;background:#FFF7E6;border:1px solid #FDE7B0;border-radius:10px;padding:10px 12px;font-size:12px;color:#8a6b1f;">
+          ⚠️ Position exacte non renseignée par le propriétaire.
+        </div>`}
 
       <div style="background:#f5f5f5;padding:16px;border-radius:12px;margin-bottom:16px;" id="blocReservationVisite"></div>
 
@@ -457,9 +476,25 @@ function afficherDetail(a) {
   document.getElementById("fermerModal").onclick = () => modal.classList.remove("ouverte");
   modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("ouverte"); };
   rendreBlocReservation(a);
+  initDetailMiniMap(a);
 
   // Comptage des vues, best-effort (n'empêche pas l'affichage si ça échoue)
   updateDoc(doc(db, "annonces", a.id), { vues: increment(1) }).catch(() => {});
+}
+
+/* Mini-carte de géolocalisation dans le détail d'une annonce.
+   Le conteneur #detailMiniMap est recréé à chaque ouverture (innerHTML plus haut),
+   donc on détruit toujours l'ancienne instance Leaflet avant d'en créer une nouvelle. */
+let detailMiniMap = null;
+function initDetailMiniMap(a) {
+  if (detailMiniMap) { detailMiniMap.remove(); detailMiniMap = null; }
+  const conteneur = document.getElementById("detailMiniMap");
+  if (!conteneur || typeof a.lat !== "number" || typeof a.lng !== "number") return;
+  detailMiniMap = L.map("detailMiniMap", { zoomControl: false, dragging: false, scrollWheelZoom: false })
+    .setView([a.lat, a.lng], 15);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(detailMiniMap);
+  L.marker([a.lat, a.lng]).addTo(detailMiniMap).bindPopup(escapeHTML(a.titre || "Position du bien"));
+  setTimeout(() => detailMiniMap?.invalidateSize(), 150);
 }
 
 /* ══════════ RÉSERVATION DE VISITE (gratuite, via WhatsApp) ══════════
