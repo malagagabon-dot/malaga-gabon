@@ -62,6 +62,10 @@ function initContact() {
         lu: false,
         dateCreation: serverTimestamp()
       });
+      window.MALAGA_EMAIL?.envoyerEmail("Nouveau message", {
+        nom, tel, sujet,
+        message: msg
+      });
       document.getElementById("contactSucces").classList.add("visible");
       document.getElementById("formContact").reset();
       setTimeout(() => fermerModal("contactModal"), 1600);
@@ -125,6 +129,11 @@ function initSignalement() {
         annonceId: signalementAnnonceId,
         traite: false,
         dateCreation: serverTimestamp()
+      });
+      window.MALAGA_EMAIL?.envoyerEmail("Signalement", {
+        nom: signalePar,
+        sujet: `🚩 Signalement : ${type}`,
+        message: `Annonce concernée : ${annonceTitre}\n\n${desc}`
       });
       document.getElementById("signalerSucces").classList.add("visible");
       document.getElementById("formSignaler").reset();

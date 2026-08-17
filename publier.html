@@ -555,7 +555,7 @@
         });
 
         // Notification email à l'admin (n'empêche jamais la publication en cas d'échec)
-        window.MALAGA_EMAIL?.envoyerEmail("TEMPLATE_ANNONCE", {
+        window.MALAGA_EMAIL?.envoyerEmail("Nouvelle annonce publiée", {
           titre: document.getElementById("titre").value.trim(),
           type: document.getElementById("type").value,
           prix: document.getElementById("prix").value,
