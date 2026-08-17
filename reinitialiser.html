@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nouveau mot de passe — MALAGA</title>
+  <meta name="theme-color" content="#009E60">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .champ-mdp-wrap{ position:relative; display:flex; align-items:center; }
+    .champ-mdp-wrap input{ width:100%; padding-right:44px; }
+    .btn-oeil{
+      position:absolute; right:2px; top:50%; transform:translateY(-50%);
+      background:none; border:none; cursor:pointer; font-size:18px;
+      line-height:1; padding:8px 10px; opacity:0.65; transition:opacity .15s;
+    }
+    .btn-oeil:hover{ opacity:1; }
+    .btn-oeil.actif{ opacity:1; }
+    .page-centre{ min-height:80vh; display:flex; align-items:center; justify-content:center; }
+    .logo-reinit{ height:56px; width:auto; display:block; margin:0 auto 14px; }
+    .etat-msg{ text-align:center; padding:20px 0; }
+    .etat-msg .gros-icone{ font-size:44px; margin-bottom:10px; }
+  </style>
+</head>
+<body>
+
+  <div class="page-form page-centre">
+    <div class="form-card" style="width:100%;">
+      <img src="img/logo.png" alt="MALAGA" class="logo-reinit">
+
+      <!-- Vérification du lien en cours -->
+      <div id="etatVerification" class="etat-msg">
+        <div class="gros-icone">⏳</div>
+        <p>Vérification du lien…</p>
+      </div>
+
+      <!-- Lien invalide ou expiré -->
+      <div id="etatInvalide" class="etat-msg" style="display:none;">
+        <div class="gros-icone">⚠️</div>
+        <h2 style="color:var(--vert);">Lien invalide ou expiré</h2>
+        <p class="sous-titre" style="margin-bottom:20px;">
+          Ce lien de réinitialisation n'est plus valable — il a peut-être déjà été utilisé,
+          ou il date de plus d'une heure. Demandez-en un nouveau depuis la page de connexion.
+        </p>
+        <a href="connexion.html" class="btn btn-vert btn-full">Retour à la connexion</a>
+      </div>
+
+      <!-- Formulaire nouveau mot de passe -->
+      <form id="formNouveauMdp" style="display:none;">
+        <h2>Nouveau mot de passe 🔑</h2>
+        <p class="sous-titre" id="emailCompteTexte">Choisissez un nouveau mot de passe pour votre compte.</p>
+
+        <div id="erreurMsg" class="erreur-msg"></div>
+        <div id="succesMsg" class="succes-msg"></div>
+
+        <div class="champ">
+          <label>Nouveau mot de passe</label>
+          <div class="champ-mdp-wrap">
+            <input type="password" id="nouveauMdp" required minlength="6" placeholder="6 caractères minimum">
+            <button type="button" class="btn-oeil" data-cible="nouveauMdp" aria-label="Afficher le mot de passe">👁️</button>
+          </div>
+        </div>
+        <div class="champ">
+          <label>Confirmer le mot de passe</label>
+          <div class="champ-mdp-wrap">
+            <input type="password" id="confirmerMdp" required minlength="6" placeholder="Retapez le mot de passe">
+            <button type="button" class="btn-oeil" data-cible="confirmerMdp" aria-label="Afficher le mot de passe">👁️</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-vert btn-full" id="btnValider">Enregistrer le nouveau mot de passe</button>
+      </form>
+
+      <!-- Succès -->
+      <div id="etatSucces" class="etat-msg" style="display:none;">
+        <div class="gros-icone">✅</div>
+        <h2 style="color:var(--vert);">Mot de passe changé !</h2>
+        <p class="sous-titre" style="margin-bottom:20px;">Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.</p>
+        <a href="connexion.html" class="btn btn-vert btn-full">Se connecter</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, verifyPasswordResetCode, confirmPasswordReset } from "./firebase-config.js";
+
+    const etatVerification = document.getElementById("etatVerification");
+    const etatInvalide = document.getElementById("etatInvalide");
+    const formNouveauMdp = document.getElementById("formNouveauMdp");
+    const etatSucces = document.getElementById("etatSucces");
+    const erreurMsg = document.getElementById("erreurMsg");
+    const succesMsg = document.getElementById("succesMsg");
+
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get("mode");
+    const oobCode = params.get("oobCode");
+
+    // Afficher / masquer le mot de passe (icône œil)
+    document.querySelectorAll(".btn-oeil").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const input = document.getElementById(btn.dataset.cible);
+        const estVisible = input.type === "text";
+        input.type = estVisible ? "password" : "text";
+        btn.textContent = estVisible ? "👁️" : "🙈";
+        btn.classList.toggle("actif", !estVisible);
+      });
+    });
+
+    async function init() {
+      if (mode !== "resetPassword" || !oobCode) {
+        etatVerification.style.display = "none";
+        etatInvalide.style.display = "block";
+        return;
+      }
+      try {
+        const email = await verifyPasswordResetCode(auth, oobCode);
+        document.getElementById("emailCompteTexte").textContent =
+          `Choisissez un nouveau mot de passe pour ${email}.`;
+        etatVerification.style.display = "none";
+        formNouveauMdp.style.display = "block";
+      } catch (err) {
+        etatVerification.style.display = "none";
+        etatInvalide.style.display = "block";
+      }
+    }
+    init();
+
+    formNouveauMdp.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      erreurMsg.classList.remove("visible");
+      succesMsg.classList.remove("visible");
+
+      const mdp1 = document.getElementById("nouveauMdp").value;
+      const mdp2 = document.getElementById("confirmerMdp").value;
+
+      if (mdp1.length < 6) {
+        erreurMsg.textContent = "❌ Le mot de passe doit contenir au moins 6 caractères.";
+        erreurMsg.classList.add("visible");
+        return;
+      }
+      if (mdp1 !== mdp2) {
+        erreurMsg.textContent = "❌ Les deux mots de passe ne correspondent pas.";
+        erreurMsg.classList.add("visible");
+        return;
+      }
+
+      const btn = document.getElementById("btnValider");
+      btn.disabled = true;
+      btn.textContent = "Enregistrement…";
+
+      try {
+        await confirmPasswordReset(auth, oobCode, mdp1);
+        formNouveauMdp.style.display = "none";
+        etatSucces.style.display = "block";
+      } catch (err) {
+        erreurMsg.textContent = "❌ Une erreur est survenue. Le lien a peut-être expiré — redemandez-en un nouveau.";
+        erreurMsg.classList.add("visible");
+        btn.disabled = false;
+        btn.textContent = "Enregistrer le nouveau mot de passe";
+      }
+    });
+  </script>
+</body>
+</html>

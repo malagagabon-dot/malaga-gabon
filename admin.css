@@ -101,6 +101,12 @@ body {
   font-size: .85rem; margin-bottom: 1rem;
 }
 
+.login-success {
+  background: var(--green-l); color: var(--green-d);
+  border-radius: 8px; padding: .6rem 1rem;
+  font-size: .85rem; margin-bottom: 1rem;
+}
+
 /* ══════════════════════════════
    LAYOUT
 ══════════════════════════════ */

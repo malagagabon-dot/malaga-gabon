@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTopbarDate();
   initSidebar();
   initToggleMdp();
+  initMdpOublieAdmin();
   initListesReference();
   checkAuth();
 });
@@ -151,6 +152,9 @@ function adminLogin() {
   const password = document.getElementById('adminPassword').value;
   const btn = document.getElementById('loginBtnText');
   const errEl = document.getElementById('loginError');
+  const successEl = document.getElementById('loginResetSuccess');
+
+  successEl.classList.add('hidden');
 
   if (!email || !password) {
     errEl.textContent = '⚠️ Remplissez tous les champs';
@@ -182,6 +186,40 @@ function adminLogin() {
       errEl.classList.remove('hidden');
       btn.textContent = 'Se connecter';
     });
+}
+
+/* ══════════ MOT DE PASSE OUBLIÉ (admin) ══════════ */
+function initMdpOublieAdmin() {
+  const lien = document.getElementById('lienMdpOublieAdmin');
+  if (!lien) return;
+  lien.addEventListener('click', (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('loginError');
+    const successEl = document.getElementById('loginResetSuccess');
+    const email = document.getElementById('adminEmail').value.trim() || ADMIN_EMAIL;
+
+    errEl.classList.add('hidden');
+    successEl.classList.add('hidden');
+    lien.textContent = 'Envoi...';
+
+    authAdmin.sendPasswordResetEmail(email, {
+      url: "https://malagagabon-dot.github.io/malaga-gabon/reinitialiser.html"
+    })
+      .then(() => {
+        successEl.classList.remove('hidden');
+        lien.textContent = 'Mot de passe oublié ?';
+      })
+      .catch((err) => {
+        const messages = {
+          'auth/invalid-email': "Adresse email invalide.",
+          'auth/user-not-found': "Aucun compte administrateur avec cet email.",
+          'auth/too-many-requests': "Trop de tentatives. Réessayez dans quelques minutes."
+        };
+        errEl.textContent = '❌ ' + (messages[err.code] || "Une erreur est survenue. Réessayez.");
+        errEl.classList.remove('hidden');
+        lien.textContent = 'Mot de passe oublié ?';
+      });
+  });
 }
 
 function onLoginSuccess(user) {
