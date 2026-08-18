@@ -842,9 +842,50 @@ function annoncesDemoData() {
     `https://loremflickr.com/800/600/${encodeURIComponent(mots)}?lock=${lock + n}`
   );
 
+  /* ── PROFILS VENDEUR DE DÉMONSTRATION ──────────────────────
+     Un profil par catégorie (voir CATEGORIES_VENDEUR / getCategorieVendeur
+     dans malaga-reference.js), pour que le badge vendeur, les couleurs et
+     le regroupement (clusters) sur la carte soient visibles avec des
+     données réalistes. Les champs proprietaireCompteType /
+     proprietaireTypeEntreprise / proprietaireRaisonSociale /
+     proprietaireStatutEntreprise sont ceux dénormalisés sur chaque
+     annonce à la publication (voir publier.html). Chaque profil publie
+     plusieurs biens dans un même secteur, volontairement rapprochés
+     (quelques centaines de mètres), pour bien voir Leaflet.markercluster
+     les regrouper sur la carte publique. */
+  const vendeurParticulier = {
+    proprietaireCompteType: "particulier",
+    proprietaireNom: "Sylvie Obiang",
+    proprietaireTel: "+241 74 22 15 63",
+    proprietaireEmail: "sylvie.obiang@gmail.com"
+  };
+  const vendeurAgence = {
+    proprietaireCompteType: "entreprise",
+    proprietaireTypeEntreprise: "Agence immobilière",
+    proprietaireRaisonSociale: "Agence Malaga Immo",
+    proprietaireStatutEntreprise: "verifie", // 🏢 Agence vérifiée
+    proprietaireNom: "Agence Malaga Immo",
+    proprietaireTel: "+241 66 12 34 56",
+    proprietaireEmail: "contact@agence-malaga-immo.ga"
+  };
+  const vendeurEntreprise = {
+    proprietaireCompteType: "entreprise",
+    proprietaireTypeEntreprise: "Société privée",
+    proprietaireRaisonSociale: "Gabon Business Invest SARL",
+    // Pas de proprietaireStatutEntreprise : société pas encore vérifiée par
+    // l'admin, pour illustrer aussi ce cas (badge "Société privée" simple,
+    // sans le ✔️ vérifié — à comparer avec l'agence ci-dessus).
+    proprietaireNom: "Gabon Business Invest SARL",
+    proprietaireTel: "+241 62 45 78 90",
+    proprietaireEmail: "contact@gabonbusinessinvest.ga"
+  };
+
   return [
-    // ── VILLA ─────────────────────────────────────────────
+    /* ══════ AGENCE IMMOBILIÈRE — portefeuille résidentiel haut de
+       gamme, secteur Cap Estérias / Beau-Lieu / Malibé 1 (Akanda, 1er
+       arrondissement), biens volontairement rapprochés ══════ */
     {
+      ...vendeurAgence,
       titre: "Villa de standing avec piscine à Cap Estérias",
       type: "Villa", commune: "Akanda", arrondissement: "1er arrondissement", quartier: "Cap Estérias",
       pointRepere: "À 200 m de la plage, après le carrefour Cap Estérias",
@@ -857,22 +898,40 @@ function annoncesDemoData() {
       equipements: ["Meublé", "Climatisé", "Piscine", "Jardin", "Parking", "Groupe électrogène", "Gardiennage"],
       statut: "disponible", lat: 0.5320, lng: 9.3650, photos: photo("villa,house,exterior", 101)
     },
-    // ── APPARTEMENT ───────────────────────────────────────
     {
-      titre: "Appartement moderne 2 chambres aux Cocotiers",
-      type: "Appartement", commune: "Libreville", arrondissement: "2e arrondissement", quartier: "Cocotiers",
-      pointRepere: "Immeuble Le Baobab, près de la pharmacie des Cocotiers",
-      zoneCaractere: "Centre-ville",
-      prix: 220000, surface: 85, chambres: 2, salons: 1, sdb: 1, douches: 1,
-      cloture: false, materiau: "Dur (parpaing / béton)", couleurMurale: "Crème / Ivoire",
+      ...vendeurAgence,
+      titre: "Maison de standing avec jardin à Beau-Lieu",
+      type: "Maison", commune: "Akanda", arrondissement: "1er arrondissement", quartier: "Beau-Lieu",
+      pointRepere: "Lotissement Beau-Lieu, à 500 m de la plage",
+      zoneCaractere: "Bord de mer / lagune",
+      prix: 420000, surface: 180, chambres: 4, salons: 1, sdb: 2, douches: 2,
+      cloture: true, materiau: "Dur (parpaing / béton)", couleurMurale: "Blanc",
+      cuisineType: "Interne", doucheType: "Interne", terrasse: true, carreaux: true,
+      eau: "Forage", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Maison familiale récente dans un lotissement calme et sécurisé, grand séjour lumineux, jardin arboré et véranda. Gérée par l'agence, visites organisées sur rendez-vous.",
+      equipements: ["Jardin", "Parking", "Gardiennage", "Climatisé"],
+      statut: "disponible", lat: 0.5275, lng: 9.3705, photos: photo("house,villa,garden", 102)
+    },
+    {
+      ...vendeurAgence,
+      titre: "Appartement de standing bord de mer à Malibé 1",
+      type: "Appartement", commune: "Akanda", arrondissement: "1er arrondissement", quartier: "Malibé 1",
+      pointRepere: "Résidence Les Palmiers, face à la plage de Malibé",
+      zoneCaractere: "Bord de mer / lagune",
+      prix: 280000, surface: 95, chambres: 2, salons: 1, sdb: 2, douches: 2,
+      cloture: true, materiau: "Dur (parpaing / béton)", couleurMurale: "Crème / Ivoire",
       cuisineType: "Interne", doucheType: "Interne", terrasse: true, carreaux: true,
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
-      description: "Bel appartement lumineux au 2e étage, proche des commerces et des transports. Cuisine équipée, carrelage au sol dans toutes les pièces et balcon avec vue dégagée sur le quartier.",
-      equipements: ["Climatisé", "Fibre optique", "Interphone"],
-      statut: "disponible", lat: 0.3912, lng: 9.4580, photos: photo("apartment,livingroom", 201)
+      description: "Appartement neuf avec vue mer, dans une résidence sécurisée avec gardiennage 24h/24. Cuisine équipée, grande terrasse et parking privatif inclus.",
+      equipements: ["Climatisé", "Parking", "Gardiennage", "Fibre optique"],
+      statut: "disponible", lat: 0.5250, lng: 9.3745, photos: photo("apartment,seaview,livingroom", 103)
     },
-    // ── STUDIO ────────────────────────────────────────────
+
+    /* ══════ PARTICULIER — Sylvie Obiang, petits biens locatifs,
+       secteur Akébé-Ville / Akébé Plaine / Akébé Frontière (Libreville,
+       3e arrondissement), biens volontairement rapprochés ══════ */
     {
+      ...vendeurParticulier,
       titre: "Studio meublé et climatisé à Akébé-Ville",
       type: "Studio", commune: "Libreville", arrondissement: "3e arrondissement", quartier: "Akébé-Ville",
       pointRepere: "Près du carrefour Akébé-Ville, à côté de l'école primaire",
@@ -885,50 +944,40 @@ function annoncesDemoData() {
       equipements: ["Meublé", "Climatisé", "Interphone"],
       statut: "disponible", lat: 0.3830, lng: 9.4650, photos: photo("studio,apartment,interior", 301)
     },
-    // ── CHAMBRE ───────────────────────────────────────────
     {
-      titre: "Chambre meublée à Glass, salle d'eau partagée",
-      type: "Chambre", commune: "Libreville", arrondissement: "4e arrondissement", quartier: "Glass",
-      pointRepere: "Résidence Bord-Mer, en face de l'ancien cinéma de Glass",
-      zoneCaractere: "Bord de mer / lagune",
-      prix: 60000, surface: 18, chambres: 1, salons: 0, sdb: 1, douches: 1,
+      ...vendeurParticulier,
+      titre: "Chambre meublée à Akébé Plaine, salle d'eau partagée",
+      type: "Chambre", commune: "Libreville", arrondissement: "3e arrondissement", quartier: "Akébé Plaine",
+      pointRepere: "Non loin du marché d'Akébé Plaine",
+      zoneCaractere: "Résidentiel calme",
+      prix: 55000, surface: 16, chambres: 1, salons: 0, sdb: 1, douches: 1,
       cloture: false, materiau: "Semi-dur", couleurMurale: "Jaune",
       cuisineType: "Externe", doucheType: "Externe", terrasse: false, carreaux: false,
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Commun",
-      description: "Chambre meublée avec cuisine et douche communes, dans une résidence sécurisée en bord de mer. Idéal petit budget, à deux pas du marché de Glass.",
+      description: "Chambre meublée avec cuisine et douche communes, dans une cour familiale calme. Idéal petit budget, à deux pas des taxis et du marché.",
       equipements: ["Meublé", "Gardiennage"],
-      statut: "disponible", lat: 0.3980, lng: 9.4470, photos: photo("bedroom,interior", 401)
+      statut: "disponible", lat: 0.3855, lng: 9.4630, photos: photo("bedroom,interior", 302)
     },
-    // ── MAISON ────────────────────────────────────────────
     {
-      titre: "Maison familiale clôturée à Angondjé",
-      type: "Maison", commune: "Akanda", arrondissement: "2e arrondissement", quartier: "Angondjé",
-      pointRepere: "Lot 34, non loin du temple d'Angondjé",
-      zoneCaractere: "Périphérie / semi-rural",
-      prix: 300000, surface: 140, chambres: 3, salons: 1, sdb: 2, douches: 2,
-      cloture: true, materiau: "Dur (parpaing / béton)", couleurMurale: "Vert",
-      cuisineType: "Interne", doucheType: "Interne", terrasse: true, carreaux: true,
+      ...vendeurParticulier,
+      titre: "Appartement 1 chambre à Akébé Frontière",
+      type: "Appartement", commune: "Libreville", arrondissement: "3e arrondissement", quartier: "Akébé Frontière",
+      pointRepere: "Immeuble bleu, à côté de la pharmacie d'Akébé Frontière",
+      zoneCaractere: "Résidentiel calme",
+      prix: 150000, surface: 55, chambres: 1, salons: 1, sdb: 1, douches: 1,
+      cloture: false, materiau: "Dur (parpaing / béton)", couleurMurale: "Crème / Ivoire",
+      cuisineType: "Interne", doucheType: "Interne", terrasse: false, carreaux: true,
       eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
-      description: "Maison spacieuse dans un quartier résidentiel calme, cour clôturée avec espace pour jardin potager et terrasse couverte. Proche des écoles et d'un forage de secours.",
-      equipements: ["Clôturé", "Parking", "Forage", "Gardiennage"],
-      statut: "disponible", lat: 0.4790, lng: 9.4240, photos: photo("house,home,exterior", 501)
+      description: "Appartement calme au 1er étage, cuisine séparée, salon lumineux. Propriétaire habitant le même immeuble, disponible pour les visites en soirée.",
+      equipements: ["Climatisé", "Interphone"],
+      statut: "disponible", lat: 0.3805, lng: 9.4675, photos: photo("apartment,livingroom", 303)
     },
-    // ── BUREAU ────────────────────────────────────────────
+
+    /* ══════ SOCIÉTÉ PRIVÉE — Gabon Business Invest SARL, portefeuille
+       commercial, secteur Owendo Port / Alénakiri / Virié (Owendo, 1er
+       arrondissement), biens volontairement rapprochés ══════ */
     {
-      titre: "Bureau climatisé open-space à Charbonnages",
-      type: "Bureau", commune: "Libreville", arrondissement: "1er arrondissement", quartier: "Charbonnages",
-      pointRepere: "Immeuble Étoile, 1er étage, face à l'agence BICIG Charbonnages",
-      zoneCaractere: "Zone commerciale",
-      prix: 350000, surface: 100, chambres: 0, salons: 1, sdb: 1, douches: 1,
-      cloture: false, materiau: "Dur (parpaing / béton)", couleurMurale: "Gris",
-      cuisineType: "Externe", doucheType: "Interne", terrasse: false, carreaux: true,
-      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
-      description: "Espace de bureau climatisé, open-space modulable avec salle de réunion, idéal pour une PME. Parking visiteurs et connexion fibre optique disponibles.",
-      equipements: ["Climatisé", "Parking", "Fibre optique"],
-      statut: "disponible", lat: 0.4210, lng: 9.4390, photos: photo("office,workspace,interior", 601)
-    },
-    // ── LOCAL COMMERCIAL ──────────────────────────────────
-    {
+      ...vendeurEntreprise,
       titre: "Local commercial clôturé au port d'Owendo",
       type: "Local commercial", commune: "Owendo", arrondissement: "1er arrondissement", quartier: "Owendo Port",
       pointRepere: "Le long de la route du port, entrepôt B12",
@@ -940,6 +989,34 @@ function annoncesDemoData() {
       description: "Local commercial bien situé à proximité immédiate du port, forte visibilité et passage. Grand espace de stockage, cour clôturée et gardiennée. Idéal commerce ou entrepôt.",
       equipements: ["Clôturé", "Parking", "Gardiennage"],
       statut: "disponible", lat: 0.2940, lng: 9.5050, photos: photo("shop,storefront,warehouse", 701)
+    },
+    {
+      ...vendeurEntreprise,
+      titre: "Bureau climatisé open-space à Alénakiri",
+      type: "Bureau", commune: "Owendo", arrondissement: "1er arrondissement", quartier: "Alénakiri",
+      pointRepere: "Immeuble Le Phare, face à l'agence BGFI d'Alénakiri",
+      zoneCaractere: "Zone commerciale",
+      prix: 320000, surface: 90, chambres: 0, salons: 1, sdb: 1, douches: 1,
+      cloture: false, materiau: "Dur (parpaing / béton)", couleurMurale: "Gris",
+      cuisineType: "Externe", doucheType: "Interne", terrasse: false, carreaux: true,
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Espace de bureau climatisé, open-space modulable avec salle de réunion, idéal pour une PME logistique proche du port. Parking visiteurs et fibre optique disponibles.",
+      equipements: ["Climatisé", "Parking", "Fibre optique"],
+      statut: "disponible", lat: 0.2915, lng: 9.5025, photos: photo("office,workspace,interior", 601)
+    },
+    {
+      ...vendeurEntreprise,
+      titre: "Box de stockage sécurisé à Virié",
+      type: "Box", commune: "Owendo", arrondissement: "1er arrondissement", quartier: "Virié",
+      pointRepere: "Zone d'entrepôts de Virié, portail vert",
+      zoneCaractere: "Zone industrielle",
+      prix: 180000, surface: 40, chambres: 0, salons: 0, sdb: 0, douches: 0,
+      cloture: true, materiau: "Dur (parpaing / béton)", couleurMurale: "Autre",
+      cuisineType: "Externe", doucheType: "Externe", terrasse: false, carreaux: false,
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Commun",
+      description: "Box de stockage sécurisé dans une zone d'entrepôts gardiennée, accès poids-lourd facile. Idéal pour stockage de marchandises ou archives d'entreprise.",
+      equipements: ["Clôturé", "Gardiennage", "Parking"],
+      statut: "disponible", lat: 0.2960, lng: 9.5085, photos: photo("warehouse,storage,box", 702)
     }
   ];
 }
@@ -947,7 +1024,7 @@ function annoncesDemoData() {
 function semerAnnoncesDemo() {
   if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
   const lot = annoncesDemoData();
-  if (!confirm(`Ajouter ${lot.length} annonces de démonstration (une par type de bien) dans Firestore ? Elles seront visibles sur le site public et modifiables/supprimables ici.`)) return;
+  if (!confirm(`Ajouter ${lot.length} annonces de démonstration (3 profils vendeur × 3 biens : agence, particulier, société privée) dans Firestore ? Elles seront visibles sur le site public et modifiables/supprimables ici.`)) return;
 
   const batch = window.dbAdmin.batch();
   const maintenant = firebase.firestore.FieldValue.serverTimestamp();
@@ -958,8 +1035,8 @@ function semerAnnoncesDemo() {
       ...item,
       video: null,
       proprietaireNom: item.proprietaireNom || "MALAGA Démo",
-      proprietaireTel: "+241 60 14 19 24",
-      whatsapp: "+241 60 14 19 24",
+      proprietaireTel: item.proprietaireTel || "+241 60 14 19 24",
+      whatsapp: item.whatsapp || item.proprietaireTel || "+241 60 14 19 24",
       vues: Math.floor(Math.random() * 40),
       demo: true,
       dateCreation: maintenant,
