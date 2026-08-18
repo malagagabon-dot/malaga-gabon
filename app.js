@@ -87,6 +87,9 @@ function initCarte() {
   if (carteWrap && getComputedStyle(carteWrap).position === "static") {
     carteWrap.style.position = "relative";
   }
+
+  // Force le recalcul de la taille au démarrage (évite un rendu vide)
+  setTimeout(() => map.invalidateSize(), 50);
 }
 
 /* Recentre/zoome la carte sur la zone choisie dans les filtres (commune → arrondissement),
@@ -359,6 +362,11 @@ function rendreTout() {
   rendreListe(filtrees);
   rendreMarqueurs(filtrees);
   document.getElementById("count-annonces").textContent = `${filtrees.length} annonce(s)`;
+  
+  // Force Leaflet à recalculer la taille du conteneur après les changements du DOM
+  if (map) {
+    setTimeout(() => map.invalidateSize(), 100);
+  }
 }
 
 function rendreListe(liste) {
