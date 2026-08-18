@@ -222,6 +222,16 @@ function appliquerFiltres(liste) {
   return resultat;
 }
 
+/* Date + heure complètes de publication, affichées en miniature sur chaque
+   carte d'annonce (a.dateCreation est un Timestamp Firestore). */
+function formaterDateHeure(valeur) {
+  const date = valeur?.toDate ? valeur.toDate() : (valeur instanceof Date ? valeur : null);
+  if (!date) return "";
+  const jour = date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const heure = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return `${jour} à ${heure}`;
+}
+
 function distanceKm(pos, annonce) {
   const R = 6371;
   const dLat = (annonce.lat - pos.lat) * Math.PI / 180;
@@ -381,6 +391,7 @@ function rendreListe(liste) {
         <div class="localisation">📍 ${escapeHTML(a.quartier || "")}${a.quartier ? " — " : ""}${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
         ${(a.etage && a.etage !== "Non précisé") || (a.vue && a.vue !== "Non précisé") ? `
         <div class="localisation" style="margin-top:2px;">${a.etage && a.etage !== "Non précisé" ? "🪜 " + escapeHTML(a.etage) : ""}${a.etage && a.etage !== "Non précisé" && a.vue && a.vue !== "Non précisé" ? " · " : ""}${a.vue && a.vue !== "Non précisé" ? "🌅 " + escapeHTML(a.vue) : ""}</div>` : ""}
+        ${a.dateCreation ? `<span class="date-publication">🕒 Publiée le ${escapeHTML(formaterDateHeure(a.dateCreation))}</span>` : ""}
       </div>
     `;
     carte.querySelector(".btn-favori").onclick = (e) => {
