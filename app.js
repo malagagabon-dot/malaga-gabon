@@ -362,11 +362,6 @@ function rendreTout() {
   rendreListe(filtrees);
   rendreMarqueurs(filtrees);
   document.getElementById("count-annonces").textContent = `${filtrees.length} annonce(s)`;
-  
-  // Force Leaflet à recalculer la taille du conteneur après les changements du DOM
-  if (map) {
-    setTimeout(() => map.invalidateSize(), 100);
-  }
 }
 
 function rendreListe(liste) {
@@ -476,78 +471,58 @@ function afficherDetail(a) {
       <h2 style="font-size:18px;font-weight:800;padding-right:36px;">${escapeHTML(a.titre)}</h2>
       <div style="font-size:21px;font-weight:900;color:var(--jaune);margin-top:4px;">${formatPrix(a.prix)}</div>
       <div style="opacity:.9;font-size:13px;margin-top:2px;">📍 ${escapeHTML(a.quartier || "")} — ${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
-      ${a.proprietaireCompteType === "entreprise" ? `<a href="entreprise.html?id=${escapeHTML(a.proprietaireId || "")}" style="display:inline-block;margin-top:8px;font-size:12px;color:#fff;text-decoration:underline;">🏢 Voir tous les biens de ${escapeHTML(a.proprietaireRaisonSociale || a.proprietaireNom || "cette entreprise")}</a>` : ""}
+      <div style="opacity:.8;font-size:11px;margin-top:6px;">${a.vues || 0} vue(s)</div>
     </div>
-    <div style="padding:20px;">
-      ${a.photos && a.photos.length ? `
-        <div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;">
-          ${a.photos.map(p => `<img src="${escapeHTML(p)}" style="height:130px;border-radius:10px;flex-shrink:0;">`).join("")}
-        </div>` : ""}
-      ${a.video ? `<video src="${escapeHTML(a.video)}" controls style="width:100%;border-radius:10px;margin-bottom:16px;"></video>` : ""}
 
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
-        ${a.chambres ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">🛏️ ${a.chambres}</div><div style="font-size:11px;color:#666;">Chambres</div></div>` : ""}
-        ${a.salons ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">🛋️ ${a.salons}</div><div style="font-size:11px;color:#666;">Salons</div></div>` : ""}
-        ${a.sdb ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">🚿 ${a.sdb}</div><div style="font-size:11px;color:#666;">S. bain</div></div>` : ""}
-        ${a.surface ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">📐 ${a.surface}</div><div style="font-size:11px;color:#666;">m²</div></div>` : ""}
+    <div id="detailMiniMap" style="width:100%;height:180px;border-radius:8px;margin:16px 0;overflow:hidden;background:#eee;"></div>
+
+    <div style="padding:16px 20px;">
+      <h3 style="font-size:15px;font-weight:800;margin-bottom:8px;">📋 Caractéristiques</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:16px;">
+        ${a.chambres ? `<div>🛏️ <strong>${a.chambres}</strong> chambre${a.chambres > 1 ? "s" : ""}</div>` : ""}
+        ${a.salons ? `<div>🛋️ <strong>${a.salons}</strong> salon${a.salons > 1 ? "s" : ""}</div>` : ""}
+        ${a.douches || a.sdb ? `<div>🚿 <strong>${a.douches || a.sdb}</strong> sdb</div>` : ""}
+        ${a.etage && a.etage !== "Non précisé" ? `<div>🪜 Étage ${escapeHTML(a.etage)}</div>` : ""}
+        ${a.vue && a.vue !== "Non précisé" ? `<div>🌅 ${escapeHTML(a.vue)}</div>` : ""}
+        ${a.surface ? `<div>📐 ${a.surface} m²</div>` : ""}
       </div>
 
-      <div style="margin-bottom:16px;">
-        <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">Description</h3>
-        <p style="font-size:13px;color:#666;">${escapeHTML(a.description || "Aucune description.")}</p>
+      ${a.description ? `
+      <h3 style="font-size:15px;font-weight:800;margin-bottom:8px;margin-top:12px;">📝 Description</h3>
+      <p style="font-size:13px;color:#666;line-height:1.5;margin-bottom:16px;">${escapeHTML(a.description)}</p>
+      ` : ""}
+
+      <h3 style="font-size:15px;font-weight:800;margin-bottom:8px;margin-top:12px;">💬 Contact</h3>
+      <div style="font-size:13px;color:#444;margin-bottom:12px;">
+        ${a.proprietaireNom ? `<div><strong>${escapeHTML(a.proprietaireNom)}</strong></div>` : ""}
+        ${a.proprietaire ? `<div style="color:#888;">${escapeHTML(a.proprietaire)}</div>` : ""}
       </div>
-
-      <div style="margin-bottom:16px;font-size:13px;color:#444;line-height:1.9;">
-        ${a.cloture ? "✓ Clôturé &nbsp;" : ""}${a.eau ? `✓ Eau : ${escapeHTML(a.eau)} &nbsp;` : ""}${a.electricite ? `✓ Électricité : ${escapeHTML(a.electricite)}` : ""}
-        ${a.compteur ? `<br>✓ Compteur ${escapeHTML(a.compteur)}` : ""}
-        ${a.etat ? `<br>✓ État du bâtiment : ${escapeHTML(a.etat)}` : ""}
-        ${a.materiau ? `<br>✓ Matériau : ${escapeHTML(a.materiau)}` : ""}
-        ${a.couleurMurale ? ` &nbsp;✓ Peinture murale : ${escapeHTML(a.couleurMurale)}` : ""}
-        ${a.cuisineType ? `<br>✓ Cuisine ${escapeHTML(a.cuisineType.toLowerCase())}` : ""}
-        ${a.doucheType ? ` &nbsp;✓ Douche ${escapeHTML(a.doucheType.toLowerCase())}` : ""}
-        ${a.terrasse ? "<br>✓ Terrasse" : ""}${a.carreaux ? " &nbsp;✓ Sol carrelé" : ""}
-        ${a.zoneCaractere ? `<br>✓ Zone : ${escapeHTML(a.zoneCaractere)}` : ""}
-        ${a.pointRepere ? `<br>✓ Repère : ${escapeHTML(a.pointRepere)}` : ""}
-        ${a.numeroBien ? `<br>✓ Repérage : ${escapeHTML(a.numeroBien)}` : ""}
-        ${a.etage && a.etage !== "Non précisé" ? `<br>✓ Étage : ${escapeHTML(a.etage)}` : ""}
-        ${a.vue && a.vue !== "Non précisé" ? `<br>✓ Vue : ${escapeHTML(a.vue)}` : ""}
-      </div>
-
-      ${a.equipements && a.equipements.length ? `
-        <div style="margin-bottom:16px;">
-          <h3 style="font-size:14px;font-weight:700;margin-bottom:8px;">Équipements</h3>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            ${a.equipements.map(e => `<span style="background:#E8F5EE;color:var(--vert);padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">✓ ${escapeHTML(e)}</span>`).join("")}
-          </div>
-        </div>` : ""}
-
-      ${typeof a.lat === "number" && typeof a.lng === "number" ? `
-        <div style="margin-bottom:16px;">
-          <h3 style="font-size:14px;font-weight:700;margin-bottom:8px;">📍 Localisation</h3>
-          <div id="detailMiniMap" style="width:100%;height:200px;border-radius:12px;overflow:hidden;border:1px solid #eee;margin-bottom:10px;"></div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-            <a href="https://www.google.com/maps?q=${a.lat},${a.lng}" target="_blank" rel="noopener" style="text-align:center;background:#fff;border:1.5px solid #eee;border-radius:10px;padding:10px 4px;font-size:11.5px;font-weight:700;text-decoration:none;color:#222;">🗺️<br>Google Maps</a>
-            <a href="https://www.google.com/maps/dir/?api=1&destination=${a.lat},${a.lng}" target="_blank" rel="noopener" style="text-align:center;background:#fff;border:1.5px solid #eee;border-radius:10px;padding:10px 4px;font-size:11.5px;font-weight:700;text-decoration:none;color:#222;">🧭<br>Itinéraire</a>
-            ${numeroWhatsApp ? `<a href="https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(`Bonjour, voici la position exacte de l'annonce "${a.titre}" sur MALAGA : https://www.google.com/maps?q=${a.lat},${a.lng}`)}" target="_blank" rel="noopener" style="text-align:center;background:#fff;border:1.5px solid #eee;border-radius:10px;padding:10px 4px;font-size:11.5px;font-weight:700;text-decoration:none;color:#222;">💬<br>Partager</a>` : `<div></div>`}
-          </div>
-        </div>` : `
-        <div style="margin-bottom:16px;background:#FFF7E6;border:1px solid #FDE7B0;border-radius:10px;padding:10px 12px;font-size:12px;color:#8a6b1f;">
-          ⚠️ Position exacte non renseignée par le propriétaire.
-        </div>`}
-
-      <div style="background:#f5f5f5;padding:16px;border-radius:12px;margin-bottom:16px;" id="blocReservationVisite"></div>
-
-      <div style="background:#f5f5f5;padding:16px;border-radius:12px;">
-        <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;">Contacter le propriétaire</h3>
-        <div style="font-size:13px;margin-bottom:10px;"><strong>${escapeHTML(a.proprietaireNom || "")}</strong></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
           ${numeroWhatsApp ? `<a href="https://wa.me/${numeroWhatsApp}?text=${texteWhatsAppContact}" target="_blank" class="btn btn-vert">💬 WhatsApp</a>` : ""}
           ${a.proprietaireTel ? `<a href="tel:${escapeHTML(a.proprietaireTel)}" class="btn btn-bleu">📞 Appeler</a>` : ""}
           ${a.proprietaireEmail ? `<a href="mailto:${escapeHTML(a.proprietaireEmail)}" class="btn btn-outline">✉️ Email</a>` : ""}
         </div>
       </div>
     </div>
+
+    <div id="blocReservationVisite" style="padding:16px 20px;border-top:1px solid #eee;"></div>
   `;
+
+  // Ajouter les images du bien en carrousel
+  if (a.photos && a.photos.length > 0) {
+    const carrouselHtml = `
+      <div id="carrousel" style="position:relative;margin:-20px -20px 0;padding-top:100%;background:#f5f5f5;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;transition:transform .3s ease;overflow-x:auto;scroll-snap-type:x mandatory;">
+          ${a.photos.map((photo, i) => `
+            <img src="${escapeHTML(photo)}" alt="Photo ${i+1}" loading="lazy" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;scroll-snap-align:start;">
+          `).join("")}
+        </div>
+        <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.5);color:#fff;padding:4px 8px;border-radius:4px;font-size:11px;z-index:10;">${a.photos.length} photo(s)</div>
+      </div>
+    `;
+    panneau.insertAdjacentHTML("afterbegin", carrouselHtml);
+  }
+
   modal.classList.add("ouverte");
   document.getElementById("fermerModal").onclick = () => modal.classList.remove("ouverte");
   modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("ouverte"); };
