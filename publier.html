@@ -119,35 +119,39 @@
 
         <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">🏠 Caractéristiques</h3>
 
-        <div class="grille-2">
-          <div class="champ">
-            <label>Surface (m²)</label>
-            <input type="number" id="surface" min="1" placeholder="75">
-          </div>
-          <div class="champ">
-            <label>Chambres</label>
-            <input type="number" id="chambres" min="0" placeholder="2">
-          </div>
+        <div class="champ">
+          <label>Surface (m²)</label>
+          <input type="number" id="surface" min="1" placeholder="75">
         </div>
-        <div class="grille-2">
-          <div class="champ">
-            <label>Salons</label>
-            <input type="number" id="salons" min="0" placeholder="1">
+
+        <div id="blocPieces">
+          <div class="grille-2">
+            <div class="champ">
+              <label>Chambres</label>
+              <input type="number" id="chambres" min="0" placeholder="2">
+            </div>
+            <div class="champ">
+              <label>Salons</label>
+              <input type="number" id="salons" min="0" placeholder="1">
+            </div>
           </div>
-          <div class="champ">
-            <label>Salles de bain / douches</label>
-            <input type="number" id="sdb" min="0" placeholder="1">
+          <div class="grille-2">
+            <div class="champ">
+              <label>Salles de bain / douches</label>
+              <input type="number" id="sdb" min="0" placeholder="1">
+            </div>
+            <div class="champ">
+              <label>Douche</label>
+              <select id="doucheType"></select>
+            </div>
           </div>
-        </div>
-        <div class="grille-2">
           <div class="champ">
             <label>Cuisine</label>
             <select id="cuisineType"></select>
           </div>
-          <div class="champ">
-            <label>Douche</label>
-            <select id="doucheType"></select>
-          </div>
+        </div>
+        <div class="champ" id="avisTypeNonResidentiel" style="display:none;background:#FFF7E6;border:1px solid #FDE7B0;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#8a6b1f;">
+          ℹ️ Chambres, salons, cuisine et douche ne s'appliquent pas à ce type de bien — ces champs sont masqués.
         </div>
         <div class="champ">
           <label>État du bâtiment</label>
@@ -325,7 +329,8 @@
     import {
       COMMUNES, ARRONDISSEMENTS, getQuartiers, CENTRES, TYPES_BIEN, EQUIPEMENTS,
       EAU_OPTIONS, ELECTRICITE_OPTIONS, COMPTEUR_OPTIONS, ETAT_BATIMENT, LIBREVILLE_CENTER,
-      ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES, VUES, ETAGES
+      ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES, VUES, ETAGES,
+      estResidentiel
     } from "./malaga-reference.js";
 
     let utilisateurCourant = null;
@@ -342,6 +347,23 @@
     // Remplissage des listes déroulantes
     document.getElementById("type").innerHTML = TYPES_BIEN.map(t => `<option>${t}</option>`).join("");
     document.getElementById("etat").innerHTML = ETAT_BATIMENT.map(e => `<option>${e}</option>`).join("");
+
+    // Le formulaire s'adapte au type de bien : chambres/salons/cuisine/douche
+    // n'ont de sens que pour un logement résidentiel (pas un bureau, local
+    // commercial ou box de stockage).
+    const selectType = document.getElementById("type");
+    const blocPieces = document.getElementById("blocPieces");
+    const avisTypeNonResidentiel = document.getElementById("avisTypeNonResidentiel");
+    function adapterFormulaireAuType() {
+      const residentiel = estResidentiel(selectType.value);
+      blocPieces.style.display = residentiel ? "" : "none";
+      avisTypeNonResidentiel.style.display = residentiel ? "none" : "block";
+      if (!residentiel) {
+        ["chambres", "salons", "sdb"].forEach(id => document.getElementById(id).value = "");
+      }
+    }
+    selectType.addEventListener("change", adapterFormulaireAuType);
+    adapterFormulaireAuType();
     document.getElementById("etage").innerHTML = ETAGES.map(e => `<option>${e}</option>`).join("");
     document.getElementById("vue").innerHTML = VUES.map(v => `<option>${v}</option>`).join("");
 
@@ -528,15 +550,23 @@
         btn.textContent = "Publication en cours…";
 
         const { lat, lng } = marqueur.getLatLng();
+        const typeChoisi = document.getElementById("type").value;
+        const residentiel = estResidentiel(typeChoisi);
 
         await setDoc(nouvelleRef, {
           proprietaireId: utilisateurCourant.uid,
           proprietaireNom: profil?.nom || "",
           proprietaireTel: profil?.tel || "",
           proprietaireEmail: document.getElementById("emailContact").value.trim() || profil?.email || "",
+          // Dénormalisé depuis /users/{uid} pour afficher le badge Agence/Particulier
+          // sur chaque carte d'annonce sans lecture supplémentaire.
+          proprietaireCompteType: profil?.compteType || "particulier",
+          proprietaireRaisonSociale: profil?.raisonSociale || "",
+          proprietaireLogoUrl: profil?.logoUrl || "",
+          proprietaireStatutEntreprise: profil?.statutEntreprise || "",
           whatsapp: document.getElementById("whatsapp").value.trim(),
           titre: document.getElementById("titre").value.trim(),
-          type: document.getElementById("type").value,
+          type: typeChoisi,
           prix: Number(document.getElementById("prix").value),
           description: document.getElementById("description").value.trim(),
           commune: document.getElementById("commune").value,
@@ -546,12 +576,13 @@
           zoneCaractere: document.getElementById("zoneCaractere").value,
           lat, lng,
           surface: Number(document.getElementById("surface").value) || null,
-          chambres: Number(document.getElementById("chambres").value) || null,
-          salons: Number(document.getElementById("salons").value) || null,
-          sdb: Number(document.getElementById("sdb").value) || null,
-          douches: Number(document.getElementById("sdb").value) || null,
-          cuisineType: document.getElementById("cuisineType").value,
-          doucheType: document.getElementById("doucheType").value,
+          // Champs "pièces" — n'ont de sens que pour un bien résidentiel.
+          chambres: residentiel ? (Number(document.getElementById("chambres").value) || null) : null,
+          salons: residentiel ? (Number(document.getElementById("salons").value) || null) : null,
+          sdb: residentiel ? (Number(document.getElementById("sdb").value) || null) : null,
+          douches: residentiel ? (Number(document.getElementById("sdb").value) || null) : null,
+          cuisineType: residentiel ? document.getElementById("cuisineType").value : "",
+          doucheType: residentiel ? document.getElementById("doucheType").value : "",
           etat: document.getElementById("etat").value,
           numeroBien: document.getElementById("numeroBien").value.trim(),
           etage: document.getElementById("etage").value,

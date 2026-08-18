@@ -374,7 +374,7 @@ function showPage(pageId) {
   else if (pageId === 'reservations' && window.chargerReservations) window.chargerReservations();
   else if (pageId === 'messages') loadMessages();
   else if (pageId === 'stats') loadStats();
-  else if (pageId === 'publier') initPubMiniMap();
+  else if (pageId === 'publier') { initPubMiniMap(); adapterPubFormulaireAuType(); }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -505,7 +505,7 @@ function loadAnnonces(liste) {
       <tr>
         <td style="font-size:11px;color:#888;">${a.id}</td>
         <td style="font-weight:600;">${escapeHTML(String(titre).substring(0, 20))}</td>
-        <td>${escapeHTML(texte(a, 'proprietaireNom', 'proprio', 'nomProprietaire'))}</td>
+        <td>${escapeHTML(texte(a, 'proprietaireNom', 'proprio', 'nomProprietaire'))}${champ(a, 'proprietaireCompteType') === 'entreprise' ? ' 🏢' : ' 🏠'}</td>
         <td>${escapeHTML(texte(a, 'commune', 'ville'))}</td>
         <td>${nombre(a, 'prix', 'prixMensuel', 'loyer').toLocaleString()}</td>
         <td>${nombre(a, 'vues').toLocaleString()}</td>
@@ -630,6 +630,17 @@ function supprimerPhotoModif(i) {
   renderPhotosModif();
 }
 
+/* Même logique que côté publication : masque chambres/salons/sdb/cuisine/douche
+   dans la modale de modification quand le type de bien n'est pas résidentiel. */
+function adapterModFormulaireAuType() {
+  const residentiel = TYPES_RESIDENTIELS_ADMIN.includes(document.getElementById('modType').value);
+  ['modGroupeChambres', 'modGroupeSalons', 'modGroupeSdb', 'modGroupeCuisine', 'modGroupeDouche'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = residentiel ? '' : 'none';
+  });
+}
+window.adapterModFormulaireAuType = adapterModFormulaireAuType;
+
 function modifierAnnonce(id) {
   const a = annoncesData.find(x => x.id === id);
   if (!a) return;
@@ -637,6 +648,7 @@ function modifierAnnonce(id) {
 
   document.getElementById('modTitre').value = texte(a, 'titre', 'title') === '—' ? '' : texte(a, 'titre', 'title');
   document.getElementById('modType').value = champ(a, 'type') || 'Maison';
+  adapterModFormulaireAuType();
   document.getElementById('modCommune').value = champ(a, 'commune', 'ville') || 'Libreville';
   document.getElementById('modArrondissement').value = champ(a, 'arrondissement') || '';
   document.getElementById('modQuartier').value = champ(a, 'quartier', 'adresse') || '';
@@ -693,9 +705,12 @@ function enregistrerModificationAnnonce() {
   const btn = document.getElementById('modBtnEnregistrer');
   btn.textContent = '⏳ Enregistrement...';
 
+  const typeChoisi = document.getElementById('modType').value;
+  const residentiel = TYPES_RESIDENTIELS_ADMIN.includes(typeChoisi);
+
   window.dbAdmin.collection('annonces').doc(annonceEnEdition).update({
     titre,
-    type: document.getElementById('modType').value,
+    type: typeChoisi,
     commune: document.getElementById('modCommune').value,
     arrondissement: document.getElementById('modArrondissement').value.trim(),
     quartier: document.getElementById('modQuartier').value.trim(),
@@ -703,15 +718,15 @@ function enregistrerModificationAnnonce() {
     zoneCaractere: document.getElementById('modZoneCaractere').value,
     prix: parseInt(prix) || 0,
     surface: parseInt(document.getElementById('modSurface').value) || null,
-    chambres: parseInt(document.getElementById('modChambres').value) || null,
-    salons: parseInt(document.getElementById('modSalons').value) || null,
-    sdb: parseInt(document.getElementById('modSdb').value) || null,
-    douches: parseInt(document.getElementById('modSdb').value) || null,
+    chambres: residentiel ? (parseInt(document.getElementById('modChambres').value) || null) : null,
+    salons: residentiel ? (parseInt(document.getElementById('modSalons').value) || null) : null,
+    sdb: residentiel ? (parseInt(document.getElementById('modSdb').value) || null) : null,
+    douches: residentiel ? (parseInt(document.getElementById('modSdb').value) || null) : null,
     numeroBien: document.getElementById('modNumeroBien').value.trim(),
     etage: document.getElementById('modEtage').value,
     vue: document.getElementById('modVue').value,
-    cuisineType: document.getElementById('modCuisineType').value,
-    doucheType: document.getElementById('modDoucheType').value,
+    cuisineType: residentiel ? document.getElementById('modCuisineType').value : '',
+    doucheType: residentiel ? document.getElementById('modDoucheType').value : '',
     materiau: document.getElementById('modMateriau').value,
     couleurMurale: document.getElementById('modCouleurMurale').value,
     terrasse: document.getElementById('modTerrasse').value === 'oui',
@@ -1040,6 +1055,19 @@ function filtrerEntreprises() {
   loadEntreprises(filtres);
 }
 
+/* Les annonces stockent une copie (dénormalisée) du statut de vérification de
+   l'entreprise (proprietaireStatutEntreprise) pour afficher le badge "Agence
+   vérifiée" sans lecture supplémentaire côté public. Il faut donc la resynchroniser
+   sur toutes les annonces de ce compte à chaque changement de statut admin —
+   sinon le badge public ne bouge jamais après une vérification/suspension. */
+function synchroniserStatutAnnoncesEntreprise(uid, nouveauStatut) {
+  const biens = annoncesData.filter(a => champ(a, 'proprietaireId') === uid);
+  if (biens.length === 0) return Promise.resolve();
+  const lot = window.dbAdmin.batch();
+  biens.forEach(a => lot.update(window.dbAdmin.collection('annonces').doc(a.id), { proprietaireStatutEntreprise: nouveauStatut }));
+  return lot.commit();
+}
+
 function verifierEntreprise(id) {
   const u = usersData.find(x => x.id === id);
   if (!u) return;
@@ -1049,6 +1077,7 @@ function verifierEntreprise(id) {
   btn.textContent = 'Vérifier';
   btn.onclick = () => {
     window.dbAdmin.collection('users').doc(id).update({ statutEntreprise: 'verifie' })
+      .then(() => synchroniserStatutAnnoncesEntreprise(id, 'verifie'))
       .then(() => toast('✅ Compte professionnel vérifié'))
       .catch((err) => { console.error(err); toast('❌ Erreur lors de la vérification'); });
     fermerModal();
@@ -1066,6 +1095,7 @@ function suspendreEntreprise(id) {
   btn.onclick = () => {
     const motif = window.prompt('Motif de la suspension (optionnel, visible en interne uniquement) :', '') || '';
     window.dbAdmin.collection('users').doc(id).update({ statutEntreprise: 'suspendu', motifSuspension: motif })
+      .then(() => synchroniserStatutAnnoncesEntreprise(id, 'suspendu'))
       .then(() => toast('⛔ Compte professionnel suspendu'))
       .catch((err) => { console.error(err); toast('❌ Erreur lors de la suspension'); });
     fermerModal();
@@ -1077,6 +1107,7 @@ function reactiverEntreprise(id) {
   const u = usersData.find(x => x.id === id);
   if (!u) return;
   window.dbAdmin.collection('users').doc(id).update({ statutEntreprise: 'attente', motifSuspension: '' })
+    .then(() => synchroniserStatutAnnoncesEntreprise(id, 'attente'))
     .then(() => toast('↩️ Compte réactivé — en attente de nouvelle vérification'))
     .catch((err) => { console.error(err); toast('❌ Erreur lors de la réactivation'); });
 }
@@ -1165,6 +1196,21 @@ function loadStats() {
 /* ══════════════════════════════════════════════════════════
    PUBLICATION ANNONCE — écrit réellement dans Firestore
 ══════════════════════════════════════════════════════════ */
+// Types "à vivre" : seuls ceux-ci ont des chambres / salles de bain à renseigner.
+const TYPES_RESIDENTIELS_ADMIN = ['Maison', 'Appartement', 'Studio', 'Villa', 'Chambre'];
+function adapterPubFormulaireAuType() {
+  const residentiel = TYPES_RESIDENTIELS_ADMIN.includes(document.getElementById('pubType').value);
+  const gChambres = document.getElementById('pubGroupeChambres');
+  const gSdb = document.getElementById('pubGroupeSdb');
+  if (gChambres) gChambres.style.display = residentiel ? '' : 'none';
+  if (gSdb) gSdb.style.display = residentiel ? '' : 'none';
+  if (!residentiel) {
+    if (document.getElementById('pubChambres')) document.getElementById('pubChambres').value = '';
+    if (document.getElementById('pubSdb')) document.getElementById('pubSdb').value = '';
+  }
+}
+window.adapterPubFormulaireAuType = adapterPubFormulaireAuType;
+
 function publierAnnonce() {
   const titre = document.getElementById('pubTitre').value.trim();
   const type = document.getElementById('pubType').value;
@@ -1191,12 +1237,13 @@ function publierAnnonce() {
   const btn = document.getElementById('pubBtnText');
   btn.textContent = '⏳ Publication...';
 
+  const residentiel = TYPES_RESIDENTIELS_ADMIN.includes(type);
   const nouvelleAnnonce = {
     titre, type, commune, quartier, arrondissement,
     prix: parseInt(prix) || 0,
     surface: parseInt(document.getElementById('pubSurface').value) || 0,
-    chambres: parseInt(document.getElementById('pubChambres').value) || 0,
-    sdb: parseInt(document.getElementById('pubSdb').value) || 0,
+    chambres: residentiel ? (parseInt(document.getElementById('pubChambres').value) || 0) : 0,
+    sdb: residentiel ? (parseInt(document.getElementById('pubSdb').value) || 0) : 0,
     numeroBien: document.getElementById('pubNumeroBien').value.trim(),
     etage: document.getElementById('pubEtage').value,
     vue: document.getElementById('pubVue').value,
@@ -1237,6 +1284,7 @@ function resetForm() {
   document.getElementById('pubSurface').value = '';
   document.getElementById('pubChambres').value = '';
   document.getElementById('pubSdb').value = '';
+  adapterPubFormulaireAuType();
   document.getElementById('pubProprioNom').value = '';
   document.getElementById('pubProprioEmail').value = '';
   document.getElementById('pubLat').value = '';

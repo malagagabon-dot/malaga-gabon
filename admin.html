@@ -580,7 +580,7 @@
       <div class="form-grid">
         <div class="form-group">
           <label>Type de bien *</label>
-          <select id="pubType">
+          <select id="pubType" onchange="adapterPubFormulaireAuType()">
             <option value="">Choisir</option>
             <option>Maison</option>
             <option>Appartement</option>
@@ -589,6 +589,7 @@
             <option>Chambre</option>
             <option>Bureau</option>
             <option>Local commercial</option>
+            <option>Box</option>
           </select>
         </div>
         <div class="form-group">
@@ -623,11 +624,11 @@
           <label>Surface (m²)</label>
           <input type="number" id="pubSurface" placeholder="Ex: 80" />
         </div>
-        <div class="form-group">
+        <div class="form-group" id="pubGroupeChambres">
           <label>Nombre de chambres</label>
           <input type="number" id="pubChambres" placeholder="Ex: 2" min="0" />
         </div>
-        <div class="form-group">
+        <div class="form-group" id="pubGroupeSdb">
           <label>Salles de bain</label>
           <input type="number" id="pubSdb" placeholder="Ex: 1" min="0" />
         </div>
@@ -724,7 +725,7 @@
       </div>
       <div class="form-group">
         <label>Type de bien *</label>
-        <select id="modType">
+        <select id="modType" onchange="adapterModFormulaireAuType()">
           <option>Maison</option>
           <option>Appartement</option>
           <option>Studio</option>
@@ -732,6 +733,7 @@
           <option>Chambre</option>
           <option>Bureau</option>
           <option>Local commercial</option>
+          <option>Box</option>
         </select>
       </div>
       <div class="form-group">
@@ -766,15 +768,15 @@
         <label>Surface (m²)</label>
         <input type="number" id="modSurface" />
       </div>
-      <div class="form-group">
+      <div class="form-group" id="modGroupeChambres">
         <label>Chambres</label>
         <input type="number" id="modChambres" min="0" />
       </div>
-      <div class="form-group">
+      <div class="form-group" id="modGroupeSalons">
         <label>Salons</label>
         <input type="number" id="modSalons" min="0" />
       </div>
-      <div class="form-group">
+      <div class="form-group" id="modGroupeSdb">
         <label>Salles de bain / douches</label>
         <input type="number" id="modSdb" min="0" />
       </div>
@@ -790,11 +792,11 @@
         <label>Vue</label>
         <select id="modVue"></select>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="modGroupeCuisine">
         <label>Cuisine</label>
         <select id="modCuisineType"></select>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="modGroupeDouche">
         <label>Douche</label>
         <select id="modDoucheType"></select>
       </div>

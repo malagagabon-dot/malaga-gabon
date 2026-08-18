@@ -12,7 +12,7 @@ import { getProfil } from "./auth.js";
 import {
   COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, getIconeType, formatPrix,
   ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
-  EQUIPEMENTS, PALIERS_PIECES, escapeHTML
+  EQUIPEMENTS, PALIERS_PIECES, escapeHTML, getBadgeVendeur
 } from "./malaga-reference.js";
 import { estFavori, toggleFavori } from "./nav.js";
 
@@ -34,7 +34,7 @@ onAuthStateChanged(auth, async (user) => {
 
 let toutesLesAnnonces = [];
 let filtres = {
-  commune: "", arrondissement: "", type: "", prixMax: "", texte: "",
+  commune: "", arrondissement: "", type: "", prixMax: "", texte: "", vendeur: "",
   // Filtres avancés
   quartier: "", rue: "", zone: "", presLocalisation: false,
   chambresMin: "", salonsMin: "", douchesMin: "", doucheType: "", cuisineType: "",
@@ -117,9 +117,14 @@ function initFiltres() {
   const selectArrondissement = document.getElementById("filterArrondissement");
   const selectType = document.getElementById("filterType");
   const selectPrix = document.getElementById("filterPrix");
+  const selectVendeur = document.getElementById("filterVendeur");
 
   selectCommune.innerHTML += COMMUNES.map(c => `<option>${c}</option>`).join("");
   selectType.innerHTML += TYPES_BIEN.map(t => `<option>${t}</option>`).join("");
+
+  if (selectVendeur) {
+    selectVendeur.onchange = () => { filtres.vendeur = selectVendeur.value; rendreTout(); };
+  }
 
   selectCommune.onchange = () => {
     filtres.commune = selectCommune.value;
@@ -146,6 +151,9 @@ function appliquerFiltres(liste) {
       (a.arrondissement || "").toLowerCase().includes(filtres.texte) ||
       (a.commune || "").toLowerCase().includes(filtres.texte);
     const okFavoris = !modeFavoris || estFavori(a.id);
+    const okVendeur = !filtres.vendeur || (filtres.vendeur === "entreprise"
+      ? a.proprietaireCompteType === "entreprise"
+      : a.proprietaireCompteType !== "entreprise");
 
     // ══ Filtres avancés ══
     const okQuartier = !filtres.quartier || (a.quartier || "").toLowerCase().includes(filtres.quartier);
@@ -165,7 +173,7 @@ function appliquerFiltres(liste) {
     const okEquipements = !filtres.equipements.length ||
       filtres.equipements.every(e => (a.equipements || []).includes(e));
 
-    return okCommune && okArr && okType && okPrix && okTexte && okFavoris &&
+    return okCommune && okArr && okType && okPrix && okTexte && okFavoris && okVendeur &&
       okQuartier && okRue && okZone && okChambres && okSalons && okDouches &&
       okDoucheType && okCuisineType && okMateriau && okCouleur && okTerrasse &&
       okCarreaux && okPrixMin && okPrixMaxAv && okEquipements;
@@ -328,11 +336,13 @@ function rendreListe(liste) {
     carte.className = "carte-annonce";
     carte.id = `carte-${a.id}`;
     const photo = a.photos && a.photos[0];
+    const badgeVendeur = getBadgeVendeur(a);
     carte.innerHTML = `
       <div class="visuel">
         ${photo ? `<img src="${escapeHTML(photo)}" alt="${escapeHTML(a.titre)}" loading="lazy">` : getIconeType(a.type)}
         <button class="btn-favori ${estFavori(a.id) ? "actif" : ""}" data-id="${a.id}" aria-label="Ajouter aux favoris">${estFavori(a.id) ? "❤️" : "🤍"}</button>
         <span class="badge badge-disponible" style="position:absolute;top:8px;right:8px;">🟢 Disponible</span>
+        <span class="badge ${badgeVendeur.classe}" style="position:absolute;bottom:8px;left:8px;">${badgeVendeur.texte}</span>
       </div>
       <div class="carte-info">
         <h3>${escapeHTML(a.titre)}<span class="type-tag">${escapeHTML(a.type || "")}</span></h3>
@@ -394,13 +404,16 @@ function afficherDetail(a) {
     `Bonjour${a.proprietaireNom ? " " + a.proprietaireNom : ""}, je suis intéressé(e) par votre annonce "${a.titre}" (${formatPrix(a.prix)}) sur MALAGA. Pouvez-vous me préciser les modalités de paiement du loyer ?`
   );
 
+  const badgeVendeurDetail = getBadgeVendeur(a);
   panneau.innerHTML = `
     <div style="background:linear-gradient(135deg,var(--vert) 0%,var(--vert-fonce) 100%);padding:24px 20px;color:#fff;position:relative;">
       <button id="fermerModal" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.25);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
       <div style="font-size:44px;margin-bottom:6px;">${getIconeType(a.type)}</div>
+      <span class="badge ${badgeVendeurDetail.classe}" style="display:inline-block;margin-bottom:6px;">${badgeVendeurDetail.texte}</span>
       <h2 style="font-size:18px;font-weight:800;padding-right:36px;">${escapeHTML(a.titre)}</h2>
       <div style="font-size:21px;font-weight:900;color:var(--jaune);margin-top:4px;">${formatPrix(a.prix)}</div>
       <div style="opacity:.9;font-size:13px;margin-top:2px;">📍 ${escapeHTML(a.quartier || "")} — ${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
+      ${a.proprietaireCompteType === "entreprise" ? `<a href="entreprise.html?id=${escapeHTML(a.proprietaireId || "")}" style="display:inline-block;margin-top:8px;font-size:12px;color:#fff;text-decoration:underline;">🏢 Voir tous les biens de ${escapeHTML(a.proprietaireRaisonSociale || a.proprietaireNom || "cette entreprise")}</a>` : ""}
     </div>
     <div style="padding:20px;">
       ${a.photos && a.photos.length ? `

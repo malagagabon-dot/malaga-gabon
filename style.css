@@ -280,6 +280,11 @@ body { padding-bottom: 68px; }
 .badge-disponible { background: #D1FAE5; color: var(--vert-fonce); }
 .badge-occupe { background: #FEE2E2; color: #B91C1C; }
 
+/* Distinction agence/entreprise vs particulier, sur les cartes d'annonces et le détail */
+.badge-vendeur-particulier { background: rgba(255,255,255,.92); color: var(--texte); }
+.badge-vendeur-entreprise { background: #DBEAFE; color: #1D4ED8; }
+.badge-vendeur-verifie { background: #D1FAE5; color: var(--vert-fonce); }
+
 .carte-info { padding: 12px 14px; }
 .carte-info h3 { font-size: 13.5px; font-weight: 700; margin-bottom: 6px; }
 .carte-info .prix { color: var(--vert); font-weight: 800; font-size: 15px; margin-bottom: 4px; }

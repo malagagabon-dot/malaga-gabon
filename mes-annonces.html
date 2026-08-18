@@ -98,7 +98,7 @@
   </div>
 
   <script type="module">
-    import { auth, db, signOut, collection, query, where, orderBy, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "./firebase-config.js";
+    import { auth, db, signOut, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "./firebase-config.js";
     import { protegerPage } from "./auth.js";
     import { getIconeType, formatPrix, escapeHTML, ETAGES, VUES } from "./malaga-reference.js";
 
@@ -110,10 +110,15 @@
       ecouterMesAnnonces(user.uid);
     }, "proprietaire");
 
+    // Remarque : le tri se fait côté client (et non via orderBy() dans la requête)
+    // pour éviter de dépendre d'un index composite Firestore (proprietaireId + dateCreation)
+    // qui doit être créé manuellement dans la console — sans lui, la requête échoue
+    // silencieusement et la liste n'apparaît jamais.
     function ecouterMesAnnonces(uid) {
-      const q = query(collection(db, "annonces"), where("proprietaireId", "==", uid), orderBy("dateCreation", "desc"));
+      const q = query(collection(db, "annonces"), where("proprietaireId", "==", uid));
       onSnapshot(q, (snap) => {
-        const annonces = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const annonces = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.dateCreation?.toMillis?.() || 0) - (a.dateCreation?.toMillis?.() || 0));
         rendreListe(annonces);
       }, (err) => {
         console.error(err);

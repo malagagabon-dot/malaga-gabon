@@ -96,6 +96,15 @@ export const TYPES_BIEN = [
   "Maison", "Appartement", "Studio", "Chambre", "Villa", "Bureau", "Local commercial", "Box"
 ];
 
+/* Types de biens "à vivre" (habitation), pour lesquels les champs chambres / salons /
+   cuisine / douche ont un sens. Les biens commerciaux ou de stockage (Bureau, Local
+   commercial, Box) n'affichent pas ces champs — ils ont leurs propres notions de
+   pièces (bureaux, surface de vente, box de stockage...). */
+export const TYPES_RESIDENTIELS = ["Maison", "Appartement", "Studio", "Chambre", "Villa"];
+export function estResidentiel(type) {
+  return TYPES_RESIDENTIELS.includes(type);
+}
+
 export const EQUIPEMENTS = [
   "Meublé", "Climatisé", "Clôturé", "Parking", "Jardin", "Piscine",
   "Fibre optique", "Groupe électrogène", "Forage", "Gardiennage", "Interphone"
@@ -172,6 +181,19 @@ export const PALIERS_PIECES = [1, 2, 3, 4, 5];
 
 // Centre par défaut de la carte au chargement (agglomération de Libreville)
 export const LIBREVILLE_CENTER = { lat: 0.3924, lng: 9.4536 };
+
+/* Badge "vendeur" affiché sur les annonces : distingue les biens publiés par une
+   agence/entreprise (avec ou sans vérification admin) de ceux publiés par un
+   particulier. Les infos sont dénormalisées sur l'annonce à la publication
+   (voir publier.html) pour éviter une lecture supplémentaire par carte affichée. */
+export function getBadgeVendeur(annonce) {
+  if (annonce.proprietaireCompteType !== "entreprise") {
+    return { texte: "🏠 Particulier", classe: "badge-vendeur-particulier" };
+  }
+  return annonce.proprietaireStatutEntreprise === "verifie"
+    ? { texte: "🏢 Agence vérifiée", classe: "badge-vendeur-verifie" }
+    : { texte: "🏢 Agence / Entreprise", classe: "badge-vendeur-entreprise" };
+}
 
 export function getIconeType(type) {
   const icons = {

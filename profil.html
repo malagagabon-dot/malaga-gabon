@@ -222,7 +222,7 @@
   </div>
 
   <script type="module">
-    import { auth, db, doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, serverTimestamp } from "./firebase-config.js";
+    import { auth, db, doc, getDoc, updateDoc, collection, query, where, onSnapshot, serverTimestamp } from "./firebase-config.js";
     import { protegerPage, majProfil, deconnecter } from "./auth.js";
     import { getFavoris } from "./nav.js";
     import { getIconeType, formatPrix, escapeHTML } from "./malaga-reference.js";
@@ -353,10 +353,13 @@
     let toutesLesRdv = [];
     let filtreRdv = "en_attente";
 
+    // Tri côté client (voir remarque équivalente dans mes-annonces.html) pour éviter
+    // de dépendre d'un index composite Firestore non créé (chercheurId + dateCreation).
     function chargerRdv(uid) {
-      const q = query(collection(db, "demandesVisite"), where("chercheurId", "==", uid), orderBy("dateCreation", "desc"));
+      const q = query(collection(db, "demandesVisite"), where("chercheurId", "==", uid));
       onSnapshot(q, (snap) => {
-        toutesLesRdv = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        toutesLesRdv = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.dateCreation?.toMillis?.() || 0) - (a.dateCreation?.toMillis?.() || 0));
         document.getElementById("statRdv").textContent = toutesLesRdv.length;
         rendreRdv();
       }, () => {
@@ -410,11 +413,13 @@
        correspondante est mise en évidence et amenée à l'écran. */
     let toutesLesDemandesRecues = [];
 
+    // Idem : tri côté client, pas d'orderBy() dans la requête (proprietaireId + dateCreation).
     function chargerDemandesRecues(uid) {
       document.getElementById("sectionDemandesRecues").style.display = "block";
-      const q = query(collection(db, "demandesVisite"), where("proprietaireId", "==", uid), orderBy("dateCreation", "desc"));
+      const q = query(collection(db, "demandesVisite"), where("proprietaireId", "==", uid));
       onSnapshot(q, (snap) => {
-        toutesLesDemandesRecues = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        toutesLesDemandesRecues = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.dateCreation?.toMillis?.() || 0) - (a.dateCreation?.toMillis?.() || 0));
         rendreDemandesRecues();
         const idCible = new URLSearchParams(location.search).get("demande");
         if (idCible) {
