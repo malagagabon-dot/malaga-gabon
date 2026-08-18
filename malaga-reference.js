@@ -182,17 +182,47 @@ export const PALIERS_PIECES = [1, 2, 3, 4, 5];
 // Centre par défaut de la carte au chargement (agglomération de Libreville)
 export const LIBREVILLE_CENTER = { lat: 0.3924, lng: 9.4536 };
 
+/* ═══════════════════════════════════════════════════════════
+   CATÉGORIES DE VENDEUR — agences, sociétés privées, particuliers
+   Chaque catégorie a sa couleur/icône propre, utilisée à la fois pour
+   les tuiles de la liste et pour le regroupement (clusters) sur la carte.
+   NB : distingue "agence" de "entreprise" (société privée) via le champ
+   proprietaireTypeEntreprise, dénormalisé sur l'annonce à la publication
+   au même titre que proprietaireRaisonSociale / proprietaireStatutEntreprise
+   (voir publier.html). Si ce champ n'est pas encore renseigné pour une
+   société, elle retombe par défaut dans la catégorie "entreprise".
+═══════════════════════════════════════════════════════════ */
+export const CATEGORIES_VENDEUR = {
+  particulier: { label: "Particulier", icone: "🏠", couleur: "#009E60" },
+  agence: { label: "Agence immobilière", icone: "🏢", couleur: "#2563EB" },
+  entreprise: { label: "Société privée", icone: "🏛️", couleur: "#7C3AED" }
+};
+
+export function getCategorieVendeur(annonce) {
+  if (annonce.proprietaireCompteType !== "entreprise") return "particulier";
+  return annonce.proprietaireTypeEntreprise === "Agence immobilière" ? "agence" : "entreprise";
+}
+
 /* Badge "vendeur" affiché sur les annonces : distingue les biens publiés par une
-   agence/entreprise (avec ou sans vérification admin) de ceux publiés par un
-   particulier. Les infos sont dénormalisées sur l'annonce à la publication
-   (voir publier.html) pour éviter une lecture supplémentaire par carte affichée. */
+   agence, une société privée ou un particulier (avec ou sans vérification admin
+   pour les deux premières). Les infos sont dénormalisées sur l'annonce à la
+   publication (voir publier.html) pour éviter une lecture supplémentaire par
+   carte affichée. */
 export function getBadgeVendeur(annonce) {
-  if (annonce.proprietaireCompteType !== "entreprise") {
-    return { texte: "🏠 Particulier", classe: "badge-vendeur-particulier" };
+  const cat = getCategorieVendeur(annonce);
+  const { icone } = CATEGORIES_VENDEUR[cat];
+
+  if (cat === "particulier") {
+    return { texte: `${icone} Particulier`, classe: "badge-vendeur-particulier" };
+  }
+  if (cat === "agence") {
+    return annonce.proprietaireStatutEntreprise === "verifie"
+      ? { texte: `${icone} Agence vérifiée`, classe: "badge-vendeur-verifie" }
+      : { texte: `${icone} Agence immobilière`, classe: "badge-vendeur-entreprise" };
   }
   return annonce.proprietaireStatutEntreprise === "verifie"
-    ? { texte: "🏢 Agence vérifiée", classe: "badge-vendeur-verifie" }
-    : { texte: "🏢 Agence / Entreprise", classe: "badge-vendeur-entreprise" };
+    ? { texte: `${icone} Société vérifiée`, classe: "badge-vendeur-verifie" }
+    : { texte: `${icone} Société privée`, classe: "badge-vendeur-entreprise" };
 }
 
 export function getIconeType(type) {

@@ -604,13 +604,92 @@ function supprimerAnnonce(id) {
 let annonceEnEdition = null;
 let modPhotosActuelles = [];
 
+/* ══════════ GALERIE PHOTO PLEIN ÉCRAN (lightbox) ══════════
+   Même comportement que sur index.html / profil.html / mes-annonces.html.
+   Exposée sur window : renderPhotosModif() insère l'appel via onclick inline
+   (script classique, sans modules). */
+let lightboxPhotos = [], lightboxIndex = 0;
+
+function ouvrirLightbox(photos, indexDepart) {
+  lightboxPhotos = (photos || []).filter(Boolean);
+  if (!lightboxPhotos.length) return;
+  lightboxIndex = Math.min(indexDepart || 0, lightboxPhotos.length - 1);
+
+  let overlay = document.getElementById('lightboxOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'lightboxOverlay';
+    overlay.className = 'lightbox-overlay';
+    overlay.innerHTML = `
+      <button type="button" class="lightbox-fermer" aria-label="Fermer">✕</button>
+      <button type="button" class="lightbox-prec" aria-label="Photo précédente">‹</button>
+      <img class="lightbox-img" alt="Photo en plein écran">
+      <button type="button" class="lightbox-suiv" aria-label="Photo suivante">›</button>
+      <div class="lightbox-compteur"></div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('.lightbox-fermer').onclick = fermerLightbox;
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) fermerLightbox(); });
+    overlay.querySelector('.lightbox-prec').onclick = (e) => { e.stopPropagation(); naviguerLightbox(-1); };
+    overlay.querySelector('.lightbox-suiv').onclick = (e) => { e.stopPropagation(); naviguerLightbox(1); };
+    document.addEventListener('keydown', (e) => {
+      if (!overlay.classList.contains('ouverte')) return;
+      if (e.key === 'Escape') fermerLightbox();
+      if (e.key === 'ArrowLeft') naviguerLightbox(-1);
+      if (e.key === 'ArrowRight') naviguerLightbox(1);
+    });
+  }
+
+  mettreAJourLightbox();
+  overlay.classList.add('ouverte');
+  document.body.style.overflow = 'hidden';
+}
+
+function mettreAJourLightbox() {
+  const overlay = document.getElementById('lightboxOverlay');
+  if (!overlay) return;
+  overlay.querySelector('.lightbox-img').src = lightboxPhotos[lightboxIndex];
+  overlay.querySelector('.lightbox-compteur').textContent = `${lightboxIndex + 1} / ${lightboxPhotos.length}`;
+  const multi = lightboxPhotos.length > 1;
+  overlay.querySelector('.lightbox-prec').style.display = multi ? 'flex' : 'none';
+  overlay.querySelector('.lightbox-suiv').style.display = multi ? 'flex' : 'none';
+}
+
+function naviguerLightbox(delta) {
+  lightboxIndex = (lightboxIndex + delta + lightboxPhotos.length) % lightboxPhotos.length;
+  mettreAJourLightbox();
+}
+
+function fermerLightbox() {
+  document.getElementById('lightboxOverlay')?.classList.remove('ouverte');
+  document.body.style.overflow = '';
+}
+
+(function injecterStylesLightbox() {
+  if (document.getElementById('malagaLightboxStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'malagaLightboxStyles';
+  style.textContent = `
+    .lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:3000;}
+    .lightbox-overlay.ouverte{display:flex;}
+    .lightbox-img{max-width:92vw;max-height:88vh;object-fit:contain;border-radius:6px;}
+    .lightbox-fermer{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;color:#fff;width:38px;height:38px;border-radius:50%;font-size:18px;cursor:pointer;}
+    .lightbox-prec,.lightbox-suiv{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;width:44px;height:44px;border-radius:50%;font-size:26px;cursor:pointer;align-items:center;justify-content:center;display:flex;}
+    .lightbox-prec{left:12px;}
+    .lightbox-suiv{right:12px;}
+    .lightbox-compteur{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:#fff;font-size:12.5px;background:rgba(255,255,255,.15);padding:4px 12px;border-radius:20px;}
+    .photo-row img{cursor:zoom-in;}
+  `;
+  document.head.appendChild(style);
+})();
+
 function renderPhotosModif() {
   const wrap = document.getElementById('modPhotosManager');
   if (!wrap) return;
   wrap.innerHTML = modPhotosActuelles.length
     ? modPhotosActuelles.map((url, i) => `
       <div class="photo-row" data-i="${i}">
-        <img src="${(url || '').replace(/"/g, '&quot;')}" alt="Photo ${i + 1}" onerror="this.style.visibility='hidden'" />
+        <img src="${(url || '').replace(/"/g, '&quot;')}" alt="Photo ${i + 1}" onerror="this.style.visibility='hidden'" onclick="ouvrirLightbox(modPhotosActuelles, ${i})" />
         <input type="text" value="${(url || '').replace(/"/g, '&quot;')}"
                placeholder="https://exemple.com/photo.jpg"
                oninput="modPhotosActuelles[${i}] = this.value; document.querySelectorAll('.photo-row')[${i}].querySelector('img').src = this.value;" />

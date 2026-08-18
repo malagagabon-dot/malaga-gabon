@@ -11,6 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 </head>
 <body>
 
@@ -113,7 +115,8 @@
     </select>
     <select id="filterVendeur">
       <option value="">Tous les annonceurs</option>
-      <option value="entreprise">🏢 Agences / Entreprises</option>
+      <option value="agence">🏢 Agences immobilières</option>
+      <option value="entreprise">🏛️ Sociétés privées</option>
       <option value="particulier">🏠 Particuliers</option>
     </select>
   </div>
@@ -490,6 +493,7 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <!-- Notifications email automatiques (voir emailjs-config.js) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
