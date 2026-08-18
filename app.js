@@ -10,7 +10,7 @@ import {
 } from "./firebase-config.js";
 import { getProfil } from "./auth.js";
 import {
-  COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, getIconeType, formatPrix,
+  COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, CENTRES, getIconeType, formatPrix,
   ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
   EQUIPEMENTS, PALIERS_PIECES, escapeHTML, getBadgeVendeur
 } from "./malaga-reference.js";
@@ -81,6 +81,37 @@ function initCarte() {
     attribution: "&copy; contributeurs OpenStreetMap",
     maxZoom: 19
   }).addTo(map);
+
+  // Conteneur du message "aucun résultat" affiché par-dessus la carte
+  const carteWrap = document.getElementById("carteWrap");
+  if (carteWrap && getComputedStyle(carteWrap).position === "static") {
+    carteWrap.style.position = "relative";
+  }
+}
+
+/* Recentre/zoome la carte sur la zone choisie dans les filtres (commune → arrondissement),
+   même quand aucune annonce géolocalisée n'y correspond, pour que l'utilisateur voie
+   toujours la zone qu'il a sélectionnée plutôt qu'une carte figée sur l'ancienne vue. */
+function recentrerSurZoneFiltre() {
+  let cible = LIBREVILLE_CENTER, zoom = 12;
+  if (filtres.commune && CENTRES[filtres.commune]) {
+    cible = CENTRES[filtres.commune];
+    zoom = filtres.arrondissement ? Math.min(cible.zoom + 2, 16) : cible.zoom;
+  }
+  map.flyTo([cible.lat, cible.lng], zoom, { duration: 0.6 });
+}
+
+/* Message flottant sur la carte quand le filtrage courant ne donne aucun marqueur à afficher. */
+function afficherMessageCarteVide(texte) {
+  let el = document.getElementById("carteVideMsg");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "carteVideMsg";
+    el.style.cssText = "position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:500;background:rgba(255,255,255,.97);border:1px solid #eee;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:600;color:#555;box-shadow:0 2px 10px rgba(0,0,0,.1);pointer-events:none;max-width:85%;text-align:center;";
+    document.getElementById("carteWrap")?.appendChild(el);
+  }
+  if (texte) { el.textContent = "📍 " + texte; el.style.display = "block"; }
+  else { el.style.display = "none"; }
 }
 
 function iconMarqueur(annonce) {
@@ -386,7 +417,20 @@ function rendreMarqueurs(liste) {
     bounds.push([a.lat, a.lng]);
   });
 
-  if (bounds.length > 0) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+  // Message + recentrage adaptés selon ce que le filtre courant produit
+  if (liste.length === 0) {
+    afficherMessageCarteVide("Aucune annonce ne correspond à ces critères.");
+  } else if (bounds.length === 0) {
+    afficherMessageCarteVide("Ces annonces n'ont pas encore de position exacte renseignée.");
+  } else {
+    afficherMessageCarteVide(null);
+  }
+
+  if (bounds.length > 0) {
+    map.flyToBounds(bounds, { padding: [30, 30], maxZoom: 15, duration: 0.6 });
+  } else {
+    recentrerSurZoneFiltre();
+  }
 }
 
 function survolerMarqueur(id, actif) {
