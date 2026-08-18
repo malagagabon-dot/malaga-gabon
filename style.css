@@ -222,12 +222,18 @@ body { padding-bottom: 68px; }
   display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px; align-items: start;
 }
 @media (max-width: 860px) {
-  /* Mobile : la liste et la carte sont empilées. On affiche la carte tout de
-     suite après les filtres (avant la liste) grâce à `order`, sans changer
-     l'ordre du HTML — elle continue d'être alimentée par la même liste
-     filtrée que la liste de dessous (rendreTout() dans app.js). */
-  .split-layout { grid-template-columns: 1fr; }
-  .split-layout .map-wrap { order: -1; margin-bottom: 18px; }
+  /* Mobile : la liste et la carte sont empilées. On "déplie" le conteneur
+     .liste-col (display:contents) pour que le titre, les icônes de mode
+     d'affichage, la carte et la grille d'annonces deviennent des éléments
+     indépendants du même flex, réordonnables individuellement — la carte
+     s'intercale juste après les icônes de vue, sans les recouvrir ni
+     laisser d'espace vide au-dessus. */
+  .split-layout { grid-template-columns: 1fr; display: flex; flex-direction: column; }
+  .split-layout .liste-col { display: contents; }
+  .split-layout .section-header { order: 1; }
+  .split-layout .vue-modes-bar { order: 2; }
+  .split-layout .map-wrap { order: 3; margin: 0 0 18px; }
+  .split-layout .grille-annonces { order: 4; }
 }
 
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
