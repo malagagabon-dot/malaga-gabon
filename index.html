@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=0.9">
   <title>MALAGA — Maison À Louer Au Gabon</title>
   <meta name="theme-color" content="#009E60">
   <link rel="manifest" href="manifest.json">
@@ -390,6 +390,16 @@
       flex-direction: column !important;
       min-width: 0 !important;
       height: auto !important;
+    }
+
+    /* En mobile : réordonner les éléments pour que les filtres descendent après la carte et les annonces */
+    @media (max-width: 860px) {
+      body { display: flex; flex-direction: column; }
+      .stats-section { order: 10; }
+      .map-wrap { order: 11; }
+      .split-layout { order: 12; }
+      .filters-bar { order: 13; }
+      .filtres-avances-panel { order: 14; }
     }
   </style>
 
