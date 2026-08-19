@@ -86,18 +86,18 @@
 
   <!-- Stats -->
   <div class="stats-section">
-    <div class="stat-item">
+    <button class="stat-item stat-dispo" onclick="filtrerDisponibles()">
       <div class="stat-num" id="statDisponibles">—</div>
       <div class="stat-label">🟢 Disponibles</div>
-    </div>
-    <div class="stat-item">
+    </button>
+    <button class="stat-item stat-zone" onclick="afficherZones()">
       <div class="stat-num" id="statZones">—</div>
       <div class="stat-label">📍 Zones couvertes</div>
-    </div>
-    <div class="stat-item">
+    </button>
+    <button class="stat-item stat-public" onclick="afficherPublicationsRecentes()">
       <div class="stat-num" id="statAujourdhui">—</div>
       <div class="stat-label">🆕 Publiées cette semaine</div>
-    </div>
+    </button>
   </div>
 
   <!-- Carte — placée juste après les statistiques -->
@@ -118,6 +118,7 @@
       <option value="400000">400 000 FCFA</option>
       <option value="1000000">1 000 000 FCFA</option>
     </select>
+    <input type="number" id="filterPrixExact" placeholder="Prix exact FCFA">
     <select id="filterVendeur" style="text-align:center;">
       <option value="">Agences et entreprises</option>
       <option value="agence">🏢 Agences immobilières</option>
@@ -347,9 +348,9 @@
     .map-wrap {
       width: calc(100% - 32px) !important;
       max-width: 1200px !important;
-      height: 320px !important;
-      max-height: 320px !important;
-      min-height: 320px !important;
+      height: 240px !important;
+      max-height: 240px !important;
+      min-height: 240px !important;
       margin: 0 auto 14px !important;
       position: relative !important;
       overflow: hidden !important;
@@ -361,8 +362,8 @@
 
     #carteMap {
       width: 100% !important;
-      height: 100% !important;
-      max-height: 100% !important;
+      height: 240px !important;
+      max-height: 240px !important;
       z-index: 1;
     }
 

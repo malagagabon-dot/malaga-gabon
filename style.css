@@ -502,3 +502,42 @@ body { padding-bottom: 68px; }
     max-height: 240px !important;
   }
 }
+
+/* Boutons statistiques cliquables */
+.stats-section .stat-item {
+  border: none;
+  cursor: pointer;
+  background: white;
+  border-radius: 12px;
+  padding: 10px 6px;
+  transition: transform .15s, box-shadow .15s;
+  font-family: inherit;
+}
+
+.stats-section .stat-item:active {
+  transform: scale(.96);
+}
+
+.stat-dispo {
+  border: 2px solid #009E60 !important;
+}
+
+.stat-zone {
+  border: 2px solid #3A75C4 !important;
+}
+
+.stat-public {
+  border: 2px solid #FCD116 !important;
+}
+
+.stat-dispo .stat-num {
+  color: #009E60;
+}
+
+.stat-zone .stat-num {
+  color: #3A75C4;
+}
+
+.stat-public .stat-num {
+  color: #C49A00;
+}

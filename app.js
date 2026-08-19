@@ -34,7 +34,7 @@ onAuthStateChanged(auth, async (user) => {
 
 let toutesLesAnnonces = [];
 let filtres = {
-  commune: "", arrondissement: "", type: "", prixMax: "", texte: "", vendeur: "",
+  commune: "", arrondissement: "", type: "", prixMax: "", texte: "", vendeur: "", disponibles: false, recentes: false, zoneSelectionnee: false,
   // Filtres avancés
   quartier: "", rue: "", zone: "", presLocalisation: false,
   chambresMin: "", salonsMin: "", douchesMin: "", doucheType: "", cuisineType: "",
@@ -160,6 +160,7 @@ function initFiltres() {
   const selectType = document.getElementById("filterType");
   const selectPrix = document.getElementById("filterPrix");
   const selectVendeur = document.getElementById("filterVendeur");
+  const inputPrixExact = document.getElementById("filterPrixExact");
 
   selectCommune.innerHTML += COMMUNES.map(c => `<option>${c}</option>`).join("");
   selectType.innerHTML += TYPES_BIEN.map(t => `<option>${t}</option>`).join("");
@@ -179,6 +180,12 @@ function initFiltres() {
   selectArrondissement.onchange = () => { filtres.arrondissement = selectArrondissement.value; rendreTout(); };
   selectType.onchange = () => { filtres.type = selectType.value; rendreTout(); };
   selectPrix.onchange = () => { filtres.prixMax = selectPrix.value; rendreTout(); };
+  if (inputPrixExact) {
+    inputPrixExact.oninput = () => {
+      filtres.prixExact = inputPrixExact.value;
+      rendreTout();
+    };
+  }
 }
 
 function appliquerFiltres(liste) {
@@ -187,6 +194,9 @@ function appliquerFiltres(liste) {
     const okArr = !filtres.arrondissement || a.arrondissement === filtres.arrondissement;
     const okType = !filtres.type || a.type === filtres.type;
     const okPrix = !filtres.prixMax || a.prix <= parseInt(filtres.prixMax);
+    const okPrixExact = !filtres.prixExact || a.prix === parseInt(filtres.prixExact);
+    const okDisponibles = !filtres.disponibles || !a.statut || a.statut.toLowerCase().includes("dispon");
+    const okRecentes = !filtres.recentes || (a.dateCreation?.toMillis?.() > (Date.now() - 7 * 24 * 60 * 60 * 1000));
     const okTexte = !filtres.texte ||
       (a.titre || "").toLowerCase().includes(filtres.texte) ||
       (a.quartier || "").toLowerCase().includes(filtres.texte) ||
@@ -201,6 +211,7 @@ function appliquerFiltres(liste) {
     const okQuartier = !filtres.quartier || (a.quartier || "").toLowerCase().includes(filtres.quartier);
     const okRue = !filtres.rue || (a.pointRepere || "").toLowerCase().includes(filtres.rue);
     const okZone = !filtres.zone || a.zoneCaractere === filtres.zone;
+    const okZoneSelectionnee = !filtres.zoneSelectionnee || !!(a.commune || a.arrondissement);
     const okChambres = !filtres.chambresMin || (a.chambres || 0) >= parseInt(filtres.chambresMin);
     const okSalons = !filtres.salonsMin || (a.salons || 0) >= parseInt(filtres.salonsMin);
     const okDouches = !filtres.douchesMin || (a.douches || a.sdb || 0) >= parseInt(filtres.douchesMin);
@@ -215,8 +226,8 @@ function appliquerFiltres(liste) {
     const okEquipements = !filtres.equipements.length ||
       filtres.equipements.every(e => (a.equipements || []).includes(e));
 
-    return okCommune && okArr && okType && okPrix && okTexte && okFavoris && okVendeur &&
-      okQuartier && okRue && okZone && okChambres && okSalons && okDouches &&
+    return okCommune && okArr && okType && okPrix && okPrixExact && okDisponibles && okRecentes && okTexte && okFavoris && okVendeur &&
+      okQuartier && okRue && okZone && okZoneSelectionnee && okChambres && okSalons && okDouches &&
       okDoucheType && okCuisineType && okMateriau && okCouleur && okTerrasse &&
       okCarreaux && okPrixMin && okPrixMaxAv && okEquipements;
   });
@@ -727,3 +738,24 @@ function mettreAJourStats() {
   document.getElementById("statZones").textContent = zones;
   document.getElementById("statAujourdhui").textContent = recentes;
 }
+
+// Actions boutons statistiques
+function filtrerDisponibles() {
+  filtres.disponibles = !filtres.disponibles;
+  filtres.recentes = false;
+  rendreTout();
+}
+
+function afficherZones() {
+  filtres.zoneSelectionnee = !filtres.zoneSelectionnee;
+  rendreTout();
+}
+
+function afficherPublicationsRecentes() {
+  filtres.recentes = !filtres.recentes;
+  filtres.disponibles = false;
+  rendreTout();
+}
+
+
+
