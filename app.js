@@ -83,34 +83,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ══════════ CARTE LEAFLET ══════════ */
 function initCarte() {
-  const carteMap = document.getElementById("carteMap");
   const carteWrap = document.getElementById("carteWrap");
-  
-  // S'assurer que le conteneur a les bonnes dimensions
-  if (carteWrap) {
+  if (carteWrap && getComputedStyle(carteWrap).position === "static") {
     carteWrap.style.position = "relative";
-    carteWrap.style.width = "100%";
-    carteWrap.style.height = "calc(100vh - 280px)";
-  }
-  
-  if (carteMap) {
-    carteMap.style.width = "100%";
-    carteMap.style.height = "100%";
   }
 
-  // Initialiser la carte Leaflet
+  // Initialiser la carte Leaflet (la taille est gérée entièrement par le CSS)
   map = L.map("carteMap").setView([LIBREVILLE_CENTER.lat, LIBREVILLE_CENTER.lng], 12);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; contributeurs OpenStreetMap",
     maxZoom: 19
   }).addTo(map);
 
-  // Redessiner la carte après un court délai pour s'assurer que tout est calculé
-  setTimeout(() => {
-    if (map) {
-      map.invalidateSize();
-    }
-  }, 100);
+  // Forcer Leaflet à recalculer sa taille une fois le layout stabilisé
+  setTimeout(() => { map && map.invalidateSize(); }, 150);
+  window.addEventListener("load", () => { map && map.invalidateSize(); });
 }
 
 /* Recentre/zoome la carte sur la zone choisie dans les filtres (commune → arrondissement),
