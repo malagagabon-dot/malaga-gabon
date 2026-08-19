@@ -483,11 +483,3 @@ body { padding-bottom: 68px; }
 
 /* ===== SPINNER ===== */
 .spinner { text-align: center; color: var(--gris-clair); padding: 40px; grid-column: 1/-1; }
-
-/* Correction affichage carte */
-#carteMap {
-  height: 420px;
-  min-height: 420px;
-  width: 100%;
-  display: block;
-}
