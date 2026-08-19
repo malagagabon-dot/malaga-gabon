@@ -483,3 +483,22 @@ body { padding-bottom: 68px; }
 
 /* ===== SPINNER ===== */
 .spinner { text-align: center; color: var(--gris-clair); padding: 40px; grid-column: 1/-1; }
+
+/* Correction carte mobile */
+@media (max-width: 860px) {
+  .map-wrap {
+    position: relative !important;
+    top: auto !important;
+    margin-top: 10px !important;
+    margin-bottom: 18px !important;
+    height: 240px !important;
+    min-height: 240px !important;
+    max-height: 240px !important;
+    overflow: hidden !important;
+  }
+
+  #carteMap {
+    height: 240px !important;
+    max-height: 240px !important;
+  }
+}
