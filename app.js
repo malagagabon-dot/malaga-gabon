@@ -72,21 +72,45 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnFavorisHeader")?.addEventListener("click", basculerFavoris);
   document.getElementById("bnFavoris")?.addEventListener("click", basculerFavoris);
   document.getElementById("drawerFavorisLink")?.addEventListener("click", basculerFavoris);
+
+  // Redimensionner la carte quand la fenêtre est redimensionnée
+  window.addEventListener("resize", () => {
+    if (map) {
+      setTimeout(() => map.invalidateSize(), 100);
+    }
+  });
 });
 
 /* ══════════ CARTE LEAFLET ══════════ */
 function initCarte() {
+  const carteMap = document.getElementById("carteMap");
+  const carteWrap = document.getElementById("carteWrap");
+  
+  // S'assurer que le conteneur a les bonnes dimensions
+  if (carteWrap) {
+    carteWrap.style.position = "relative";
+    carteWrap.style.width = "100%";
+    carteWrap.style.height = "calc(100vh - 280px)";
+  }
+  
+  if (carteMap) {
+    carteMap.style.width = "100%";
+    carteMap.style.height = "100%";
+  }
+
+  // Initialiser la carte Leaflet
   map = L.map("carteMap").setView([LIBREVILLE_CENTER.lat, LIBREVILLE_CENTER.lng], 12);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; contributeurs OpenStreetMap",
     maxZoom: 19
   }).addTo(map);
 
-  // Conteneur du message "aucun résultat" affiché par-dessus la carte
-  const carteWrap = document.getElementById("carteWrap");
-  if (carteWrap && getComputedStyle(carteWrap).position === "static") {
-    carteWrap.style.position = "relative";
-  }
+  // Redessiner la carte après un court délai pour s'assurer que tout est calculé
+  setTimeout(() => {
+    if (map) {
+      map.invalidateSize();
+    }
+  }, 100);
 }
 
 /* Recentre/zoome la carte sur la zone choisie dans les filtres (commune → arrondissement),
