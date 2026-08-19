@@ -100,6 +100,11 @@
     </div>
   </div>
 
+  <!-- Carte — placée juste après les statistiques -->
+  <div class="map-wrap" id="carteWrap">
+    <div id="carteMap"></div>
+  </div>
+
   <!-- Filtres -->
   <div class="filters-bar">
     <select id="filterCommune"><option value="">Toutes les communes</option></select>
@@ -333,27 +338,14 @@
     .type-tag{display:none;font-size:11px;font-weight:600;color:#888;margin-left:6px;}
     .carte-info .desc-liste{display:none;font-size:12px;color:#777;margin-top:4px;line-height:1.4;}
 
-    /* ═══ STYLES CARTE LEAFLET (mobile d'abord) ═══ */
-    .split-layout {
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 0 !important;
-    }
-
-    .liste-col {
-      display: flex !important;
-      flex-direction: column !important;
-      min-width: 0 !important;
-      height: auto !important;
-    }
-
+    /* ═══ STYLES CARTE LEAFLET — carte indépendante, placée après les stats ═══ */
     .map-wrap {
       width: calc(100% - 32px) !important;
-      max-width: calc(100% - 32px) !important;
+      max-width: 1200px !important;
       height: 320px !important;
       max-height: 320px !important;
       min-height: 320px !important;
-      margin: 4px 16px 22px !important;
+      margin: 4px auto 20px !important;
       position: relative !important;
       overflow: hidden !important;
       border-radius: 14px !important;
@@ -375,36 +367,29 @@
       height: 100% !important;
     }
 
-    @media (min-width: 1025px) {
-      .split-layout {
-        flex-direction: row !important;
-        height: calc(100vh - 280px) !important;
-      }
-
-      .liste-col {
-        flex: 1 !important;
-        overflow-y: auto !important;
-        min-width: 0 !important;
-      }
-
+    @media (min-width: 768px) {
       .map-wrap {
-        flex: 0 0 42% !important;
-        width: auto !important;
-        max-width: none !important;
-        height: auto !important;
-        max-height: none !important;
-        min-height: auto !important;
-        margin: 0 !important;
-        border-radius: 0 !important;
-        border-left: 1px solid #ddd;
-        box-shadow: none;
-
+        height: 420px !important;
+        max-height: 420px !important;
+        min-height: 420px !important;
       }
+    }
+
+    /* Liste des annonces — pleine largeur, sous la carte */
+    .split-layout {
+      display: block !important;
+    }
+
+    .liste-col {
+      display: flex !important;
+      flex-direction: column !important;
+      min-width: 0 !important;
+      height: auto !important;
     }
   </style>
 
 
-  <!-- Contenu : liste + carte côte à côte -->
+  <!-- Contenu : liste des annonces -->
   <div class="split-layout">
     <div class="liste-col">
       <div class="section-header">
@@ -422,10 +407,6 @@
       <div id="liste-annonces-grille" class="grille-annonces">
         <div class="spinner">Chargement des annonces en temps réel…</div>
       </div>
-    </div>
-
-    <div class="map-wrap" id="carteWrap">
-      <div id="carteMap"></div>
     </div>
   </div>
 
@@ -568,9 +549,9 @@
   <!-- Notifications email automatiques (voir emailjs-config.js) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script type="module" src="nav.js?v=20260819a"></script>
-  <script type="module" src="app.js?v=20260819a"></script>
-  <script src="grille-adaptive.js?v=20260819a"></script>
-  <script type="module" src="contact-signalement.js?v=20260819a"></script>
+  <script type="module" src="nav.js?v=20260819b"></script>
+  <script type="module" src="app.js?v=20260819b"></script>
+  <script src="grille-adaptive.js?v=20260819b"></script>
+  <script type="module" src="contact-signalement.js?v=20260819b"></script>
 </body>
 </html>

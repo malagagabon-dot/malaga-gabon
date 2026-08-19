@@ -415,6 +415,17 @@ function rendreListe(liste) {
     carte.onclick = () => afficherDetail(a);
     carte.addEventListener("mouseenter", () => survolerMarqueur(a.id, true));
     carte.addEventListener("mouseleave", () => survolerMarqueur(a.id, false));
+
+    // Filet de sécurité : si la photo ne charge pas (lien expiré, réseau lent...),
+    // on la remplace par l'icône du type de bien au lieu de laisser une image cassée.
+    const imgEl = carte.querySelector(".visuel img");
+    if (imgEl) {
+      imgEl.addEventListener("error", () => {
+        const remplacement = document.createRange().createContextualFragment(getIconeType(a.type));
+        imgEl.replaceWith(remplacement);
+      }, { once: true });
+    }
+
     container.appendChild(carte);
   });
 }
