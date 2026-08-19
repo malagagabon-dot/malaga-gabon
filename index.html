@@ -335,54 +335,70 @@
 
     /* ═══ STYLES CARTE LEAFLET (mobile d'abord) ═══ */
     .split-layout {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 0 !important;
     }
 
     .liste-col {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
+      display: flex !important;
+      flex-direction: column !important;
+      min-width: 0 !important;
+      height: auto !important;
     }
 
     .map-wrap {
-      width: calc(100% - 32px);
-      height: 320px;
-      margin: 4px 16px 22px;
-      position: relative;
-      overflow: hidden;
-      border-radius: 14px;
+      width: calc(100% - 32px) !important;
+      max-width: calc(100% - 32px) !important;
+      height: 320px !important;
+      max-height: 320px !important;
+      min-height: 320px !important;
+      margin: 4px 16px 22px !important;
+      position: relative !important;
+      overflow: hidden !important;
+      border-radius: 14px !important;
       box-shadow: 0 2px 10px rgba(0,0,0,.10);
       background: #e0e0e0;
+      box-sizing: border-box !important;
     }
 
     #carteMap {
-      width: 100%;
-      height: 100%;
+      width: 100% !important;
+      height: 100% !important;
+      max-height: 100% !important;
       z-index: 1;
+    }
+
+    /* Empêche Leaflet de générer des panneaux internes plus grands que le conteneur visible */
+    .map-wrap .leaflet-container {
+      width: 100% !important;
+      height: 100% !important;
     }
 
     @media (min-width: 1025px) {
       .split-layout {
-        flex-direction: row;
-        height: calc(100vh - 280px);
+        flex-direction: row !important;
+        height: calc(100vh - 280px) !important;
       }
 
       .liste-col {
-        flex: 1;
-        overflow-y: auto;
-        min-width: 0;
+        flex: 1 !important;
+        overflow-y: auto !important;
+        min-width: 0 !important;
       }
 
       .map-wrap {
-        flex: 0 0 42%;
-        width: auto;
-        height: auto;
-        margin: 0;
-        border-radius: 0;
+        flex: 0 0 42% !important;
+        width: auto !important;
+        max-width: none !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
         border-left: 1px solid #ddd;
         box-shadow: none;
+
       }
     }
   </style>
@@ -552,9 +568,9 @@
   <!-- Notifications email automatiques (voir emailjs-config.js) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script type="module" src="nav.js"></script>
-  <script type="module" src="app.js"></script>
-  <script src="grille-adaptive.js"></script>
-  <script type="module" src="contact-signalement.js"></script>
+  <script type="module" src="nav.js?v=20260819a"></script>
+  <script type="module" src="app.js?v=20260819a"></script>
+  <script src="grille-adaptive.js?v=20260819a"></script>
+  <script type="module" src="contact-signalement.js?v=20260819a"></script>
 </body>
 </html>
