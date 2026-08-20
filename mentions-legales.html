@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mentions légales — MALAGA</title>
+  <link rel="icon" type="image/png" href="img/icon-night-192.png">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .page-legale { max-width: 760px; margin: 0 auto; padding: 90px 20px 60px; line-height: 1.7; color: #222; }
+    .page-legale h1 { font-family:'Playfair Display',serif; font-size: 24px; margin-bottom: 6px; }
+    .page-legale h2 { font-size: 17px; margin-top: 28px; color: #0B3B2E; }
+    .page-legale p { font-size: 14px; margin: 8px 0; }
+    .page-legale .maj { font-size: 12px; color: #888; margin-bottom: 24px; }
+    .retour { display:inline-block; margin-bottom: 18px; font-size: 13px; color:#009E60; text-decoration:none; }
+
+    /* ===== Encadré créateur technique ===== */
+    .createur-encadre {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: #F8FAF9;
+      border: 1.5px solid #e2e8e5;
+      border-left: 4px solid #009E60;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin: 28px 0;
+    }
+    .createur-photo {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+      transition: transform .15s ease;
+    }
+    .createur-photo:hover { transform: scale(1.05); }
+    .createur-texte p { margin: 0; font-size: 13px; line-height: 1.6; }
+    .createur-texte .nom { font-weight: 800; font-size: 14.5px; color: #0B3B2E; }
+    .createur-texte .role { color: #555; }
+    .createur-texte .startup { color: #009E60; font-weight: 700; }
+
+    /* Plein écran de la photo */
+    .photo-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.88);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+      padding: 24px;
+    }
+    .photo-overlay.ouvert { display: flex; }
+    .photo-overlay img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    }
+    .photo-overlay .fermer-overlay {
+      position: absolute;
+      top: 18px;
+      right: 22px;
+      color: #fff;
+      font-size: 26px;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-legale">
+    <a href="index.html" class="retour">← Retour à l'accueil</a>
+    <h1>Mentions légales</h1>
+    <p class="maj">Dernière mise à jour : août 2026</p>
+
+    <div class="createur-encadre">
+      <img src="img/kozangue-patrick.png" alt="Photo de Kozangue Essono Patrick Bertin" class="createur-photo" id="photoCreateur">
+      <div class="createur-texte">
+        <p class="nom">KOZANGUE ESSONO Patrick Bertin</p>
+        <p class="role">Informaticien, créateur technique de l'application MALAGA</p>
+        <p class="startup">Fondateur de PC-INFORMATIQUE 🇬🇦 — startup informatique gabonaise</p>
+      </div>
+    </div>
+
+    <div class="photo-overlay" id="overlayPhoto">
+      <button class="fermer-overlay" id="fermerOverlay" aria-label="Fermer">✕</button>
+      <img src="img/kozangue-patrick.png" alt="Photo de Kozangue Essono Patrick Bertin en plein écran">
+    </div>
+
+    <script>
+      const photo = document.getElementById('photoCreateur');
+      const overlay = document.getElementById('overlayPhoto');
+      const fermer = document.getElementById('fermerOverlay');
+      photo?.addEventListener('click', () => overlay.classList.add('ouvert'));
+      overlay?.addEventListener('click', () => overlay.classList.remove('ouvert'));
+      fermer?.addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('ouvert'); });
+    </script>
+
+    <h2>Éditeur du site</h2>
+    <p>
+      Le site MALAGA (« Maison À Louer Au Gabon ») est édité par KOZANGUE Patrick, exploité sous le nom
+      commercial MALAGA, basé à Libreville, Gabon.<br>
+      Téléphone : +241 60 14 19 24<br>
+      Email : malagagabon@gmail.com
+    </p>
+
+    <h2>Nature du service</h2>
+    <p>
+      MALAGA est une plateforme de mise en relation entre particuliers, agences immobilières et sociétés
+      privées proposant des logements à louer, et des personnes recherchant un logement à Libreville et
+      ses environs. MALAGA n'est ni propriétaire, ni agence immobilière, ni intermédiaire au sens juridique
+      du terme dans les transactions conclues entre utilisateurs : le site ne fait que faciliter la mise en
+      relation et la prise de contact.
+    </p>
+
+    <h2>Hébergement</h2>
+    <p>
+      Le site est hébergé par GitHub Pages (GitHub, Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107,
+      États-Unis). Les données de l'application (annonces, comptes utilisateurs, messages) sont hébergées
+      par Google Ireland Limited via les services Firebase (Google LLC).
+    </p>
+
+    <h2>Responsabilité</h2>
+    <p>
+      MALAGA s'efforce de vérifier autant que possible le contenu des annonces publiées, notamment via le
+      dispositif de signalement mis à disposition des utilisateurs. MALAGA ne garantit toutefois pas
+      l'exactitude, la disponibilité réelle, ni la conformité des biens annoncés par des tiers. Toute
+      transaction (visite, réservation, paiement de loyer) intervient directement et sous la seule
+      responsabilité du propriétaire et du locataire.
+    </p>
+
+    <h2>Propriété intellectuelle</h2>
+    <p>
+      Le nom « MALAGA », le logo et l'interface du site sont la propriété de leur éditeur. Les photos et
+      descriptions des annonces restent la propriété de leurs auteurs respectifs (propriétaires ou agences
+      ayant publié l'annonce).
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      Pour toute question relative au site ou à son fonctionnement : malagagabon@gmail.com ou
+      +241 60 14 19 24.
+    </p>
+  </div>
+</body>
+</html>
