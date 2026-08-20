@@ -1104,6 +1104,7 @@ function nbBiensEntreprise(uid) {
 }
 
 function loadEntreprises(liste) {
+  injecterToolbarEntreprisesDemo();
   const tbody = document.getElementById('entreprisesTableBody');
   const data = liste || entreprisesData();
 
@@ -1225,10 +1226,148 @@ function reactiverEntreprise(id) {
     .catch((err) => { console.error(err); toast('❌ Erreur lors de la réactivation'); });
 }
 
+/* ══════════════════════════════════════════════════════════
+   ENTREPRISES DÉMO — génération et nettoyage en un clic
+   Même logique que semerAnnoncesDemo()/supprimerAnnoncesDemo()
+   (annonces démo), mais ici on crée de VRAIS comptes "users"
+   (compteType: 'entreprise', demo: true) avec leur catalogue de
+   biens réellement lié (proprietaireId), pour visualiser en
+   conditions réelles la page publique entreprise.html?id=...
+   depuis l'admin. Tout porte demo:true → supprimable d'un clic
+   sans toucher aux vrais comptes professionnels.
+══════════════════════════════════════════════════════════ */
+function entreprisesDemoData() {
+  const photo = (mots, lock) => [0, 1, 2].map(n =>
+    `https://loremflickr.com/800/600/${encodeURIComponent(mots)}?lock=${lock + n}`
+  );
+  const T = (dateStr) => firebase.firestore.Timestamp.fromDate(new Date(dateStr));
+  const recent = (joursAvant) => firebase.firestore.Timestamp.fromDate(new Date(Date.now() - joursAvant * 86400000));
+
+  return [
+    // ── Agence immobilière vérifiée, catalogue fourni, tous contacts renseignés ──
+    {
+      entreprise: {
+        raisonSociale: "Gabon Immo Services", typeEntreprise: "Agence immobilière",
+        statutEntreprise: "verifie", slogan: "Votre partenaire immobilier de confiance à Libreville",
+        entrepriseTel: "+241 74 12 34 56", entrepriseEmail: "contact@gabonimmo.ga",
+        entrepriseAdresse: "Immeuble Horizon, Boulevard Triomphal, Libreville",
+        entrepriseLat: 0.3924, entrepriseLng: 9.4536, dateCreation: T("2023-03-10")
+      },
+      biens: [
+        { titre: "Villa de standing avec piscine à Cap Estérias", type: "Villa", commune: "Akanda", arrondissement: "1er arrondissement", quartier: "Cap Estérias", pointRepere: "À 200 m de la plage, après le carrefour Cap Estérias", zoneCaractere: "Bord de mer / lagune", prix: 550000, surface: 220, chambres: 4, salons: 2, sdb: 3, douches: 3, cloture: true, materiau: "Dur (parpaing / béton)", couleurMurale: "Bleu ciel", cuisineType: "Interne", doucheType: "Interne", terrasse: true, carreaux: true, eau: "Forage", electricite: "SEEG (réseau)", compteur: "Individuel", vue: "Vue mer", description: "Villa de standing en bord de mer avec piscine privée, grand jardin arboré, terrasse donnant sur la lagune, parking pour 2 véhicules et groupe électrogène de secours.", equipements: ["Meublé", "Climatisé", "Piscine", "Jardin", "Parking", "Groupe électrogène", "Gardiennage"], statut: "disponible", lat: 0.5320, lng: 9.3650, photos: photo("villa,house,exterior", 111), dateCreation: recent(2) },
+        { titre: "Maison familiale clôturée à Angondjé", type: "Maison", commune: "Akanda", arrondissement: "2e arrondissement", quartier: "Angondjé", pointRepere: "Lot 34, non loin du temple d'Angondjé", zoneCaractere: "Périphérie / semi-rural", prix: 300000, surface: 140, chambres: 3, salons: 1, sdb: 2, douches: 2, cloture: true, materiau: "Dur (parpaing / béton)", couleurMurale: "Vert", cuisineType: "Interne", doucheType: "Interne", terrasse: true, carreaux: true, eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel", description: "Maison spacieuse dans un quartier résidentiel calme, cour clôturée avec espace pour jardin potager et terrasse couverte.", equipements: ["Clôturé", "Parking", "Forage", "Gardiennage"], statut: "disponible", lat: 0.4790, lng: 9.4240, photos: photo("house,home,exterior", 121), dateCreation: T("2024-06-20") },
+        { titre: "Appartement moderne 2 chambres aux Cocotiers", type: "Appartement", commune: "Libreville", arrondissement: "2e arrondissement", quartier: "Cocotiers", pointRepere: "Immeuble Le Baobab, près de la pharmacie des Cocotiers", zoneCaractere: "Centre-ville", prix: 220000, surface: 85, chambres: 2, salons: 1, sdb: 1, douches: 1, cloture: false, materiau: "Dur (parpaing / béton)", couleurMurale: "Crème / Ivoire", cuisineType: "Interne", doucheType: "Interne", terrasse: true, carreaux: true, eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel", etage: "2e étage", description: "Bel appartement lumineux, proche des commerces et des transports. Cuisine équipée, carrelage au sol dans toutes les pièces et balcon avec vue dégagée.", equipements: ["Climatisé", "Fibre optique", "Interphone"], statut: "disponible", lat: 0.3912, lng: 9.4580, photos: photo("apartment,livingroom", 131), dateCreation: recent(5) },
+        { titre: "Studio meublé et climatisé à Akébé-Ville", type: "Studio", commune: "Libreville", arrondissement: "3e arrondissement", quartier: "Akébé-Ville", pointRepere: "Près du carrefour Akébé-Ville, à côté de l'école primaire", zoneCaractere: "Résidentiel calme", prix: 95000, surface: 28, chambres: 1, salons: 0, sdb: 1, douches: 1, cloture: false, materiau: "Semi-dur", couleurMurale: "Beige", cuisineType: "Interne", doucheType: "Interne", terrasse: false, carreaux: true, eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Commun", description: "Studio compact et fonctionnel, parfait pour un étudiant ou une personne seule. Coin cuisine intégré, quartier calme et bien desservi.", equipements: ["Meublé", "Climatisé", "Interphone"], statut: "occupé", lat: 0.3830, lng: 9.4650, photos: photo("studio,apartment,interior", 141), dateCreation: T("2024-09-15") }
+      ]
+    },
+    // ── Société privée en attente de vérification, catalogue réduit, pas de téléphone public ──
+    {
+      entreprise: {
+        raisonSociale: "SOGACI Patrimoine", typeEntreprise: "Société privée",
+        statutEntreprise: "attente", entrepriseEmail: "info@sogaci.ga"
+      },
+      biens: [
+        { titre: "Bureau climatisé open-space à Charbonnages", type: "Bureau", commune: "Libreville", arrondissement: "1er arrondissement", quartier: "Charbonnages", pointRepere: "Immeuble Étoile, 1er étage, face à l'agence BICIG Charbonnages", zoneCaractere: "Zone commerciale", prix: 350000, surface: 100, chambres: 0, salons: 1, sdb: 1, douches: 1, cloture: false, materiau: "Dur (parpaing / béton)", couleurMurale: "Gris", cuisineType: "Externe", doucheType: "Interne", terrasse: false, carreaux: true, eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel", description: "Espace de bureau climatisé, open-space modulable avec salle de réunion, idéal pour une PME. Parking visiteurs et fibre optique disponibles.", equipements: ["Climatisé", "Parking", "Fibre optique"], statut: "disponible", lat: 0.4210, lng: 9.4390, photos: photo("office,workspace,interior", 151), dateCreation: T("2024-04-18") },
+        { titre: "Box de stockage sécurisé à Oloumi", type: "Box", commune: "Libreville", arrondissement: "5e arrondissement", quartier: "Zone Industrielle d'Oloumi", zoneCaractere: "Zone industrielle", prix: 90000, surface: 20, cloture: true, materiau: "Dur (parpaing / béton)", description: "Box de stockage sécurisé et gardienné, accès facile pour véhicule utilitaire.", equipements: ["Clôturé", "Gardiennage"], statut: "occupé", lat: 0.3980, lng: 9.4780, photos: [], dateCreation: T("2024-07-11") }
+      ]
+    },
+    // ── Société privée vérifiée, mais catalogue vide (pour tester l'état "aucun bien publié") ──
+    {
+      entreprise: {
+        raisonSociale: "AtlanticBiz Gabon", typeEntreprise: "Société privée",
+        statutEntreprise: "verifie", entrepriseTel: "+241 62 45 67 89", dateCreation: T("2025-01-05")
+      },
+      biens: []
+    }
+  ];
+}
+
+function semerEntreprisesDemo() {
+  if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
+  const profils = entreprisesDemoData();
+  const totalBiens = profils.reduce((n, p) => n + p.biens.length, 0);
+  if (!confirm(`Ajouter ${profils.length} entreprises démo (agence + sociétés) et ${totalBiens} biens liés à leur catalogue ? Elles seront visibles sur le site public et gérables ici comme un vrai compte professionnel.`)) return;
+
+  const batch = window.dbAdmin.batch();
+  const maintenant = firebase.firestore.FieldValue.serverTimestamp();
+
+  profils.forEach((p) => {
+    const refEntreprise = window.dbAdmin.collection('users').doc();
+    batch.set(refEntreprise, {
+      ...p.entreprise,
+      compteType: 'entreprise',
+      demo: true,
+      dateCreation: p.entreprise.dateCreation || maintenant
+    });
+
+    p.biens.forEach((b) => {
+      const refAnnonce = window.dbAdmin.collection('annonces').doc();
+      batch.set(refAnnonce, {
+        ...b,
+        video: null,
+        proprietaireId: refEntreprise.id,
+        proprietaireCompteType: 'entreprise',
+        proprietaireTypeEntreprise: p.entreprise.typeEntreprise,
+        proprietaireStatutEntreprise: p.entreprise.statutEntreprise,
+        proprietaireRaisonSociale: p.entreprise.raisonSociale,
+        proprietaireNom: p.entreprise.raisonSociale,
+        proprietaireTel: p.entreprise.entrepriseTel || '',
+        whatsapp: p.entreprise.entrepriseTel || '',
+        vues: Math.floor(Math.random() * 40),
+        demo: true,
+        dateCreation: b.dateCreation || maintenant,
+        dateModification: maintenant
+      });
+    });
+  });
+
+  batch.commit()
+    .then(() => toast(`✅ ${profils.length} entreprises démo + ${totalBiens} biens ajoutés`))
+    .catch((err) => { console.error(err); toast('❌ Erreur lors de l\'ajout des entreprises démo'); });
+}
+
+function supprimerEntreprisesDemo() {
+  if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
+  const demosEnt = usersData.filter(u => u.demo === true && u.compteType === 'entreprise');
+  if (demosEnt.length === 0) { toast('ℹ️ Aucune entreprise démo à supprimer'); return; }
+
+  const idsEnt = demosEnt.map(u => u.id);
+  const biensLies = annoncesData.filter(a => idsEnt.includes(champ(a, 'proprietaireId')));
+  if (!confirm(`Supprimer définitivement ${demosEnt.length} entreprise(s) démo et les ${biensLies.length} bien(s) de leur catalogue ?`)) return;
+
+  const batch = window.dbAdmin.batch();
+  demosEnt.forEach(u => batch.delete(window.dbAdmin.collection('users').doc(u.id)));
+  biensLies.forEach(a => batch.delete(window.dbAdmin.collection('annonces').doc(a.id)));
+
+  batch.commit()
+    .then(() => toast(`✅ ${demosEnt.length} entreprise(s) et ${biensLies.length} bien(s) supprimés`))
+    .catch((err) => { console.error(err); toast('❌ Erreur lors de la suppression'); });
+}
+
+// Injecte la barre "Générer / Supprimer entreprises démo" au-dessus du tableau,
+// sans dépendre de admin.html (fonctionne même si le bouton n'y a pas été ajouté à la main).
+function injecterToolbarEntreprisesDemo() {
+  if (document.getElementById('entreprisesDemoToolbar')) return;
+  const tbody = document.getElementById('entreprisesTableBody');
+  if (!tbody) return;
+  const cible = tbody.closest('table') || tbody;
+
+  cible.insertAdjacentHTML('beforebegin', `
+    <div id="entreprisesDemoToolbar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <button id="btnSemerEntreprisesDemo" style="padding:8px 14px;background:#7C3AED;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:700;">🧪 Générer 3 entreprises démo (avec catalogue)</button>
+      <button id="btnSupprimerEntreprisesDemo" style="padding:8px 14px;background:#fff;color:#EF4444;border:1.5px solid #EF4444;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:700;">🗑️ Supprimer les entreprises démo</button>
+    </div>
+  `);
+  document.getElementById('btnSemerEntreprisesDemo').addEventListener('click', semerEntreprisesDemo);
+  document.getElementById('btnSupprimerEntreprisesDemo').addEventListener('click', supprimerEntreprisesDemo);
+}
+
 window.filtrerEntreprises = filtrerEntreprises;
 window.verifierEntreprise = verifierEntreprise;
 window.suspendreEntreprise = suspendreEntreprise;
 window.reactiverEntreprise = reactiverEntreprise;
+window.semerEntreprisesDemo = semerEntreprisesDemo;
+window.supprimerEntreprisesDemo = supprimerEntreprisesDemo;
 
 function formaterDate(valeur) {
   if (!valeur) return '—';
