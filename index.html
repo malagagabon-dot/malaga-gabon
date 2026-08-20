@@ -13,6 +13,14 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+  <!-- SEO & partage (WhatsApp, Facebook...) -->
+  <meta name="description" content="MALAGA — plateforme de location de logements à Libreville, Gabon.">
+  <meta property="og:title" content="MALAGA — Maison à louer au Gabon">
+  <meta property="og:description" content="Trouvez votre logement idéal à Libreville, ou publiez votre annonce gratuitement.">
+  <meta property="og:image" content="https://malagagabon-dot.github.io/malaga-gabon/img/logo.png">
+  <meta property="og:url" content="https://malagagabon-dot.github.io/malaga-gabon/">
+  <meta property="og:type" content="website">
 </head>
 <body>
 
@@ -421,6 +429,15 @@
     <div class="brand">MALAGA 🇬🇦</div>
     <p>📞 +241 60 14 19 24 &nbsp;|&nbsp; ✉️ malagagabon@gmail.com</p>
     <p style="color:rgba(255,255,255,.5);font-size:11px;margin-top:8px;">MALAGA © 2026 — Libreville, Gabon</p>
+    <p style="font-size:11px;margin-top:8px;">
+      <a href="mentions-legales.html" style="color:rgba(255,255,255,.6);">Mentions légales</a> ·
+      <a href="confidentialite.html" style="color:rgba(255,255,255,.6);">Confidentialité</a> ·
+      <a href="cgu.html" style="color:rgba(255,255,255,.6);">CGU</a>
+    </p>
+    <p style="font-size:10.5px;color:rgba(255,255,255,.4);margin-top:4px;">
+      Application développée par KOZANGUE ESSONO Patrick Bertin —
+      <a href="mentions-legales.html" style="color:rgba(255,255,255,.55);">PC-INFORMATIQUE</a>
+    </p>
   </footer>
 
   <!-- Modal détail annonce -->
@@ -559,5 +576,14 @@
   <script type="module" src="app.js?v=20260819b"></script>
   <script src="grille-adaptive.js?v=20260819b"></script>
   <script type="module" src="contact-signalement.js?v=20260819b"></script>
+
+  <!-- Activation de la PWA (installation + fonctionnement hors-ligne) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW non enregistré :', err));
+      });
+    }
+  </script>
 </body>
 </html>
