@@ -41,6 +41,36 @@
     .loc-btn:hover{border-color:var(--vert);background:rgba(0,158,96,.05);}
     .loc-btn .icone{font-size:20px;}
 
+    /* ===== Badges de confiance (en-tête) ===== */
+    .ent-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+    .ent-badge-sec{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;
+      background:rgba(255,255,255,.14);padding:3px 9px;border-radius:20px;}
+
+    /* ===== 3e stat (nouveautés) ===== */
+    .ent-stats.trois{grid-template-columns:repeat(3,1fr);}
+
+    /* ===== Filtres du catalogue ===== */
+    .cat-filtres{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;
+      -webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    .cat-filtres::-webkit-scrollbar{display:none;}
+    .cat-filtres select{flex:0 0 auto;min-width:118px;padding:9px 10px;border-radius:10px;
+      border:1.5px solid var(--gris-bordure);background:#fff;font-size:12.5px;font-weight:600;
+      color:var(--texte);font-family:inherit;}
+    .cat-chip{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:9px 12px;border-radius:10px;
+      border:1.5px solid var(--gris-bordure);background:#fff;font-size:12.5px;font-weight:600;
+      color:var(--texte);cursor:pointer;user-select:none;white-space:nowrap;}
+    .cat-chip input{margin:0;accent-color:var(--vert);}
+    .cat-chip.actif{border-color:var(--vert);background:rgba(0,158,96,.06);color:var(--vert-fonce);}
+    .cat-compteur{font-size:11.5px;color:var(--gris-clair);font-weight:600;margin:-6px 0 10px;}
+
+    /* ===== Contact rapide flottant ===== */
+    .contact-flottant{position:fixed;right:16px;bottom:22px;display:flex;flex-direction:column;gap:10px;z-index:60;}
+    .contact-flottant a{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-size:23px;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:transform .15s;}
+    .contact-flottant a:active{transform:scale(.92);}
+    .contact-flottant .cf-whatsapp{background:#25D366;color:#fff;}
+    .contact-flottant .cf-appel{background:var(--vert);color:#fff;}
+
     .mini-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
     .mini-carte{background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;overflow:hidden;cursor:pointer;
       transition:box-shadow .15s ease;}
@@ -94,16 +124,17 @@
       <div class="ent-logo" id="entLogo">🏢</div>
       <div class="ent-infos">
         <div class="ent-nom" id="entNom">Chargement…</div>
-        <div id="entBadgeWrap"></div>
+        <div class="ent-badges" id="entBadgeWrap"></div>
         <div class="ent-slogan" id="entSlogan" style="display:none;"></div>
         <div class="ent-contact" id="entContact"></div>
       </div>
     </div>
   </div>
 
-  <div class="ent-stats">
+  <div class="ent-stats trois">
     <div class="stat-carte"><div class="n" id="statBiens">0</div><div class="l">🏘️ Biens publiés</div></div>
     <div class="stat-carte"><div class="n" id="statDisponibles">0</div><div class="l">🟢 Disponibles</div></div>
+    <div class="stat-carte"><div class="n" id="statNouveaux">0</div><div class="l">🆕 Nouveaux (7j)</div></div>
   </div>
 
   <div class="ent-section" id="sectionLocalisation" style="display:none;">
@@ -114,6 +145,19 @@
 
   <div class="ent-section">
     <h2>📋 Catalogue de biens</h2>
+    <div class="cat-filtres" id="catFiltres" style="display:none;">
+      <select id="fType"><option value="">🏷️ Tous types</option></select>
+      <select id="fQuartier"><option value="">📍 Tous quartiers</option></select>
+      <label class="cat-chip" id="fDispoChip">
+        <input type="checkbox" id="fDispo"> 🟢 Disponibles uniquement
+      </label>
+      <select id="fTri">
+        <option value="recent">↕️ Plus récents</option>
+        <option value="prix-asc">💰 Prix croissant</option>
+        <option value="prix-desc">💰 Prix décroissant</option>
+      </select>
+    </div>
+    <div class="cat-compteur" id="catCompteur" style="display:none;"></div>
     <div class="mini-grille" id="listeBiens">
       <div class="spinner">Chargement…</div>
     </div>
@@ -124,10 +168,12 @@
     <p>📞 +241 60 14 19 24 &nbsp;|&nbsp; ✉️ malagagabon@gmail.com</p>
   </footer>
 
+  <div class="contact-flottant" id="contactFlottant" style="display:none;"></div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module">
     import { db, doc, getDoc, collection, query, where, onSnapshot } from "./firebase-config.js";
-    import { getIconeType, formatPrix, escapeHTML } from "./malaga-reference.js";
+    import { getIconeType, formatPrix, escapeHTML, TYPES_BIEN } from "./malaga-reference.js";
 
     const entrepriseId = new URLSearchParams(location.search).get("id");
     const conteneur = document.getElementById("listeBiens");
@@ -154,8 +200,34 @@
         document.getElementById("entLogo").innerHTML = e.logoUrl
           ? `<img src="${escapeHTML(e.logoUrl)}" alt="">` : "🏢";
 
+        // ===== Badges de confiance : vérification, type, ancienneté =====
+        const badges = [];
         if (e.statutEntreprise === "verifie") {
-          document.getElementById("entBadgeWrap").innerHTML = `<span class="ent-badge">🏢 Professionnel vérifié</span>`;
+          badges.push(`<span class="ent-badge">🏢 Professionnel vérifié</span>`);
+        }
+        if (e.typeEntreprise) {
+          const icone = e.typeEntreprise === "Agence immobilière" ? "🏢" : "🏛️";
+          badges.push(`<span class="ent-badge-sec">${icone} ${escapeHTML(e.typeEntreprise)}</span>`);
+        }
+        const anneeInscription = e.dateCreation?.toDate?.().getFullYear();
+        if (anneeInscription) {
+          badges.push(`<span class="ent-badge-sec">📅 Sur MALAGA depuis ${anneeInscription}</span>`);
+        }
+        document.getElementById("entBadgeWrap").innerHTML = badges.join("");
+
+        // ===== Contact rapide flottant (WhatsApp + appel) =====
+        const telephoneContact = e.entrepriseTel || e.tel || "";
+        const numeroPropre = telephoneContact.replace(/[^\d]/g, "");
+        const boutonsContact = [];
+        if (numeroPropre) {
+          const msg = encodeURIComponent(`Bonjour, je suis intéressé(e) par vos biens sur MALAGA (${e.raisonSociale || e.nom || ""}).`);
+          boutonsContact.push(`<a class="cf-whatsapp" href="https://wa.me/${numeroPropre}?text=${msg}" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>`);
+          boutonsContact.push(`<a class="cf-appel" href="tel:${escapeHTML(telephoneContact)}" aria-label="Appeler">📞</a>`);
+        }
+        if (boutonsContact.length) {
+          const cf = document.getElementById("contactFlottant");
+          cf.innerHTML = boutonsContact.join("");
+          cf.style.display = "flex";
         }
 
         if (e.slogan) {
@@ -205,39 +277,97 @@
       `).join("");
     }
 
+    let tousLesBiens = [];
+
     function chargerBiens() {
       const q = query(collection(db, "annonces"), where("proprietaireId", "==", entrepriseId));
       onSnapshot(q, (snap) => {
-        const biens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        document.getElementById("statBiens").textContent = biens.length;
-        document.getElementById("statDisponibles").textContent = biens.filter(b => b.statut === "disponible").length;
+        tousLesBiens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        if (biens.length === 0) {
+        const uneSemaine = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        document.getElementById("statBiens").textContent = tousLesBiens.length;
+        document.getElementById("statDisponibles").textContent = tousLesBiens.filter(b => b.statut === "disponible").length;
+        document.getElementById("statNouveaux").textContent = tousLesBiens.filter(b => b.dateCreation?.toMillis?.() > uneSemaine).length;
+
+        if (tousLesBiens.length === 0) {
           conteneur.innerHTML = `<div class="etat-vide" style="grid-column:1/-1;"><div class="icone">📭</div><p>Aucun bien publié pour le moment.</p></div>`;
           return;
         }
 
-        conteneur.innerHTML = biens.map(b => `
-          <div class="mini-carte" data-id="${b.id}">
-            <div class="img">${b.photos?.[0] ? `<img src="${escapeHTML(b.photos[0])}" alt="">` : getIconeType(b.type)}</div>
-            <div class="corps">
-              <h4>${escapeHTML(b.titre || "Annonce")}</h4>
-              <div class="prix">${formatPrix(b.prix)}</div>
-              <div class="meta">📍 ${escapeHTML(b.quartier || "")}${b.commune ? ", " + escapeHTML(b.commune) : ""} · ${b.statut === "disponible" ? "🟢 Disponible" : "🔴 Occupé"}</div>
-              <div class="meta">${b.numeroBien ? "🏷️ " + escapeHTML(b.numeroBien) + " · " : ""}${b.etage && b.etage !== "Non précisé" ? "🪜 " + escapeHTML(b.etage) + " · " : ""}${b.vue && b.vue !== "Non précisé" ? "🌅 " + escapeHTML(b.vue) : ""}</div>
-            </div>
-          </div>
-        `).join("");
-
-        conteneur.querySelectorAll(".mini-carte").forEach(carte => {
-          carte.addEventListener("click", () => {
-            window.location.href = `index.html?annonce=${carte.dataset.id}`;
-          });
-        });
+        construireFiltres();
+        rendreCatalogue();
       }, () => {
         conteneur.innerHTML = `<div class="etat-vide"><p>Impossible de charger le catalogue.</p></div>`;
       });
     }
+
+    // Construit les options des selects (types & quartiers réellement présents dans le catalogue)
+    // une seule fois — les valeurs choisies par le visiteur sont préservées si le catalogue change.
+    let filtresConstruits = false;
+    function construireFiltres() {
+      document.getElementById("catFiltres").style.display = "flex";
+      if (filtresConstruits) return;
+      filtresConstruits = true;
+
+      const selType = document.getElementById("fType");
+      TYPES_BIEN.filter(t => tousLesBiens.some(b => b.type === t))
+        .forEach(t => selType.insertAdjacentHTML("beforeend", `<option value="${escapeHTML(t)}">${getIconeType(t)} ${escapeHTML(t)}</option>`));
+
+      const selQuartier = document.getElementById("fQuartier");
+      [...new Set(tousLesBiens.map(b => b.quartier).filter(Boolean))].sort()
+        .forEach(q => selQuartier.insertAdjacentHTML("beforeend", `<option value="${escapeHTML(q)}">${escapeHTML(q)}</option>`));
+
+      [selType, selQuartier, document.getElementById("fTri")].forEach(el => el.addEventListener("change", rendreCatalogue));
+      document.getElementById("fDispo").addEventListener("change", (ev) => {
+        document.getElementById("fDispoChip").classList.toggle("actif", ev.target.checked);
+        rendreCatalogue();
+      });
+    }
+
+    function rendreCatalogue() {
+      const type = document.getElementById("fType").value;
+      const quartier = document.getElementById("fQuartier").value;
+      const dispoUniquement = document.getElementById("fDispo").checked;
+      const tri = document.getElementById("fTri").value;
+
+      let biens = tousLesBiens.filter(b =>
+        (!type || b.type === type) &&
+        (!quartier || b.quartier === quartier) &&
+        (!dispoUniquement || b.statut === "disponible")
+      );
+
+      if (tri === "prix-asc") biens = biens.slice().sort((a, b) => (a.prix || 0) - (b.prix || 0));
+      else if (tri === "prix-desc") biens = biens.slice().sort((a, b) => (b.prix || 0) - (a.prix || 0));
+      else biens = biens.slice().sort((a, b) => (b.dateCreation?.toMillis?.() || 0) - (a.dateCreation?.toMillis?.() || 0));
+
+      const compteurEl = document.getElementById("catCompteur");
+      const filtreActif = type || quartier || dispoUniquement;
+      compteurEl.style.display = filtreActif ? "block" : "none";
+      compteurEl.textContent = filtreActif ? `${biens.length} bien${biens.length > 1 ? "s" : ""} correspondant${biens.length > 1 ? "s" : ""}` : "";
+
+      if (biens.length === 0) {
+        conteneur.innerHTML = `<div class="etat-vide" style="grid-column:1/-1;"><div class="icone">🔍</div><p>Aucun bien ne correspond à ces filtres.</p></div>`;
+        return;
+      }
+
+      conteneur.innerHTML = biens.map(b => `
+        <div class="mini-carte" data-id="${b.id}">
+          <div class="img">${b.photos?.[0] ? `<img src="${escapeHTML(b.photos[0])}" alt="">` : getIconeType(b.type)}</div>
+          <div class="corps">
+            <h4>${escapeHTML(b.titre || "Annonce")}</h4>
+            <div class="prix">${formatPrix(b.prix)}</div>
+            <div class="meta">📍 ${escapeHTML(b.quartier || "")}${b.commune ? ", " + escapeHTML(b.commune) : ""} · ${b.statut === "disponible" ? "🟢 Disponible" : "🔴 Occupé"}</div>
+            <div class="meta">${b.numeroBien ? "🏷️ " + escapeHTML(b.numeroBien) + " · " : ""}${b.etage && b.etage !== "Non précisé" ? "🪜 " + escapeHTML(b.etage) + " · " : ""}${b.vue && b.vue !== "Non précisé" ? "🌅 " + escapeHTML(b.vue) : ""}</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // Délégation d'événement : fonctionne même après un re-rendu du catalogue par les filtres.
+    conteneur.addEventListener("click", (ev) => {
+      const carte = ev.target.closest(".mini-carte");
+      if (carte) window.location.href = `index.html?annonce=${carte.dataset.id}`;
+    });
   </script>
   <script type="module" src="nav.js"></script>
 </body>

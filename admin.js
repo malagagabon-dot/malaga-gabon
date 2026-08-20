@@ -1124,6 +1124,7 @@ function loadEntreprises(liste) {
     const nbBiens = nbBiensEntreprise(u.id);
 
     let actions = '';
+    actions += `<a href="entreprise.html?id=${u.id}" target="_blank" rel="noopener" style="padding:4px 8px;background:#009E60;color:#fff;border-radius:5px;font-size:11px;margin-right:4px;text-decoration:none;display:inline-block;">📋 Catalogue</a>`;
     if (typeof u.entrepriseLat === 'number' && typeof u.entrepriseLng === 'number') {
       actions += `<a href="https://www.google.com/maps?q=${u.entrepriseLat},${u.entrepriseLng}" target="_blank" rel="noopener" style="padding:4px 8px;background:#3B82F6;color:#fff;border-radius:5px;font-size:11px;margin-right:4px;text-decoration:none;display:inline-block;">📍 Carte</a>`;
     }
