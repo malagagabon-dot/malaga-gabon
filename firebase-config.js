@@ -1,5 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
+  initializeAppCheck,
+  ReCaptchaV3Provider
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js";
+import {
   getAuth,
   onAuthStateChanged,
   signOut,
@@ -38,6 +42,15 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+// App Check : protège Firestore/Auth contre l'utilisation des clés en
+// dehors du site MALAGA. Clé de site reCAPTCHA v3 (publique, sans risque
+// à exposer ici — c'est son rôle).
+initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider("6LcjNY8tAAAAAEXXVJjX6Pj0IXVkXEfC23n2ZThr"),
+  isTokenAutoRefreshEnabled: true
+});
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 

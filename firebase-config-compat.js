@@ -17,6 +17,16 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
+// App Check : même protection que sur le site public (firebase-config.js).
+// Nécessite le script firebase-app-check-compat.js chargé dans admin.html
+// AVANT ce fichier (voir instructions).
+if (firebase.appCheck) {
+  firebase.appCheck().activate(
+    "6LcjNY8tAAAAAEXXVJjX6Pj0IXVkXEfC23n2ZThr",
+    true // rafraîchissement automatique du jeton
+  );
+}
+
 // Exposés globalement pour admin.js et reservations-admin.js
 window.dbAdmin = firebase.firestore();
 window.authAdmin = firebase.auth();
