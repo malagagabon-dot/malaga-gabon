@@ -83,6 +83,10 @@
             </div>
           </div>
           <div class="champ"><label>Description</label><textarea id="modDescription" required></textarea></div>
+          <div class="champ">
+            <label>💳 Moyens de paiement acceptés</label>
+            <div class="chips" id="modChipsMoyensPaiement"></div>
+          </div>
           <div class="grille-2">
             <div class="champ"><label>N° de villa / porte / appartement</label><input type="text" id="modNumeroBien" placeholder="Ex : Villa B12, Appt 4"></div>
             <div class="champ"><label>Étage</label><select id="modEtage"></select></div>
@@ -100,10 +104,11 @@
   <script type="module">
     import { auth, db, signOut, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "./firebase-config.js";
     import { protegerPage } from "./auth.js";
-    import { getIconeType, formatPrix, escapeHTML, ETAGES, VUES } from "./malaga-reference.js";
+    import { getIconeType, formatPrix, escapeHTML, ETAGES, VUES, MOYENS_PAIEMENT } from "./malaga-reference.js";
 
     let uidCourant = null;
     let annonceEnEdition = null;
+    let modMoyensPaiementChoisis = new Set();
 
     /* ══════════ GALERIE PHOTO PLEIN ÉCRAN (lightbox) ══════════
        Même comportement que sur index.html / profil.html. */
@@ -287,6 +292,18 @@
       document.getElementById("modNumeroBien").value = a.numeroBien || "";
       document.getElementById("modEtage").value = a.etage || "Non précisé";
       document.getElementById("modVue").value = a.vue || "Non précisé";
+
+      // Moyens de paiement : on repart des choix déjà enregistrés sur cette annonce
+      modMoyensPaiementChoisis = new Set(a.moyensPaiement || []);
+      document.getElementById("modChipsMoyensPaiement").innerHTML = MOYENS_PAIEMENT.map(m =>
+        `<div class="chip${modMoyensPaiementChoisis.has(m) ? " actif" : ""}" data-val="${m}">${m}</div>`).join("");
+      document.querySelectorAll("#modChipsMoyensPaiement .chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+          chip.classList.toggle("actif");
+          chip.classList.contains("actif") ? modMoyensPaiementChoisis.add(chip.dataset.val) : modMoyensPaiementChoisis.delete(chip.dataset.val);
+        });
+      });
+
       document.getElementById("modalModifier").classList.add("ouverte");
     }
     document.getElementById("btnAnnulerModif").onclick = () => document.getElementById("modalModifier").classList.remove("ouverte");
@@ -302,6 +319,7 @@
           numeroBien: document.getElementById("modNumeroBien").value.trim(),
           etage: document.getElementById("modEtage").value,
           vue: document.getElementById("modVue").value,
+          moyensPaiement: Array.from(modMoyensPaiementChoisis),
           dateModification: serverTimestamp()
         });
         document.getElementById("modalModifier").classList.remove("ouverte");

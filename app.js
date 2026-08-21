@@ -573,6 +573,14 @@ function afficherDetail(a) {
           Le loyer, la caution, l'avance éventuelle et la durée d'engagement sont à convenir <strong>directement avec le propriétaire</strong>, lors d'une visite ou d'une rencontre en personne. MALAGA n'impose ni ne garantit aucune de ces conditions.
         </div>
         <div id="blocMoyens" style="display:none;margin-top:10px;background:#FFF7E6;border:1px solid #FDE7B0;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#6b551a;line-height:1.6;">
+          ${a.moyensPaiement && a.moyensPaiement.length ? `
+            <div style="margin-bottom:10px;">
+              <strong>Moyens acceptés par le propriétaire :</strong>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                ${a.moyensPaiement.map(m => `<span style="background:#fff;border:1px solid #FDE7B0;color:#6b551a;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">${escapeHTML(m)}</span>`).join("")}
+              </div>
+            </div>` : `
+            <div style="margin-bottom:10px;">Le propriétaire n'a pas encore précisé ses moyens de paiement acceptés.</div>`}
           Toute transaction se conclut uniquement via le numéro WhatsApp fourni par le propriétaire, après une rencontre en personne. <strong>MALAGA ne collecte, ne gère et ne garantit aucun paiement</strong>, et n'est pas responsable des transactions conclues en dehors de ce cadre.
         </div>
       </div>

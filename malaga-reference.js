@@ -110,6 +110,22 @@ export const EQUIPEMENTS = [
   "Fibre optique", "Groupe électrogène", "Forage", "Gardiennage", "Interphone"
 ];
 
+/* Moyens de paiement que le propriétaire accepte pour le règlement du loyer.
+   Choisis par le propriétaire lui-même au moment de la publication de
+   l'annonce (voir publier.html) ; MALAGA ne collecte ni ne garantit aucun
+   paiement, cette liste sert uniquement d'information pour le locataire. */
+export const MOYENS_PAIEMENT = [
+  "Espèces", "Airtel Money", "Moov Money", "Carte bancaire", "Versement bancaire"
+];
+
+export const ICONES_PAIEMENT = {
+  "Espèces": "💵",
+  "Airtel Money": "📱",
+  "Moov Money": "📱",
+  "Carte bancaire": "💳",
+  "Versement bancaire": "🏦"
+};
+
 /* ═══════════════════════════════════════════════════════════
    COMPTES PROFESSIONNELS (agences / entreprises)
 ═══════════════════════════════════════════════════════════ */

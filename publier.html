@@ -78,6 +78,12 @@
         </div>
 
         <div class="champ">
+          <label>💳 Moyens de paiement acceptés</label>
+          <div class="chips" id="chipsMoyensPaiement"></div>
+          <div class="aide">Cochez les moyens que vous acceptez pour le règlement du loyer. Ils s'afficheront sur votre annonce.</div>
+        </div>
+
+        <div class="champ">
           <label>Description *</label>
           <textarea id="description" required placeholder="Décrivez le logement, son environnement, ses atouts..."></textarea>
         </div>
@@ -330,7 +336,7 @@
       COMMUNES, ARRONDISSEMENTS, getQuartiers, CENTRES, TYPES_BIEN, EQUIPEMENTS,
       EAU_OPTIONS, ELECTRICITE_OPTIONS, COMPTEUR_OPTIONS, ETAT_BATIMENT, LIBREVILLE_CENTER,
       ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES, VUES, ETAGES,
-      estResidentiel
+      MOYENS_PAIEMENT, estResidentiel
     } from "./malaga-reference.js";
 
     let utilisateurCourant = null;
@@ -341,6 +347,7 @@
     let terrasseVal = "non";
     let carreauxVal = "non";
     let equipementsChoisis = new Set();
+    let moyensPaiementChoisis = new Set();
 
     protegerPage((user) => { utilisateurCourant = user; }, "proprietaire");
 
@@ -392,6 +399,8 @@
     document.getElementById("compteur").innerHTML = COMPTEUR_OPTIONS.map(e => `<option>${e}</option>`).join("");
     document.getElementById("chipsEquipements").innerHTML = EQUIPEMENTS.map(e =>
       `<div class="chip" data-val="${e}">${e}</div>`).join("");
+    document.getElementById("chipsMoyensPaiement").innerHTML = MOYENS_PAIEMENT.map(m =>
+      `<div class="chip" data-val="${m}">${m}</div>`).join("");
 
     // Zone, capacités et construction / finitions
     document.getElementById("zoneCaractere").innerHTML =
@@ -422,6 +431,13 @@
       chip.addEventListener("click", () => {
         chip.classList.toggle("actif");
         chip.classList.contains("actif") ? equipementsChoisis.add(chip.dataset.val) : equipementsChoisis.delete(chip.dataset.val);
+      });
+    });
+
+    document.querySelectorAll("#chipsMoyensPaiement .chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        chip.classList.toggle("actif");
+        chip.classList.contains("actif") ? moyensPaiementChoisis.add(chip.dataset.val) : moyensPaiementChoisis.delete(chip.dataset.val);
       });
     });
 
@@ -598,6 +614,7 @@
           electricite: document.getElementById("electricite").value,
           compteur: document.getElementById("compteur").value,
           equipements: Array.from(equipementsChoisis),
+          moyensPaiement: Array.from(moyensPaiementChoisis),
           photos: urlsPhotos,
           video: urlVideo,
           statut: "disponible",
