@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil professionnel — MALAGA</title>
+  <meta name="theme-color" content="#009E60">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    .ent-hero{max-width:1000px;margin:0 auto;padding:24px 20px 4px;}
+    .ent-carte{background:linear-gradient(135deg,var(--vert) 0%,var(--vert-fonce) 100%);border-radius:18px;
+      padding:24px 20px;color:#fff;display:flex;align-items:center;gap:16px;box-shadow:0 6px 20px rgba(0,62,40,.18);}
+    .ent-logo{width:74px;height:74px;border-radius:16px;background:rgba(255,255,255,.18);
+      display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;flex-shrink:0;
+      border:3px solid rgba(255,255,255,.4);}
+    .ent-logo img{width:100%;height:100%;object-fit:cover;}
+    .ent-infos{min-width:0;flex:1;}
+    .ent-nom{font-size:19px;font-weight:800;font-family:'Playfair Display',serif;line-height:1.25;}
+    .ent-badge{display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:800;
+      background:rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;letter-spacing:.3px;}
+    .ent-slogan{margin-top:6px;font-size:12.5px;opacity:.92;font-style:italic;}
+    .ent-contact{margin-top:10px;font-size:12.5px;opacity:.92;line-height:1.7;}
+
+    .ent-stats{max-width:1000px;margin:16px auto 0;padding:0 20px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+    .stat-carte{background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;padding:14px 8px;text-align:center;}
+    .stat-carte .n{font-size:19px;font-weight:800;color:var(--vert);}
+    .stat-carte .l{font-size:10.5px;color:var(--gris-clair);margin-top:2px;font-weight:600;}
+
+    .ent-section{max-width:1000px;margin:26px auto 0;padding:0 20px 30px;}
+    .ent-section h2{font-size:15.5px;font-weight:800;color:var(--texte);margin-bottom:12px;}
+
+    /* ===== Localisation ===== */
+    .loc-carte{width:100%;height:220px;border-radius:14px;overflow:hidden;border:1px solid var(--gris-bordure);margin-bottom:12px;}
+    .loc-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+    @media(max-width:480px){.loc-actions{grid-template-columns:1fr;}}
+    .loc-btn{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;
+      background:#fff;border:1.5px solid var(--gris-bordure);border-radius:12px;padding:12px 8px;
+      text-decoration:none;color:var(--texte);font-size:11.5px;font-weight:700;transition:border-color .15s,background .15s;}
+    .loc-btn:hover{border-color:var(--vert);background:rgba(0,158,96,.05);}
+    .loc-btn .icone{font-size:20px;}
+
+    /* ===== Badges de confiance (en-tête) ===== */
+    .ent-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+    .ent-badge-sec{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;
+      background:rgba(255,255,255,.14);padding:3px 9px;border-radius:20px;}
+
+    /* ===== 3e stat (nouveautés) ===== */
+    .ent-stats.trois{grid-template-columns:repeat(3,1fr);}
+
+    /* ===== Filtres du catalogue ===== */
+    .cat-filtres{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;
+      -webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    .cat-filtres::-webkit-scrollbar{display:none;}
+    .cat-filtres select{flex:0 0 auto;min-width:118px;padding:9px 10px;border-radius:10px;
+      border:1.5px solid var(--gris-bordure);background:#fff;font-size:12.5px;font-weight:600;
+      color:var(--texte);font-family:inherit;}
+    .cat-chip{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:9px 12px;border-radius:10px;
+      border:1.5px solid var(--gris-bordure);background:#fff;font-size:12.5px;font-weight:600;
+      color:var(--texte);cursor:pointer;user-select:none;white-space:nowrap;}
+    .cat-chip input{margin:0;accent-color:var(--vert);}
+    .cat-chip.actif{border-color:var(--vert);background:rgba(0,158,96,.06);color:var(--vert-fonce);}
+    .cat-compteur{font-size:11.5px;color:var(--gris-clair);font-weight:600;margin:-6px 0 10px;}
+
+    /* ===== Contact rapide flottant ===== */
+    .contact-flottant{position:fixed;right:16px;bottom:22px;display:flex;flex-direction:column;gap:10px;z-index:60;}
+    .contact-flottant a{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-size:23px;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:transform .15s;}
+    .contact-flottant a:active{transform:scale(.92);}
+    .contact-flottant .cf-whatsapp{background:#25D366;color:#fff;}
+    .contact-flottant .cf-appel{background:var(--vert);color:#fff;}
+
+    .mini-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+    .mini-carte{background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;overflow:hidden;cursor:pointer;
+      transition:box-shadow .15s ease;}
+    .mini-carte:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);}
+    .mini-carte .img{height:130px;background:var(--gris-fond);display:flex;align-items:center;justify-content:center;font-size:30px;}
+    .mini-carte .img img{width:100%;height:100%;object-fit:cover;}
+    .mini-carte .corps{padding:10px 12px 12px;}
+    .mini-carte h4{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:4px;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .mini-carte .prix{font-size:13px;font-weight:800;color:var(--vert);}
+    .mini-carte .meta{font-size:10.5px;color:var(--gris-clair);margin-top:2px;}
+  </style>
+</head>
+<body>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-header">
+      <img src="img/logo.png" alt="MALAGA" class="drawer-logo">
+      <button class="drawer-close" id="fermerDrawer">✕</button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="index.html" class="drawer-link">🏠 Accueil</a>
+      <a href="index.html#liste-annonces" class="drawer-link">📋 Toutes les annonces</a>
+      <div class="drawer-sep"></div>
+      <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
+      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
+      <div class="drawer-sep"></div>
+      <a href="connexion.html" class="drawer-link" id="drawerConnexion">👤 Se connecter</a>
+    </nav>
+    <div class="drawer-footer">MALAGA 🇬🇦 — Libreville, Gabon</div>
+  </aside>
+
+  <header class="header">
+    <div class="header-inner">
+      <button class="icon-btn" id="btnMenu" aria-label="Menu">☰</button>
+      <a href="index.html" class="logo-link">
+        <img src="img/logo.png" alt="MALAGA" class="logo-img">
+        <span class="logo-text-wrap">
+          <span class="logo-text">MALAGA</span>
+          <span class="slogan">Maison à louer au Gabon 🇬🇦</span>
+        </span>
+      </a>
+      <a href="index.html" class="icon-btn" aria-label="Accueil">🏠</a>
+    </div>
+  </header>
+
+  <div style="background:#111827;color:#fff;text-align:center;padding:10px 14px;font-size:12px;font-weight:700;">
+    🧪 Aperçu démo — données fictives, aucune connexion Firebase
+  </div>
+  <nav class="demo-nav" style="max-width:1000px;margin:14px auto 0;padding:0 20px;display:flex;gap:8px;flex-wrap:wrap;">
+    <a data-demo="1" href="?demo=1" style="padding:7px 12px;border-radius:20px;border:1.5px solid var(--gris-bordure);font-size:12px;font-weight:700;text-decoration:none;color:var(--texte);">🏢 Agence vérifiée (8 biens)</a>
+    <a data-demo="2" href="?demo=2" style="padding:7px 12px;border-radius:20px;border:1.5px solid var(--gris-bordure);font-size:12px;font-weight:700;text-decoration:none;color:var(--texte);">🏛️ Société en attente (2 biens)</a>
+    <a data-demo="3" href="?demo=3" style="padding:7px 12px;border-radius:20px;border:1.5px solid var(--gris-bordure);font-size:12px;font-weight:700;text-decoration:none;color:var(--texte);">📭 Catalogue vide</a>
+  </nav>
+  <style>.demo-nav a.actif{border-color:var(--vert)!important;background:rgba(0,158,96,.08);color:var(--vert-fonce)!important;}</style>
+
+  <!-- ===== EN-TÊTE VITRINE ===== -->
+  <div class="ent-hero">
+    <div class="ent-carte" id="entCarte">
+      <div class="ent-logo" id="entLogo">🏢</div>
+      <div class="ent-infos">
+        <div class="ent-nom" id="entNom">Chargement…</div>
+        <div class="ent-badges" id="entBadgeWrap"></div>
+        <div class="ent-slogan" id="entSlogan" style="display:none;"></div>
+        <div class="ent-contact" id="entContact"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ent-stats trois">
+    <div class="stat-carte"><div class="n" id="statBiens">0</div><div class="l">🏘️ Biens publiés</div></div>
+    <div class="stat-carte"><div class="n" id="statDisponibles">0</div><div class="l">🟢 Disponibles</div></div>
+    <div class="stat-carte"><div class="n" id="statNouveaux">0</div><div class="l">🆕 Nouveaux (7j)</div></div>
+  </div>
+
+  <div class="ent-section" id="sectionLocalisation" style="display:none;">
+    <h2>📍 Nous trouver</h2>
+    <div class="loc-carte" id="locCarte"></div>
+    <div class="loc-actions" id="locActions"></div>
+  </div>
+
+  <div class="ent-section">
+    <h2>📋 Catalogue de biens</h2>
+    <div class="cat-filtres" id="catFiltres" style="display:none;">
+      <select id="fType"><option value="">🏷️ Tous types</option></select>
+      <select id="fQuartier"><option value="">📍 Tous quartiers</option></select>
+      <label class="cat-chip" id="fDispoChip">
+        <input type="checkbox" id="fDispo"> 🟢 Disponibles uniquement
+      </label>
+      <select id="fTri">
+        <option value="recent">↕️ Plus récents</option>
+        <option value="prix-asc">💰 Prix croissant</option>
+        <option value="prix-desc">💰 Prix décroissant</option>
+      </select>
+    </div>
+    <div class="cat-compteur" id="catCompteur" style="display:none;"></div>
+    <div class="mini-grille" id="listeBiens">
+      <div class="spinner">Chargement…</div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="brand">MALAGA 🇬🇦</div>
+    <p>📞 +241 60 14 19 24 &nbsp;|&nbsp; ✉️ malagagabon@gmail.com</p>
+  </footer>
+
+  <div class="contact-flottant" id="contactFlottant" style="display:none;"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module">
+    import { getIconeType, formatPrix, escapeHTML, TYPES_BIEN, ICONES_PAIEMENT } from "./malaga-reference.js";
+
+    /* ═══════════════════════════════════════════════════════════
+       MODE DÉMO — aucune connexion Firebase. Données 100% fictives
+       pour visualiser le rendu du catalogue avec plusieurs profils
+       d'entreprise (?demo=1 / 2 / 3). Retirer ce bloc + rebrancher
+       chargerEntreprise()/chargerBiens() d'origine pour la prod.
+    ═══════════════════════════════════════════════════════════ */
+    function tsDemo(dateStr) {
+      const d = new Date(dateStr);
+      return { toDate: () => d, toMillis: () => d.getTime() };
+    }
+    const img = (seed) => `https://picsum.photos/seed/${seed}/400/300`;
+
+    const PROFILS_DEMO = {
+      // Agence vérifiée, catalogue fourni, tous les contacts renseignés
+      "1": {
+        entreprise: {
+          raisonSociale: "Gabon Immo Services", compteType: "entreprise",
+          typeEntreprise: "Agence immobilière", statutEntreprise: "verifie",
+          slogan: "Votre partenaire immobilier de confiance à Libreville",
+          entrepriseTel: "+241661234567", entrepriseEmail: "contact@gabonimmo.ga",
+          entrepriseAdresse: "Immeuble Horizon, Boulevard Triomphal, Libreville",
+          entrepriseLat: 0.3924, entrepriseLng: 9.4536,
+          dateCreation: tsDemo("2023-03-10")
+        },
+        biens: [
+          { id: "d1", titre: "Villa 4 chambres avec piscine", type: "Villa", prix: 850000, statut: "disponible", quartier: "Batterie IV", commune: "Libreville", vue: "Vue mer", etage: "Non précisé", moyensPaiement: ["Espèces", "Carte bancaire", "Versement bancaire"], photos: [img("villa1")], dateCreation: tsDemo(new Date(Date.now() - 2 * 86400000)) },
+          { id: "d2", titre: "Appartement standing 3 pièces", type: "Appartement", prix: 450000, statut: "disponible", quartier: "Glass", commune: "Libreville", etage: "3e étage", vue: "Vue sur la ville", moyensPaiement: ["Espèces", "Airtel Money", "Carte bancaire"], photos: [img("appart1")], dateCreation: tsDemo("2024-11-02") },
+          { id: "d3", titre: "Studio meublé proche université", type: "Studio", prix: 180000, statut: "occupé", quartier: "Université Omar Bongo", commune: "Libreville", etage: "1er étage", moyensPaiement: ["Espèces", "Airtel Money", "Moov Money"], photos: [img("studio1")], dateCreation: tsDemo("2024-09-15") },
+          { id: "d4", titre: "Bureau climatisé centre-ville", type: "Bureau", prix: 600000, statut: "disponible", quartier: "Hôtel de Ville", commune: "Libreville", moyensPaiement: ["Versement bancaire", "Carte bancaire"], photos: [img("bureau1")], dateCreation: tsDemo(new Date(Date.now() - 5 * 86400000)) },
+          { id: "d5", titre: "Maison familiale avec jardin", type: "Maison", prix: 520000, statut: "disponible", quartier: "Angondjé", commune: "Akanda", vue: "Vue jardin", numeroBien: "A-12", moyensPaiement: ["Espèces", "Versement bancaire"], photos: [img("maison1")], dateCreation: tsDemo("2024-06-20") },
+          { id: "d6", titre: "Chambre meublée quartier calme", type: "Chambre", prix: 120000, statut: "disponible", quartier: "Okala", commune: "Akanda", moyensPaiement: ["Espèces", "Airtel Money"], photos: [img("chambre1")], dateCreation: tsDemo("2024-08-01") },
+          { id: "d7", titre: "Local commercial passage fréquenté", type: "Local commercial", prix: 700000, statut: "occupé", quartier: "Mont-Bouet", commune: "Libreville", moyensPaiement: ["Versement bancaire", "Carte bancaire"], photos: [img("local1")], dateCreation: tsDemo("2024-04-18") },
+          { id: "d8", titre: "Villa vue lagune 5 chambres", type: "Villa", prix: 1200000, statut: "disponible", quartier: "Cap Caravane", commune: "Akanda", vue: "Vue lagune", numeroBien: "V-05", moyensPaiement: ["Carte bancaire", "Versement bancaire"], photos: [img("villa2")], dateCreation: tsDemo("2024-12-28") }
+        ]
+      },
+      // Société privée en attente de vérification, peu de biens, pas de téléphone public
+      "2": {
+        entreprise: {
+          raisonSociale: "SOGACI Patrimoine", compteType: "entreprise",
+          typeEntreprise: "Société privée", statutEntreprise: "attente",
+          entrepriseEmail: "info@sogaci.ga"
+        },
+        biens: [
+          { id: "d9", titre: "Appartement 2 pièces résidence sécurisée", type: "Appartement", prix: 380000, statut: "disponible", quartier: "Nombakélé-Nord", commune: "Libreville", moyensPaiement: ["Espèces", "Moov Money"], photos: [img("appart2")], dateCreation: tsDemo("2024-10-05") },
+          { id: "d10", titre: "Box de stockage sécurisé", type: "Box", prix: 90000, statut: "occupé", quartier: "Oloumi", commune: "Libreville", moyensPaiement: ["Espèces"], photos: [], dateCreation: tsDemo("2024-07-11") }
+        ]
+      },
+      // Catalogue vide — pour vérifier l'état "aucun bien publié"
+      "3": {
+        entreprise: {
+          raisonSociale: "AtlanticBiz Gabon", compteType: "entreprise",
+          typeEntreprise: "Société privée", statutEntreprise: "verifie",
+          entrepriseTel: "+24174567890", dateCreation: tsDemo("2025-01-05")
+        },
+        biens: []
+      }
+    };
+
+    const conteneur = document.getElementById("listeBiens");
+    const demoChoisi = new URLSearchParams(location.search).get("demo") || "1";
+    document.querySelectorAll(".demo-nav a").forEach(a => {
+      if (a.dataset.demo === demoChoisi) a.classList.add("actif");
+    });
+
+    chargerEntreprise();
+    chargerBiens();
+
+    async function chargerEntreprise() {
+      try {
+        const e = PROFILS_DEMO[demoChoisi].entreprise;
+        {
+        document.getElementById("entNom").textContent = e.raisonSociale || e.nom || "Entreprise";
+        document.title = `${e.raisonSociale || "Entreprise"} — MALAGA (démo)`;
+
+        document.getElementById("entLogo").innerHTML = e.logoUrl
+          ? `<img src="${escapeHTML(e.logoUrl)}" alt="">` : "🏢";
+
+        // ===== Badges de confiance : vérification, type, ancienneté =====
+        const badges = [];
+        if (e.statutEntreprise === "verifie") {
+          badges.push(`<span class="ent-badge">🏢 Professionnel vérifié</span>`);
+        }
+        if (e.typeEntreprise) {
+          const icone = e.typeEntreprise === "Agence immobilière" ? "🏢" : "🏛️";
+          badges.push(`<span class="ent-badge-sec">${icone} ${escapeHTML(e.typeEntreprise)}</span>`);
+        }
+        const anneeInscription = e.dateCreation?.toDate?.().getFullYear();
+        if (anneeInscription) {
+          badges.push(`<span class="ent-badge-sec">📅 Sur MALAGA depuis ${anneeInscription}</span>`);
+        }
+        document.getElementById("entBadgeWrap").innerHTML = badges.join("");
+
+        // ===== Contact rapide flottant (WhatsApp + appel) =====
+        const telephoneContact = e.entrepriseTel || e.tel || "";
+        const numeroPropre = telephoneContact.replace(/[^\d]/g, "");
+        const boutonsContact = [];
+        if (numeroPropre) {
+          const msg = encodeURIComponent(`Bonjour, je suis intéressé(e) par vos biens sur MALAGA (${e.raisonSociale || e.nom || ""}).`);
+          boutonsContact.push(`<a class="cf-whatsapp" href="https://wa.me/${numeroPropre}?text=${msg}" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>`);
+          boutonsContact.push(`<a class="cf-appel" href="tel:${escapeHTML(telephoneContact)}" aria-label="Appeler">📞</a>`);
+        }
+        if (boutonsContact.length) {
+          const cf = document.getElementById("contactFlottant");
+          cf.innerHTML = boutonsContact.join("");
+          cf.style.display = "flex";
+        }
+
+        if (e.slogan) {
+          const sloganEl = document.getElementById("entSlogan");
+          sloganEl.textContent = e.slogan;
+          sloganEl.style.display = "block";
+        }
+
+        const contactParts = [];
+        if (e.entrepriseTel || e.tel) contactParts.push(`📞 ${escapeHTML(e.entrepriseTel || e.tel)}`);
+        if (e.entrepriseEmail) contactParts.push(`✉️ ${escapeHTML(e.entrepriseEmail)}`);
+        if (e.entrepriseAdresse) contactParts.push(`📍 ${escapeHTML(e.entrepriseAdresse)}`);
+        document.getElementById("entContact").innerHTML = contactParts.join(" &nbsp;·&nbsp; ");
+
+        if (typeof e.entrepriseLat === "number" && typeof e.entrepriseLng === "number") {
+          afficherLocalisation(e.entrepriseLat, e.entrepriseLng, e.raisonSociale || e.nom || "Nos bureaux", e.entrepriseTel || e.tel);
+        }
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById("entNom").textContent = "Erreur de chargement";
+      }
+    }
+
+    function afficherLocalisation(lat, lng, nom, telephone) {
+      document.getElementById("sectionLocalisation").style.display = "block";
+
+      const carte = L.map("locCarte", { zoomControl: false, dragging: false, scrollWheelZoom: false }).setView([lat, lng], 15);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap" }).addTo(carte);
+      L.marker([lat, lng]).addTo(carte).bindPopup(escapeHTML(nom));
+      setTimeout(() => carte.invalidateSize(), 150);
+
+      const numero = (telephone || "").replace(/[^\d]/g, "");
+      const lienGoogleMaps = `https://www.google.com/maps?q=${lat},${lng}`;
+      const lienItineraire = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+      const messageWhatsapp = encodeURIComponent(`Bonjour, voici la localisation de nos bureaux « ${nom} » sur MALAGA : ${lienGoogleMaps}`);
+
+      const actions = [
+        { href: lienGoogleMaps, icone: "🗺️", label: "Voir sur Google Maps" },
+        { href: lienItineraire, icone: "🧭", label: "Itinéraire" }
+      ];
+      if (numero) actions.push({ href: `https://wa.me/${numero}?text=${messageWhatsapp}`, icone: "💬", label: "Partager via WhatsApp" });
+
+      document.getElementById("locActions").innerHTML = actions.map(a => `
+        <a class="loc-btn" href="${a.href}" target="_blank" rel="noopener">
+          <span class="icone">${a.icone}</span>${a.label}
+        </a>
+      `).join("");
+    }
+
+    let tousLesBiens = [];
+
+    function chargerBiens() {
+      tousLesBiens = PROFILS_DEMO[demoChoisi].biens;
+
+      const uneSemaine = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      document.getElementById("statBiens").textContent = tousLesBiens.length;
+      document.getElementById("statDisponibles").textContent = tousLesBiens.filter(b => b.statut === "disponible").length;
+      document.getElementById("statNouveaux").textContent = tousLesBiens.filter(b => b.dateCreation?.toMillis?.() > uneSemaine).length;
+
+      if (tousLesBiens.length === 0) {
+        conteneur.innerHTML = `<div class="etat-vide" style="grid-column:1/-1;"><div class="icone">📭</div><p>Aucun bien publié pour le moment.</p></div>`;
+        return;
+      }
+
+      construireFiltres();
+      rendreCatalogue();
+    }
+
+    // Construit les options des selects (types & quartiers réellement présents dans le catalogue)
+    // une seule fois — les valeurs choisies par le visiteur sont préservées si le catalogue change.
+    let filtresConstruits = false;
+    function construireFiltres() {
+      document.getElementById("catFiltres").style.display = "flex";
+      if (filtresConstruits) return;
+      filtresConstruits = true;
+
+      const selType = document.getElementById("fType");
+      TYPES_BIEN.filter(t => tousLesBiens.some(b => b.type === t))
+        .forEach(t => selType.insertAdjacentHTML("beforeend", `<option value="${escapeHTML(t)}">${getIconeType(t)} ${escapeHTML(t)}</option>`));
+
+      const selQuartier = document.getElementById("fQuartier");
+      [...new Set(tousLesBiens.map(b => b.quartier).filter(Boolean))].sort()
+        .forEach(q => selQuartier.insertAdjacentHTML("beforeend", `<option value="${escapeHTML(q)}">${escapeHTML(q)}</option>`));
+
+      [selType, selQuartier, document.getElementById("fTri")].forEach(el => el.addEventListener("change", rendreCatalogue));
+      document.getElementById("fDispo").addEventListener("change", (ev) => {
+        document.getElementById("fDispoChip").classList.toggle("actif", ev.target.checked);
+        rendreCatalogue();
+      });
+    }
+
+    function rendreCatalogue() {
+      const type = document.getElementById("fType").value;
+      const quartier = document.getElementById("fQuartier").value;
+      const dispoUniquement = document.getElementById("fDispo").checked;
+      const tri = document.getElementById("fTri").value;
+
+      let biens = tousLesBiens.filter(b =>
+        (!type || b.type === type) &&
+        (!quartier || b.quartier === quartier) &&
+        (!dispoUniquement || b.statut === "disponible")
+      );
+
+      if (tri === "prix-asc") biens = biens.slice().sort((a, b) => (a.prix || 0) - (b.prix || 0));
+      else if (tri === "prix-desc") biens = biens.slice().sort((a, b) => (b.prix || 0) - (a.prix || 0));
+      else biens = biens.slice().sort((a, b) => (b.dateCreation?.toMillis?.() || 0) - (a.dateCreation?.toMillis?.() || 0));
+
+      const compteurEl = document.getElementById("catCompteur");
+      const filtreActif = type || quartier || dispoUniquement;
+      compteurEl.style.display = filtreActif ? "block" : "none";
+      compteurEl.textContent = filtreActif ? `${biens.length} bien${biens.length > 1 ? "s" : ""} correspondant${biens.length > 1 ? "s" : ""}` : "";
+
+      if (biens.length === 0) {
+        conteneur.innerHTML = `<div class="etat-vide" style="grid-column:1/-1;"><div class="icone">🔍</div><p>Aucun bien ne correspond à ces filtres.</p></div>`;
+        return;
+      }
+
+      conteneur.innerHTML = biens.map(b => `
+        <div class="mini-carte" data-id="${b.id}">
+          <div class="img">${b.photos?.[0] ? `<img src="${escapeHTML(b.photos[0])}" alt="">` : getIconeType(b.type)}</div>
+          <div class="corps">
+            <h4>${escapeHTML(b.titre || "Annonce")}</h4>
+            <div class="prix">${formatPrix(b.prix)}</div>
+            <div class="meta">📍 ${escapeHTML(b.quartier || "")}${b.commune ? ", " + escapeHTML(b.commune) : ""} · ${b.statut === "disponible" ? "🟢 Disponible" : "🔴 Occupé"}</div>
+            <div class="meta">${b.numeroBien ? "🏷️ " + escapeHTML(b.numeroBien) + " · " : ""}${b.etage && b.etage !== "Non précisé" ? "🪜 " + escapeHTML(b.etage) + " · " : ""}${b.vue && b.vue !== "Non précisé" ? "🌅 " + escapeHTML(b.vue) : ""}</div>
+            ${b.moyensPaiement && b.moyensPaiement.length ? `
+            <div class="meta" style="margin-top:4px;">💳 ${b.moyensPaiement.map(m => `${ICONES_PAIEMENT[m] || ""} ${escapeHTML(m)}`).join(" · ")}</div>` : ""}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // Délégation d'événement : fonctionne même après un re-rendu du catalogue par les filtres.
+    conteneur.addEventListener("click", (ev) => {
+      const carte = ev.target.closest(".mini-carte");
+      // En prod : redirection vers index.html?annonce=ID. Ici, juste un aperçu console (mode démo).
+      if (carte) console.log("Clic sur l'annonce démo :", carte.dataset.id);
+    });
+  </script>
+  <script type="module" src="nav.js"></script>
+</body>
+</html>
