@@ -751,46 +751,62 @@
         });
 
         if (publieUnBien) {
-          btn.textContent = "Envoi des photos…";
-          const nouvelleRef = doc(collection(db, "annonces"));
-          const photosParSecteurUrls = {};
-          const toutesLesUrls = [];
-          for (const s of SECTEURS) {
-            photosParSecteurUrls[s.id] = [];
-            for (const fichier of photosParSecteur[s.id]) {
-              const optimisee = await compresserImage(fichier);
-              const url = await uploaderVersCloudinary(optimisee);
-              photosParSecteurUrls[s.id].push(url);
-              toutesLesUrls.push(url);
+          try {
+            btn.textContent = "Envoi des photos…";
+            const nouvelleRef = doc(collection(db, "annonces"));
+            const photosParSecteurUrls = {};
+            const toutesLesUrls = [];
+            for (const s of SECTEURS) {
+              photosParSecteurUrls[s.id] = [];
+              for (const fichier of photosParSecteur[s.id]) {
+                const optimisee = await compresserImage(fichier);
+                const url = await uploaderVersCloudinary(optimisee);
+                photosParSecteurUrls[s.id].push(url);
+                toutesLesUrls.push(url);
+              }
             }
+            btn.textContent = "Publication de votre bien…";
+            const nomUtilisateur = document.getElementById("inscriptionNom").value.trim();
+            await setDoc(nouvelleRef, {
+              proprietaireId: user.uid,
+              proprietaireNom: nomUtilisateur,
+              proprietaireTel: document.getElementById("inscriptionTel").value.trim(),
+              proprietaireEmail: document.getElementById("inscriptionEmail").value.trim(),
+              // Dénormalisé depuis /users/{uid} pour afficher le badge Agence/Particulier
+              // sur chaque carte d'annonce sans lecture supplémentaire (même logique que publier.html).
+              proprietaireCompteType: estEntreprise ? "entreprise" : "particulier",
+              proprietaireRaisonSociale: estEntreprise ? document.getElementById("entRaisonSociale").value.trim() : "",
+              proprietaireLogoUrl: estEntreprise ? logoUrlEnAttente : "",
+              proprietaireStatutEntreprise: estEntreprise ? "attente" : "",
+              whatsapp: document.getElementById("pWhatsapp").value.trim(),
+              titre: document.getElementById("pTitre").value.trim(),
+              type: pType.value,
+              prix: Number(document.getElementById("pPrix").value),
+              description: document.getElementById("pDescription").value.trim(),
+              commune: pCommune.value,
+              arrondissement: pArrondissement.value,
+              quartier: document.getElementById("pQuartier").value.trim(),
+              chambres: Number(document.getElementById("pChambres").value) || null,
+              salons: Number(document.getElementById("pSalons").value) || null,
+              cuisineType: document.getElementById("pCuisineType").value,
+              doucheType: document.getElementById("pDoucheType").value,
+              equipements: Array.from(document.querySelectorAll("#pEquipements .chip.actif")).map(c => c.dataset.val),
+              photos: toutesLesUrls,
+              photosParSecteur: photosParSecteurUrls,
+              statut: "disponible",
+              vues: 0,
+              dateCreation: serverTimestamp(),
+              dateModification: serverTimestamp()
+            });
+          } catch (errBien) {
+            // IMPORTANT : le compte (Auth + profil Firestore) est déjà créé avec succès à ce stade.
+            // Si SEULE la publication du premier bien échoue (réseau, upload photo), on ne doit
+            // surtout pas renvoyer l'utilisateur au formulaire d'inscription : son email est
+            // désormais pris, il serait bloqué sans recours. On le prévient et on le laisse
+            // accéder à son compte, où il pourra publier via "Publier une annonce".
+            console.error("Erreur lors de la publication du premier bien :", errBien);
+            alert("✅ Votre compte a bien été créé.\n\n⚠️ Votre premier bien n'a pas pu être publié (problème réseau pendant l'envoi des photos). Vous pouvez le publier maintenant depuis votre profil, via « Publier une annonce ».");
           }
-          btn.textContent = "Publication de votre bien…";
-          const nomUtilisateur = document.getElementById("inscriptionNom").value.trim();
-          await setDoc(nouvelleRef, {
-            proprietaireId: user.uid,
-            proprietaireNom: nomUtilisateur,
-            proprietaireTel: document.getElementById("inscriptionTel").value.trim(),
-            proprietaireEmail: document.getElementById("inscriptionEmail").value.trim(),
-            whatsapp: document.getElementById("pWhatsapp").value.trim(),
-            titre: document.getElementById("pTitre").value.trim(),
-            type: pType.value,
-            prix: Number(document.getElementById("pPrix").value),
-            description: document.getElementById("pDescription").value.trim(),
-            commune: pCommune.value,
-            arrondissement: pArrondissement.value,
-            quartier: document.getElementById("pQuartier").value.trim(),
-            chambres: Number(document.getElementById("pChambres").value) || null,
-            salons: Number(document.getElementById("pSalons").value) || null,
-            cuisineType: document.getElementById("pCuisineType").value,
-            doucheType: document.getElementById("pDoucheType").value,
-            equipements: Array.from(document.querySelectorAll("#pEquipements .chip.actif")).map(c => c.dataset.val),
-            photos: toutesLesUrls,
-            photosParSecteur: photosParSecteurUrls,
-            statut: "disponible",
-            vues: 0,
-            dateCreation: serverTimestamp(),
-            dateModification: serverTimestamp()
-          });
         }
 
         rediriger(roleChoisi);

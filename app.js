@@ -52,6 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initFiltresAvances();
   initVueModes();
   initReservationVisite();
+  initCatalogues();
   ecouterAnnoncesTempsReel();
 
   document.getElementById("btnRechercher").onclick = () => {
@@ -146,6 +147,7 @@ function ecouterAnnoncesTempsReel() {
     toutesLesAnnonces = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     rendreTout();
     mettreAJourStats();
+    construireCatalogues();
   }, (err) => {
     console.error("Erreur de synchronisation :", err);
     document.getElementById("liste-annonces-grille").innerHTML =
@@ -755,6 +757,61 @@ function afficherPublicationsRecentes() {
   filtres.recentes = !filtres.recentes;
   filtres.disponibles = false;
   rendreTout();
+}
+
+/* ══════════ CATALOGUES D'AGENCES / ENTREPRISES ══════════
+   Reconstruit à partir de toutesLesAnnonces (déjà chargé en temps réel) : aucune
+   requête Firestore supplémentaire. On regroupe les annonces par proprietaireId
+   pour les comptes de type "entreprise" (champs dénormalisés proprietaireCompteType/
+   proprietaireRaisonSociale/proprietaireLogoUrl, écrits par publier.html et connexion.html). */
+function initCatalogues() {
+  const btn = document.getElementById("btnCatalogues");
+  const panel = document.getElementById("cataloguesPanel");
+  const fleche = document.getElementById("catFleche");
+  if (!btn || !panel) return;
+  btn.addEventListener("click", () => {
+    const ouvert = panel.classList.toggle("replie") === false;
+    btn.classList.toggle("actif", ouvert);
+    if (fleche) fleche.textContent = ouvert ? "▴" : "▾";
+  });
+}
+
+function construireCatalogues() {
+  const conteneur = document.getElementById("cataloguesListe");
+  if (!conteneur) return;
+
+  const parEntreprise = {};
+  toutesLesAnnonces
+    .filter(a => a.proprietaireCompteType === "entreprise" && a.proprietaireId)
+    .forEach(a => {
+      const id = a.proprietaireId;
+      if (!parEntreprise[id]) {
+        parEntreprise[id] = {
+          id,
+          nom: a.proprietaireRaisonSociale || a.proprietaireNom || "Entreprise",
+          logoUrl: a.proprietaireLogoUrl || "",
+          total: 0
+        };
+      }
+      parEntreprise[id].total++;
+    });
+
+  const entreprises = Object.values(parEntreprise).sort((a, b) => b.total - a.total);
+
+  if (entreprises.length === 0) {
+    conteneur.innerHTML = `<div class="catalogues-vide">Aucune agence ou entreprise n'a encore publié de catalogue.</div>`;
+    return;
+  }
+
+  conteneur.innerHTML = entreprises.map(e => `
+    <a class="catalogue-carte" href="entreprise.html?id=${encodeURIComponent(e.id)}">
+      <div class="logo">${e.logoUrl ? `<img src="${escapeHTML(e.logoUrl)}" alt="">` : "🏢"}</div>
+      <div class="infos">
+        <div class="nom">${escapeHTML(e.nom)}</div>
+        <div class="desc">${e.total} logement${e.total > 1 ? "s" : ""} disponible${e.total > 1 ? "s" : ""}</div>
+      </div>
+    </a>
+  `).join("");
 }
 
 
