@@ -358,6 +358,17 @@
           <div id="secteursPhotos"></div>
         </div>
 
+        <label class="champ" style="display:flex;align-items:flex-start;gap:10px;background:#f7f7f7;border-radius:12px;padding:12px 14px;margin-top:6px;cursor:pointer;">
+          <input type="checkbox" id="accepteCGU" style="margin-top:3px;flex-shrink:0;">
+          <span style="font-size:12.5px;line-height:1.5;color:#444;">
+            J'ai lu et j'accepte les <a href="cgu.html" target="_blank" rel="noopener" style="color:var(--vert);font-weight:700;">Conditions Générales d'Utilisation</a>.
+            Je comprends que MALAGA est une plateforme de mise en relation : le paiement du loyer et les modalités
+            (caution, avance, durée...) sont convenus <strong>directement avec le propriétaire, par WhatsApp/téléphone,
+            après une visite ou rencontre en personne</strong> — et que MALAGA n'intervient pas dans cette transaction
+            et n'en est pas responsable.
+          </span>
+        </label>
+
         <button type="submit" class="btn btn-vert btn-full" id="btnInscription">Créer mon compte</button>
       </form>
 
@@ -681,6 +692,14 @@
       e.preventDefault();
       erreurMsg.classList.remove("visible");
       const btn = document.getElementById("btnInscription");
+
+      // CGU obligatoires pour tous (chercheur et propriétaire) : MALAGA n'intervient pas
+      // dans la transaction, conclue uniquement entre utilisateurs via WhatsApp/téléphone.
+      if (!document.getElementById("accepteCGU").checked) {
+        erreurMsg.textContent = "Merci d'accepter les Conditions Générales d'Utilisation pour continuer.";
+        erreurMsg.classList.add("visible");
+        return;
+      }
 
       // Compte Agence/Entreprise : valider les champs obligatoires du profil pro
       const estEntreprise = roleChoisi === "proprietaire" && compteTypeChoisi === "entreprise";

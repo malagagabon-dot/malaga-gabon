@@ -564,6 +564,19 @@ function afficherDetail(a) {
 
       <div style="background:#f5f5f5;padding:16px;border-radius:12px;margin-bottom:16px;" id="blocReservationVisite"></div>
 
+      <div style="margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button type="button" class="btn-paiement-info" data-cible="blocModalites" style="background:#fff;border:1.5px solid #eee;border-radius:10px;padding:11px 6px;font-size:12.5px;font-weight:700;cursor:pointer;">📋 Modalités de paiement</button>
+          <button type="button" class="btn-paiement-info" data-cible="blocMoyens" style="background:#fff;border:1.5px solid #eee;border-radius:10px;padding:11px 6px;font-size:12.5px;font-weight:700;cursor:pointer;">💳 Moyens de paiement</button>
+        </div>
+        <div id="blocModalites" style="display:none;margin-top:10px;background:#FFF7E6;border:1px solid #FDE7B0;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#6b551a;line-height:1.6;">
+          Le loyer, la caution, l'avance éventuelle et la durée d'engagement sont à convenir <strong>directement avec le propriétaire</strong>, lors d'une visite ou d'une rencontre en personne. MALAGA n'impose ni ne garantit aucune de ces conditions.
+        </div>
+        <div id="blocMoyens" style="display:none;margin-top:10px;background:#FFF7E6;border:1px solid #FDE7B0;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#6b551a;line-height:1.6;">
+          Toute transaction se conclut uniquement via le numéro WhatsApp fourni par le propriétaire, après une rencontre en personne. <strong>MALAGA ne collecte, ne gère et ne garantit aucun paiement</strong>, et n'est pas responsable des transactions conclues en dehors de ce cadre.
+        </div>
+      </div>
+
       <div style="background:#f5f5f5;padding:16px;border-radius:12px;">
         <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;">Contacter le propriétaire</h3>
         <div style="font-size:13px;margin-bottom:10px;"><strong>${escapeHTML(a.proprietaireNom || "")}</strong></div>
@@ -578,6 +591,16 @@ function afficherDetail(a) {
   modal.classList.add("ouverte");
   document.getElementById("fermerModal").onclick = () => modal.classList.remove("ouverte");
   modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("ouverte"); };
+  panneau.querySelectorAll(".btn-paiement-info").forEach(b => {
+    b.onclick = () => {
+      const cible = document.getElementById(b.dataset.cible);
+      const ouvert = cible.style.display !== "none";
+      cible.style.display = ouvert ? "none" : "block";
+      b.style.background = ouvert ? "#fff" : "#0F766E";
+      b.style.color = ouvert ? "#222" : "#fff";
+      b.style.borderColor = ouvert ? "#eee" : "#0F766E";
+    };
+  });
   rendreBlocReservation(a);
   initDetailMiniMap(a);
 
