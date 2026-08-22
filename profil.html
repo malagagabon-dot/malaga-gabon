@@ -97,6 +97,9 @@
       <a href="profil.html" class="drawer-link actif">🙍 Mon profil</a>
       <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;">🏘️ Gérer mes annonces</a>
       <div class="drawer-sep"></div>
+      <a href="#" class="drawer-link" id="drawerNotifs">🔔 Activer les notifications</a>
+      <a href="parametres.html" class="drawer-link">⚙️ Paramètres</a>
+      <div class="drawer-sep"></div>
       <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
       <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
       <a href="mailto:malagagabon@gmail.com" class="drawer-link">✉️ Nous écrire</a>
@@ -164,6 +167,15 @@
   <div class="profil-section" id="sectionDemandesRecues" style="display:none;">
     <h2>📥 Demandes de visite reçues</h2>
     <div id="listeDemandesRecues">
+      <div class="spinner">Chargement…</div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION LIKES REÇUS (propriétaire) ===== -->
+  <div class="profil-section" id="sectionLikesRecus" style="display:none;">
+    <h2>🔥 Likes reçus</h2>
+    <p style="font-size:12px;color:var(--gris-clair);margin:-6px 0 12px;">Ouvrez un like pour le marquer comme vu : l'auteur reçoit alors une notification lui proposant de démarrer une discussion avec vous.</p>
+    <div id="listeLikesRecus">
       <div class="spinner">Chargement…</div>
     </div>
   </div>
@@ -373,6 +385,7 @@
       if (p.role === "proprietaire") {
         chargerNbAnnonces();
         chargerDemandesRecues(uidCourant);
+        chargerLikesRecus(uidCourant);
       }
 
       // Pré-remplir la modale d'édition
@@ -584,6 +597,90 @@
         if (numero) window.open(`https://wa.me/${numero}?text=${encodeURIComponent(messageReponse(d, nouveauStatut))}`, "_blank");
       } catch (err) {
         alert("Impossible d'enregistrer la réponse. Réessayez.");
+      }
+    }
+
+    /* ══════════ LIKES REÇUS (côté propriétaire) ══════════
+       Ouvert depuis le lien WhatsApp envoyé au propriétaire (?like=ID) : la carte
+       correspondante est mise en évidence et amenée à l'écran. Marquer un like comme
+       vu écrit vu:true côté Firestore, ce qui déclenche — via nav.js, sur le prochain
+       chargement de page de l'auteur du like — la notification "souhaitez-vous débuter
+       une discussion ?". Si l'auteur est connecté et a renseigné un téléphone, une
+       ouverture WhatsApp directe vers lui est aussi proposée ici, immédiatement. */
+    let toutesLesLikesRecues = [];
+
+    function chargerLikesRecus(uid) {
+      document.getElementById("sectionLikesRecus").style.display = "block";
+      const q = query(collection(db, "likes"), where("proprietaireId", "==", uid));
+      onSnapshot(q, (snap) => {
+        toutesLesLikesRecues = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.dateLike?.toMillis?.() || 0) - (a.dateLike?.toMillis?.() || 0));
+        rendreLikesRecus();
+        const idCible = new URLSearchParams(location.search).get("like");
+        if (idCible) {
+          setTimeout(() => document.getElementById(`like-${idCible}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+        }
+      }, () => {
+        document.getElementById("listeLikesRecus").innerHTML = `<p class="etat-vide">Impossible de charger les likes reçus.</p>`;
+      });
+    }
+
+    function rendreLikesRecus() {
+      const container = document.getElementById("listeLikesRecus");
+      const idCible = new URLSearchParams(location.search).get("like");
+
+      if (toutesLesLikesRecues.length === 0) {
+        container.innerHTML = `<div class="etat-vide"><div class="icone">🤍</div><p>Aucun like reçu pour le moment.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = toutesLesLikesRecues.map(l => `
+        <div class="rdv-carte" id="like-${l.id}" style="${l.id === idCible ? "outline:2px solid var(--jaune);" : ""}">
+          <div class="rdv-haut">
+            <div>
+              <div class="rdv-titre">${escapeHTML(l.annonceTitre || "Annonce")}</div>
+              <div class="rdv-date">❤️ ${escapeHTML(l.nomAffiche || "Un visiteur")} · ${tempsEcoule(l.dateLike)}</div>
+            </div>
+            <span class="badge-rdv ${l.vu ? "confirmee" : "en_attente"}">${l.vu ? "✅ Vu" : "🆕 Nouveau"}</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button type="button" class="btn ${l.vu ? "btn-outline" : "btn-vert"}" style="flex:1;padding:8px;font-size:12.5px;" data-action="voir-like" data-id="${l.id}">
+              ${l.vu ? "💬 Démarrer une discussion" : "👀 Voir ce like"}
+            </button>
+          </div>
+        </div>`
+      ).join("");
+
+      container.querySelectorAll("[data-action='voir-like']").forEach(btn => {
+        btn.addEventListener("click", () => reagirAuLike(btn.dataset.id));
+      });
+    }
+
+    async function reagirAuLike(id) {
+      const l = toutesLesLikesRecues.find(x => x.id === id);
+      if (!l) return;
+
+      try {
+        if (!l.vu) {
+          await updateDoc(doc(db, "likes", id), { vu: true, dateVu: serverTimestamp() });
+        }
+      } catch (err) {
+        alert("Impossible de marquer ce like comme vu. Réessayez.");
+        return;
+      }
+
+      // Si l'auteur du like est connecté et a renseigné un téléphone, on propose
+      // d'ouvrir directement une conversation WhatsApp avec lui, en plus de la
+      // notification qu'il recevra dans l'application.
+      const numero = (l.visiteurTel || "").replace(/[^\d]/g, "");
+      if (numero) {
+        const veut = confirm(`Souhaitez-vous démarrer une discussion WhatsApp avec ${l.nomAffiche || "cette personne"} au sujet de « ${l.annonceTitre || "votre annonce"} » ?`);
+        if (veut) {
+          const texte = `Bonjour ${l.nomAffiche || ""}, j'ai vu que vous aimez mon annonce « ${l.annonceTitre || ""} » sur MALAGA. Souhaitez-vous en discuter ?`;
+          window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texte)}`, "_blank");
+        }
+      } else if (!l.vu) {
+        alert("👀 Like marqué comme vu. La personne recevra une notification dans l'application lui proposant de démarrer une discussion avec vous.");
       }
     }
 

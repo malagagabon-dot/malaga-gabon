@@ -4,9 +4,9 @@
    et de la barre de navigation basse, utilisée par toutes les pages.
 ═══════════════════════════════════════════ */
 
-import { auth, db, onAuthStateChanged, signOut, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, increment } from "./firebase-config.js";
+import { auth, db, onAuthStateChanged, signOut, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, increment, collection, query, where, onSnapshot, orderBy, limit } from "./firebase-config.js";
 import { getProfil } from "./auth.js";
-import { escapeHTML } from "./malaga-reference.js";
+import { escapeHTML, formatPrix } from "./malaga-reference.js";
 
 /* ══════════ FAVORIS (stockage local) ══════════ */
 const CLE_FAVORIS = "malaga_favoris";
@@ -18,6 +18,16 @@ export function getFavoris() {
 
 export function estFavori(id) {
   return getFavoris().includes(id);
+}
+
+/* Réinitialise toutes les préférences locales de l'appareil (favoris, identifiant
+   visiteur anonyme, notifications déjà vues/activées). Utilisé par parametres.html. */
+export function viderDonneesLocales() {
+  localStorage.removeItem(CLE_FAVORIS);
+  localStorage.removeItem("malaga_likes_notifies");
+  localStorage.removeItem("malaga_derniere_notif_globale_vue");
+  localStorage.removeItem("malaga_notifs_actives");
+  majBadgeFavoris();
 }
 
 /* ══════════ IDENTIFIANT VISITEUR ANONYME ══════════
@@ -32,6 +42,14 @@ function idVisiteur() {
     localStorage.setItem(CLE_VISITEUR, id);
   }
   return id;
+}
+
+/* Identifiant stable de la personne courante : uid Firebase si connectée,
+   sinon identifiant anonyme persistant. Sert de clé pour retrouver "ses"
+   likes (collection "likes") depuis n'importe quelle page, y compris pour
+   un visiteur non connecté. */
+function identifiantActuel() {
+  return auth.currentUser ? auth.currentUser.uid : idVisiteur();
 }
 
 /* ══════════ TOGGLE FAVORI ══════════
@@ -51,11 +69,16 @@ export function toggleFavori(annonce) {
   localStorage.setItem(CLE_FAVORIS, JSON.stringify(favoris));
   majBadgeFavoris();
 
+  // Identifiant du document "likes" calculé en synchrone (déterministe : annonceId +
+  // identifiant courant) afin de pouvoir construire le lien "voir le like" tout de
+  // suite, sans attendre l'écriture Firestore ci-dessous.
+  const likeId = id ? `${id}_${identifiantActuel()}` : null;
+
   // Proposition WhatsApp déclenchée en synchrone, dans le même geste utilisateur
   // que le clic (nécessaire pour éviter le blocage de popup des navigateurs).
-  if (ajout) proposerPartageWhatsApp(a);
+  if (ajout) proposerPartageWhatsApp(a, likeId);
 
-  synchroniserLikeFirestore(a, ajout).catch((err) => console.error("Synchronisation du like impossible :", err));
+  synchroniserLikeFirestore(a, ajout, likeId).catch((err) => console.error("Synchronisation du like impossible :", err));
 
   return favoris.includes(id);
 }
@@ -65,39 +88,63 @@ export function toggleFavori(annonce) {
    numéro WhatsApp déjà renseigné sur l'annonce (mêmes champs que le bouton
    WhatsApp existant sur la fiche détail : whatsapp, sinon tel). Le visiteur
    garde la main : il envoie lui-même le message (ou annule), aucun envoi
-   automatique caché. */
-function proposerPartageWhatsApp(a) {
+   automatique caché.
+
+   Le message est volontairement descriptif (annonce, prix, quartier) et
+   contient un lien vers "profil.html?like=ID" : en l'ouvrant, le propriétaire
+   voit le like reçu et peut, en un clic, indiquer qu'il souhaite débuter une
+   discussion — ce qui déclenchera à son tour une notification pour l'auteur
+   du like (voir initNotificationsLikesVus ci-dessous). */
+function proposerPartageWhatsApp(a, likeId) {
   const numero = (a.whatsapp || a.proprietaireTel || a.tel || "").replace(/[^\d]/g, "");
   if (!numero) return;
 
   const veut = confirm(`❤️ Annonce ajoutée à vos favoris !\n\nVoulez-vous prévenir le propriétaire par WhatsApp que vous aimez « ${a.titre || "cette annonce"} » ?`);
   if (!veut) return;
 
-  const texte = `Bonjour${a.proprietaireNom ? " " + a.proprietaireNom : ""}, j'aime beaucoup votre annonce "${a.titre || ""}" sur MALAGA ❤️`;
+  const details = [
+    a.prix ? formatPrix(a.prix) : "",
+    a.quartier || a.commune || ""
+  ].filter(Boolean).join(" · ");
+
+  const lien = likeId ? `${location.origin}${location.pathname.replace(/[^/]*$/, "")}profil.html?like=${encodeURIComponent(likeId)}` : "";
+
+  const texte = `Bonjour${a.proprietaireNom ? " " + a.proprietaireNom : ""} 👋, je viens d'ajouter votre annonce « ${a.titre || "votre annonce"} »${details ? ` (${details})` : ""} à mes favoris sur MALAGA ❤️.`
+    + (lien ? `\n\n👉 Cliquez ici pour voir mon like et me dire si vous souhaitez qu'on discute : ${lien}` : "");
+
   window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texte)}`, "_blank");
 }
 
-async function synchroniserLikeFirestore(a, ajout) {
+async function synchroniserLikeFirestore(a, ajout, likeIdCalcule) {
   if (!a.id || !db) return;
 
   const user = auth.currentUser;
-  const identifiant = user ? user.uid : idVisiteur();
-  const likeId = `${a.id}_${identifiant}`;
+  const identifiant = identifiantActuel();
+  const likeId = likeIdCalcule || `${a.id}_${identifiant}`;
   const likeRef = doc(db, "likes", likeId);
   const annonceRef = doc(db, "annonces", a.id);
 
   if (ajout) {
     let nomAffiche = "Un visiteur";
+    let visiteurTel = "";
     if (user) {
       const profil = await getProfil(user.uid).catch(() => null);
       nomAffiche = profil?.nom || user.email || "Un visiteur";
+      visiteurTel = profil?.tel || "";
     }
 
     await setDoc(likeRef, {
       annonceId: a.id,
+      annonceTitre: a.titre || "",
       proprietaireId: a.proprietaireId || null,
+      proprietaireNom: a.proprietaireNom || "",
+      proprietaireWhatsapp: (a.whatsapp || a.proprietaireTel || a.tel || "").replace(/[^\d]/g, ""),
       utilisateurId: user ? user.uid : null,
+      identifiant,          // clé stable (uid ou id anonyme) pour retrouver "mes" likes
       nomAffiche,
+      visiteurTel,           // permet au propriétaire de répondre directement par WhatsApp
+      vu: false,             // passe à true quand le propriétaire ouvre le lien "voir le like"
+      dateVu: null,
       dateLike: serverTimestamp()
     });
     await updateDoc(annonceRef, { nbLikes: increment(1) }).catch(() => {});
@@ -116,6 +163,226 @@ async function synchroniserLikeFirestore(a, ajout) {
     await updateDoc(annonceRef, { nbLikes: increment(-1) }).catch(() => {});
   }
 }
+
+/* ══════════ NOTIFICATION RETOUR À L'AUTEUR DU LIKE ══════════
+   Dès que le propriétaire ouvre "profil.html?like=ID" et marque le like
+   comme vu (champ vu:true, écrit depuis profil.html), l'auteur du like —
+   qu'il soit connecté ou simple visiteur anonyme — reçoit, à sa prochaine
+   page vue sur le site, une notification en surcouche lui proposant de
+   démarrer une discussion WhatsApp avec le propriétaire. Écoute en temps
+   réel best-effort : ne bloque jamais l'affichage du site si Firestore est
+   indisponible. */
+const CLE_LIKES_NOTIFIES = "malaga_likes_notifies";
+
+function getLikesNotifies() {
+  try { return JSON.parse(localStorage.getItem(CLE_LIKES_NOTIFIES)) || []; }
+  catch { return []; }
+}
+function marquerLikeNotifieLocalement(likeId) {
+  const liste = getLikesNotifies();
+  if (!liste.includes(likeId)) {
+    liste.push(likeId);
+    localStorage.setItem(CLE_LIKES_NOTIFIES, JSON.stringify(liste));
+  }
+}
+
+let ecouteNotifsLikesDemarree = false;
+function initNotificationsLikesVus() {
+  if (ecouteNotifsLikesDemarree || !db) return;
+  ecouteNotifsLikesDemarree = true;
+
+  onAuthStateChanged(auth, (user) => {
+    const identifiant = user ? user.uid : idVisiteur();
+    const q = query(collection(db, "likes"), where("identifiant", "==", identifiant), where("vu", "==", true));
+    onSnapshot(q, (snap) => {
+      const deja = getLikesNotifies();
+      snap.docs
+        .filter(d => !deja.includes(d.id))
+        .forEach(d => afficherNotificationLikeVu({ id: d.id, ...d.data() }));
+    }, (err) => console.error("Écoute des notifications de like impossible :", err));
+  });
+}
+
+let fileNotificationsLikes = [];
+let notificationLikeEnCours = false;
+
+function afficherNotificationLikeVu(like) {
+  marquerLikeNotifieLocalement(like.id);
+  fileNotificationsLikes.push({ type: "like", ...like });
+  if (!notificationLikeEnCours) traiterFileNotificationsLikes();
+  notifierNatif("👀 Votre like a été vu !", `Le propriétaire de « ${like.annonceTitre || "cette annonce"} » a vu votre like.`);
+}
+
+function injecterStylesNotifLike() {
+  if (document.getElementById("styleNotifLike")) return;
+  const style = document.createElement("style");
+  style.id = "styleNotifLike";
+  style.textContent = `
+    .notif-like-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;
+      justify-content:center;z-index:9999;animation:notifLikeFondu .18s ease;}
+    @keyframes notifLikeFondu{from{opacity:0;}to{opacity:1;}}
+    .notif-like-carte{background:#fff;border-radius:18px 18px 0 0;padding:22px 20px 26px;max-width:420px;width:100%;
+      box-shadow:0 -8px 30px rgba(0,0,0,.18);font-family:inherit;}
+    @media (min-width:480px){.notif-like-overlay{align-items:center;}.notif-like-carte{border-radius:18px;}}
+    .notif-like-icone{font-size:30px;margin-bottom:8px;}
+    .notif-like-titre{font-size:15px;font-weight:800;color:#1A2332;margin-bottom:6px;line-height:1.35;}
+    .notif-like-texte{font-size:13px;color:#555;line-height:1.5;margin-bottom:18px;}
+    .notif-like-boutons{display:flex;gap:10px;}
+    .notif-like-btn{flex:1;padding:12px 10px;border-radius:12px;font-size:13px;font-weight:700;border:none;cursor:pointer;text-align:center;}
+    .notif-like-btn-oui{background:#009E60;color:#fff;}
+    .notif-like-btn-non{background:#F2F2F2;color:#444;}
+  `;
+  document.head.appendChild(style);
+}
+
+/* Affiche une notification en surcouche, qu'il s'agisse du retour d'un like vu
+   (type "like", avec proposition de discussion WhatsApp) ou d'une annonce
+   diffusée par l'administrateur (type "globale", simple message informatif). */
+function traiterFileNotificationsLikes() {
+  const notif = fileNotificationsLikes.shift();
+  if (!notif) { notificationLikeEnCours = false; return; }
+  notificationLikeEnCours = true;
+  injecterStylesNotifLike();
+
+  const estGlobale = notif.type === "globale";
+  const overlay = document.createElement("div");
+  overlay.className = "notif-like-overlay";
+  overlay.innerHTML = estGlobale ? `
+    <div class="notif-like-carte">
+      <div class="notif-like-icone">📢</div>
+      <div class="notif-like-titre">${escapeHTML(notif.titre || "MALAGA")}</div>
+      <div class="notif-like-texte">${escapeHTML(notif.message || "")}</div>
+      <div class="notif-like-boutons">
+        <button type="button" class="notif-like-btn notif-like-btn-oui" style="flex:1;">OK, compris</button>
+      </div>
+    </div>
+  ` : `
+    <div class="notif-like-carte">
+      <div class="notif-like-icone">👀</div>
+      <div class="notif-like-titre">Votre like a été vu !</div>
+      <div class="notif-like-texte">Le propriétaire de l'annonce « ${escapeHTML(notif.annonceTitre || "cette annonce")} » a vu votre like. Souhaitez-vous débuter une discussion avec lui ?</div>
+      <div class="notif-like-boutons">
+        <button type="button" class="notif-like-btn notif-like-btn-non">Plus tard</button>
+        <button type="button" class="notif-like-btn notif-like-btn-oui">💬 Oui, discuter</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const fermer = () => { overlay.remove(); traiterFileNotificationsLikes(); };
+
+  overlay.querySelector(".notif-like-btn-non")?.addEventListener("click", fermer);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) fermer(); });
+
+  overlay.querySelector(".notif-like-btn-oui").onclick = () => {
+    if (!estGlobale) {
+      const numero = (notif.proprietaireWhatsapp || "").replace(/[^\d]/g, "");
+      if (numero) {
+        const texte = `Bonjour${notif.proprietaireNom ? " " + notif.proprietaireNom : ""}, je viens de voir que vous avez consulté mon like sur votre annonce « ${notif.annonceTitre || ""} » 😊. Discutons-en !`;
+        window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texte)}`, "_blank");
+      } else {
+        alert("Le numéro WhatsApp du propriétaire n'est pas disponible pour le moment.");
+      }
+    }
+    fermer();
+  };
+}
+
+/* ══════════ ACTIVATION DES NOTIFICATIONS ══════════
+   Deux niveaux, indépendants et complémentaires :
+   1. Les notifications en surcouche (like vu, annonces admin) sont TOUJOURS
+      affichées à l'ouverture du site, qu'on soit "activé" ou non.
+   2. "Activer les notifications" (menu ☰) demande en plus la permission du
+      navigateur pour envoyer de vraies notifications système (Notification
+      API), utiles quand l'onglet MALAGA n'est pas affiché. La préférence est
+      enregistrée dans Firestore ("notifsPrefs") afin que l'admin puisse voir
+      combien de personnes l'ont activée et leur diffuser des annonces. */
+const CLE_NOTIFS_ACTIVES = "malaga_notifs_actives";
+
+export function estNotifsActives() {
+  return localStorage.getItem(CLE_NOTIFS_ACTIVES) === "1";
+}
+
+export async function toggleNotifications() {
+  const activerMaintenant = !estNotifsActives();
+
+  if (activerMaintenant && typeof Notification !== "undefined" && Notification.permission === "default") {
+    try { await Notification.requestPermission(); } catch { /* ignoré : best-effort */ }
+  }
+
+  localStorage.setItem(CLE_NOTIFS_ACTIVES, activerMaintenant ? "1" : "0");
+  majLabelDrawerNotifs();
+  enregistrerPrefNotifFirestore(activerMaintenant).catch((err) => console.error("Enregistrement de la préférence de notifications impossible :", err));
+
+  return activerMaintenant;
+}
+
+async function enregistrerPrefNotifFirestore(actif) {
+  if (!db) return;
+  const identifiant = identifiantActuel();
+  await setDoc(doc(db, "notifsPrefs", identifiant), {
+    identifiant,
+    uid: auth.currentUser ? auth.currentUser.uid : null,
+    actif,
+    dateMaj: serverTimestamp()
+  }, { merge: true });
+}
+
+/* Notification système native (best-effort) : uniquement si l'utilisateur a
+   explicitement activé les notifications ET que le navigateur a donné la
+   permission. N'affiche jamais rien qui bloque l'usage du site. */
+function notifierNatif(titre, corps) {
+  if (!estNotifsActives()) return;
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  try { new Notification(titre, { body: corps, icon: "img/favicon-180.png" }); } catch { /* ignoré */ }
+}
+
+function majLabelDrawerNotifs() {
+  document.querySelectorAll("#drawerNotifs").forEach(el => {
+    el.textContent = estNotifsActives() ? "🔕 Désactiver les notifications" : "🔔 Activer les notifications";
+  });
+}
+
+function initDrawerNotifs() {
+  majLabelDrawerNotifs();
+  document.querySelectorAll("#drawerNotifs").forEach(el => {
+    el.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const actif = await toggleNotifications();
+      alert(actif
+        ? "🔔 Notifications activées ! Vous serez prévenu(e) des réponses à vos likes et des actualités MALAGA."
+        : "🔕 Notifications désactivées.");
+    });
+  });
+}
+
+/* ══════════ NOTIFICATIONS DIFFUSÉES PAR L'ADMIN ("notificationsGlobales") ══════════
+   Écoute best-effort du dernier message envoyé par l'administrateur depuis le
+   panneau admin (page "Notifications"). Affichée une seule fois par personne
+   (mémorisé en localStorage), à tous les visiteurs — activer les notifications
+   ajoute en plus une alerte système native quand l'onglet n'est pas au premier plan. */
+const CLE_DERNIERE_NOTIF_GLOBALE = "malaga_derniere_notif_globale_vue";
+
+let ecouteNotifsGlobalesDemarree = false;
+function initEcouteNotificationsGlobales() {
+  if (ecouteNotifsGlobalesDemarree || !db) return;
+  ecouteNotifsGlobalesDemarree = true;
+
+  const q = query(collection(db, "notificationsGlobales"), orderBy("dateEnvoi", "desc"), limit(1));
+  onSnapshot(q, (snap) => {
+    if (snap.empty) return;
+    const dernier = { id: snap.docs[0].id, ...snap.docs[0].data() };
+    const dejaVue = localStorage.getItem(CLE_DERNIERE_NOTIF_GLOBALE);
+    if (dernier.id === dejaVue) return;
+
+    localStorage.setItem(CLE_DERNIERE_NOTIF_GLOBALE, dernier.id);
+    fileNotificationsLikes.push({ type: "globale", titre: dernier.titre, message: dernier.message });
+    if (!notificationLikeEnCours) traiterFileNotificationsLikes();
+    notifierNatif(dernier.titre || "MALAGA", dernier.message || "");
+  }, (err) => console.error("Écoute des notifications globales impossible :", err));
+}
+
+
 
 function majBadgeFavoris() {
   const n = getFavoris().length;
@@ -233,6 +500,9 @@ document.addEventListener("DOMContentLoaded", () => {
   initAuthUI();
   majBadgeFavoris();
   initScrollNav();
+  initNotificationsLikesVus();
+  initDrawerNotifs();
+  initEcouteNotificationsGlobales();
 
   // Marque l'onglet actif de la barre basse selon la page courante
   const page = location.pathname.split("/").pop() || "index.html";

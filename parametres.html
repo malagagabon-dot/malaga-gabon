@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paramètres — MALAGA</title>
+  <meta name="theme-color" content="#009E60">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/favicon-180.png">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .param-hero{max-width:1000px;margin:0 auto;padding:24px 20px 4px;}
+    .param-titre{font-size:20px;font-weight:800;color:var(--texte);}
+    .param-sous{font-size:12.5px;color:var(--gris-clair);margin-top:2px;}
+
+    .param-section{max-width:1000px;margin:22px auto 0;padding:0 20px;}
+    .param-section h2{font-size:14.5px;font-weight:800;color:var(--texte);margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+
+    .param-carte{background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;padding:16px;}
+    .param-ligne{display:flex;align-items:center;justify-content:space-between;gap:14px;}
+    .param-ligne + .param-ligne{margin-top:16px;padding-top:16px;border-top:1px solid var(--gris-bordure);}
+    .param-ligne .txt strong{font-size:13.5px;display:block;}
+    .param-ligne .txt p{font-size:12px;color:var(--gris-clair);margin-top:3px;line-height:1.5;}
+
+    /* Interrupteur (switch) */
+    .interrupteur{position:relative;flex-shrink:0;width:46px;height:26px;}
+    .interrupteur input{opacity:0;width:0;height:0;}
+    .interrupteur-piste{position:absolute;cursor:pointer;inset:0;background:#E2E2E2;border-radius:20px;transition:.2s;}
+    .interrupteur-piste::before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;
+      transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+    .interrupteur input:checked + .interrupteur-piste{background:var(--vert);}
+    .interrupteur input:checked + .interrupteur-piste::before{transform:translateX(20px);}
+
+    .param-btn-danger{width:100%;margin-top:4px;background:transparent;border:1.5px solid var(--rouge);color:var(--rouge);
+      font-weight:700;padding:11px;border-radius:12px;font-size:13px;cursor:pointer;}
+    .param-btn{width:100%;margin-top:4px;background:var(--gris-fond);border:none;color:var(--texte);
+      font-weight:700;padding:11px;border-radius:12px;font-size:13px;cursor:pointer;text-align:left;}
+
+    .param-apropos p{font-size:12.5px;color:var(--gris-clair);line-height:1.7;}
+    .param-apropos a{color:var(--vert);font-weight:700;text-decoration:none;}
+  </style>
+</head>
+<body>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-header">
+      <img src="img/logo.png" alt="MALAGA" class="drawer-logo">
+      <button class="drawer-close" id="fermerDrawer">✕</button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="index.html" class="drawer-link">🏠 Accueil</a>
+      <a href="profil.html" class="drawer-link">🙍 Mon profil</a>
+      <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;">🏘️ Gérer mes annonces</a>
+      <div class="drawer-sep"></div>
+      <a href="#" class="drawer-link" id="drawerNotifs">🔔 Activer les notifications</a>
+      <a href="parametres.html" class="drawer-link actif">⚙️ Paramètres</a>
+      <div class="drawer-sep"></div>
+      <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
+      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
+      <a href="mailto:malagagabon@gmail.com" class="drawer-link">✉️ Nous écrire</a>
+      <div class="drawer-sep"></div>
+      <a href="connexion.html" class="drawer-link" id="drawerConnexion">🚪 Se déconnecter</a>
+    </nav>
+    <div class="drawer-footer">MALAGA 🇬🇦 — Libreville, Gabon</div>
+  </aside>
+
+  <header class="header">
+    <div class="header-inner">
+      <button class="icon-btn" id="btnMenu" aria-label="Menu">☰</button>
+      <a href="index.html" class="logo-link">
+        <img src="img/logo.png" alt="MALAGA" class="logo-img">
+        <span class="logo-text-wrap">
+          <span class="logo-text">MALAGA</span>
+          <span class="slogan">Maison à louer au Gabon 🇬🇦</span>
+        </span>
+      </a>
+      <a href="index.html" class="icon-btn" aria-label="Accueil">🏠</a>
+    </div>
+  </header>
+
+  <nav class="bottom-nav">
+    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span>Accueil</span></a>
+    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span>Carte</span></a>
+    <a href="connexion.html?inscription=1&role=proprietaire" class="bn-item bn-central"><span class="bn-icon">➕</span></a>
+    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span>Favoris</span></a>
+    <a href="profil.html" class="bn-item" id="bnProfil" data-page="profil.html"><span class="bn-icon">👤</span><span id="bnProfilLabel">Profil</span></a>
+  </nav>
+
+  <div class="param-hero">
+    <div class="param-titre">⚙️ Paramètres</div>
+    <div class="param-sous">Gérez vos notifications et vos données sur cet appareil.</div>
+  </div>
+
+  <!-- ===== NOTIFICATIONS ===== -->
+  <div class="param-section">
+    <h2>🔔 Notifications</h2>
+    <div class="param-carte">
+      <div class="param-ligne">
+        <div class="txt">
+          <strong>Activer les notifications</strong>
+          <p>Soyez averti(e) dès qu'un propriétaire réagit à un de vos likes, et recevez les actualités importantes de MALAGA.</p>
+        </div>
+        <label class="interrupteur">
+          <input type="checkbox" id="switchNotifs">
+          <span class="interrupteur-piste"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DONNÉES LOCALES ===== -->
+  <div class="param-section">
+    <h2>🗑️ Données sur cet appareil</h2>
+    <div class="param-carte">
+      <div class="txt" style="margin-bottom:10px;">
+        <p style="font-size:12px;color:var(--gris-clair);line-height:1.6;">Vos favoris et vos préférences de notifications sont stockés uniquement sur cet appareil. Vous pouvez les réinitialiser à tout moment.</p>
+      </div>
+      <button type="button" class="param-btn-danger" id="btnViderDonnees">Réinitialiser mes favoris et préférences</button>
+    </div>
+  </div>
+
+  <!-- ===== COMPTE ===== -->
+  <div class="param-section">
+    <h2>👤 Compte</h2>
+    <div class="param-carte">
+      <a href="profil.html" class="param-btn" style="display:block;text-decoration:none;">🙍 Voir / modifier mon profil</a>
+    </div>
+  </div>
+
+  <!-- ===== À PROPOS ===== -->
+  <div class="param-section" style="padding-bottom:30px;">
+    <h2>ℹ️ À propos</h2>
+    <div class="param-carte param-apropos">
+      <p>
+        MALAGA 🇬🇦 — Maison à louer au Gabon.<br>
+        Une question, un souci technique ? <a href="mailto:malagagabon@gmail.com">Écrivez-nous</a> ou contactez-nous sur <a href="https://wa.me/24160141924" target="_blank">WhatsApp</a>.
+      </p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="brand">MALAGA 🇬🇦</div>
+  </footer>
+
+  <script type="module">
+    import { auth, onAuthStateChanged, signOut } from "./firebase-config.js";
+    import { estNotifsActives, toggleNotifications, viderDonneesLocales } from "./nav.js";
+
+    const switchNotifs = document.getElementById("switchNotifs");
+    switchNotifs.checked = estNotifsActives();
+
+    switchNotifs.addEventListener("change", async () => {
+      // On revient à l'état visuel réel après coup : toggleNotifications() gère
+      // localStorage + Firestore + le libellé du lien dans le menu latéral.
+      const actif = await toggleNotifications();
+      switchNotifs.checked = actif;
+    });
+
+    document.getElementById("btnViderDonnees").addEventListener("click", () => {
+      if (!confirm("Voulez-vous vraiment réinitialiser vos favoris et vos préférences de notifications sur cet appareil ? Cette action est irréversible.")) return;
+      viderDonneesLocales();
+      switchNotifs.checked = false;
+      alert("✅ Vos données locales ont été réinitialisées.");
+    });
+
+    // Bouton "Se connecter / déconnecter" du menu (comportement identique aux autres pages)
+    onAuthStateChanged(auth, (user) => {
+      const lien = document.getElementById("drawerConnexion");
+      if (!lien) return;
+      if (user) {
+        lien.textContent = "🚪 Se déconnecter";
+        lien.href = "#";
+        lien.onclick = (e) => { e.preventDefault(); signOut(auth); };
+      } else {
+        lien.textContent = "👤 Se connecter";
+        lien.href = "connexion.html";
+        lien.onclick = null;
+      }
+    });
+  </script>
+  <script type="module" src="nav.js"></script>
+</body>
+</html>

@@ -54,6 +54,10 @@ let ecouteUsersDemarree = false;
 let ecouteSignalementsDemarree = false;
 let ecouteMessagesDemarree = false;
 let ecouteLikesDemarree = false;
+let ecouteNotifsPrefsDemarree = false;
+let ecouteNotifsGlobalesDemarree = false;
+let notifsPrefsData = [];        // alimenté en temps réel depuis Firestore "notifsPrefs"
+let notificationsGlobalesData = []; // alimenté en temps réel depuis Firestore "notificationsGlobales"
 let pageActuelle = 'dashboard';
 let periodeClassement = 'tout';
 
@@ -453,7 +457,8 @@ function showPage(pageId) {
     'messages': 'Messages',
     'stats': 'Statistiques',
     'publier': 'Publier une annonce',
-    'classement': '🔥 Classement des likes'
+    'classement': '🔥 Classement des likes',
+    'notifications': '🔔 Notifications'
   };
   document.getElementById('topbarTitle').textContent = titles[pageId] || 'MALAGA Admin';
 
@@ -467,7 +472,109 @@ function showPage(pageId) {
   else if (pageId === 'stats') loadStats();
   else if (pageId === 'publier') { initPubMiniMap(); adapterPubFormulaireAuType(); }
   else if (pageId === 'classement') { demarrerEcouteLikes(); rendreClassement(); }
+  else if (pageId === 'notifications') { demarrerEcouteNotifsPrefs(); demarrerEcouteNotificationsGlobales(); }
 }
+
+/* ══════════════════════════════════════════════════════════
+   ÉCOUTE TEMPS RÉEL — PRÉFÉRENCES DE NOTIFICATIONS (Firestore, "notifsPrefs")
+   Un document par visiteur/utilisateur (écrit par nav.js, menu "🔔 Activer
+   les notifications"). Permet de savoir combien de personnes ont activé les
+   notifications, sans jamais accéder à leurs données personnelles.
+══════════════════════════════════════════════════════════ */
+function demarrerEcouteNotifsPrefs() {
+  if (ecouteNotifsPrefsDemarree) return;
+  ecouteNotifsPrefsDemarree = true;
+  if (!window.dbAdmin) return;
+
+  window.dbAdmin.collection('notifsPrefs').onSnapshot((snap) => {
+    notifsPrefsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    rendreStatNotifsPrefs();
+  }, (err) => {
+    console.error('Erreur de synchronisation des préférences de notifications :', err);
+  });
+}
+
+function rendreStatNotifsPrefs() {
+  const el = document.getElementById('kpiNotifsActives');
+  if (el) el.textContent = notifsPrefsData.filter(p => p.actif).length;
+  const elTotal = document.getElementById('kpiNotifsTotal');
+  if (elTotal) elTotal.textContent = notifsPrefsData.length;
+}
+
+/* ══════════════════════════════════════════════════════════
+   NOTIFICATIONS GLOBALES (Firestore, "notificationsGlobales")
+   Diffusées par l'admin à tous les visiteurs ayant activé les notifications
+   (bandeau in-app + notification native si le navigateur le permet). Lues en
+   temps réel côté public par nav.js (initEcouteNotificationsGlobales).
+══════════════════════════════════════════════════════════ */
+function demarrerEcouteNotificationsGlobales() {
+  if (ecouteNotifsGlobalesDemarree) return;
+  ecouteNotifsGlobalesDemarree = true;
+  if (!window.dbAdmin) return;
+
+  window.dbAdmin.collection('notificationsGlobales').orderBy('dateEnvoi', 'desc').onSnapshot((snap) => {
+    notificationsGlobalesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    rendreHistoriqueNotifsGlobales();
+  }, (err) => {
+    console.error('Erreur de synchronisation des notifications globales :', err);
+    const tbody = document.getElementById('notifsGlobalesBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="table-empty">Impossible de charger l\'historique.</td></tr>';
+  });
+}
+
+function rendreHistoriqueNotifsGlobales() {
+  const tbody = document.getElementById('notifsGlobalesBody');
+  if (!tbody) return;
+
+  if (notificationsGlobalesData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="table-empty">Aucune notification envoyée pour le moment.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = notificationsGlobalesData.map(n => {
+    const date = n.dateEnvoi?.toDate ? n.dateEnvoi.toDate().toLocaleString('fr-FR') : '—';
+    return `
+      <tr>
+        <td>${date}</td>
+        <td style="font-weight:700;">${escapeHTML(n.titre || '—')}</td>
+        <td>${escapeHTML(n.message || '—')}</td>
+        <td>${escapeHTML(n.envoyePar || '—')}</td>
+      </tr>`;
+  }).join('');
+}
+
+function envoyerNotificationGlobale() {
+  const titreEl = document.getElementById('notifGlobaleTitre');
+  const messageEl = document.getElementById('notifGlobaleMessage');
+  const titre = titreEl.value.trim();
+  const message = messageEl.value.trim();
+
+  if (!titre || !message) {
+    alert('Merci de renseigner un titre et un message.');
+    return;
+  }
+  if (!confirm(`Envoyer cette notification à tous les utilisateurs ayant activé les notifications (${notifsPrefsData.filter(p => p.actif).length} personne(s)) ?`)) return;
+
+  const btn = document.getElementById('btnEnvoyerNotifGlobale');
+  btn.disabled = true; btn.textContent = 'Envoi…';
+
+  window.dbAdmin.collection('notificationsGlobales').add({
+    titre,
+    message,
+    envoyePar: (window.currentAdminEmail || currentUser?.email || 'Administrateur'),
+    dateEnvoi: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    titreEl.value = '';
+    messageEl.value = '';
+    alert('✅ Notification envoyée à tous les utilisateurs concernés.');
+  }).catch((err) => {
+    console.error('Erreur envoi notification globale :', err);
+    alert('❌ Impossible d\'envoyer la notification. Réessayez.');
+  }).finally(() => {
+    btn.disabled = false; btn.textContent = '📢 Envoyer à tous';
+  });
+}
+window.envoyerNotificationGlobale = envoyerNotificationGlobale;
 
 /* ══════════════════════════════════════════════════════════
    TUILES KPI CLIQUABLES — redirection vers les données du décompte
