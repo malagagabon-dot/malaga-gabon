@@ -550,6 +550,17 @@
     .marker-prix.prix-t4 { background: #7C3AED !important; } /* 500k et + : violet, haut de gamme */
     .marker-prix.occupe { background: #9CA3AF !important; }  /* occupé : gris, quel que soit le prix */
 
+    /* ═══ Contour des cartes d'annonces, même code couleur que la légende/carte ═══
+       app.js pose déjà la classe prix-t1..t4 sur chaque carte (paletteTier) ;
+       on l'exploite ici pour colorer sa bordure selon le palier de loyer. */
+    .carte-annonce.prix-t1 { border-color: #009E60 !important; }
+    .carte-annonce.prix-t2 { border-color: #2563EB !important; }
+    .carte-annonce.prix-t3 { border-color: #F97316 !important; }
+    .carte-annonce.prix-t4 { border-color: #7C3AED !important; }
+    /* Le survol depuis la carte (survolerMarqueur) doit rester visible même
+       par-dessus la couleur de palier ci-dessus. */
+    .carte-annonce.survolee { border-color: var(--vert) !important; box-shadow: 0 0 0 3px rgba(0,158,96,.22); }
+
     .legende-prix{display:flex;flex-wrap:wrap;gap:10px 16px;justify-content:center;
       max-width:1200px;margin:0 auto 14px;padding:0 20px;font-size:11px;color:#666;}
     .legende-prix span{display:inline-flex;align-items:center;gap:5px;}
