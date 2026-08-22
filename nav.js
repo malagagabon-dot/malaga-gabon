@@ -8,6 +8,62 @@ import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc, deleteDoc, 
 import { getProfil } from "./auth.js";
 import { escapeHTML, formatPrix } from "./malaga-reference.js";
 
+/* ══════════ MODE SOMBRE / CLAIR ══════════
+   Préférence mémorisée dans localStorage ("malaga_theme" : "sombre" | "clair").
+   Si l'utilisateur n'a jamais choisi, on suit la préférence système
+   (prefers-color-scheme). Le thème est appliqué au tout premier chargement
+   du module (avant même DOMContentLoaded) pour éviter un flash clair→sombre,
+   puis ré-appliqué/branché sur les boutons une fois le DOM prêt. */
+const CLE_THEME = "malaga_theme";
+
+function themeMemorise() {
+  try { return localStorage.getItem(CLE_THEME); } catch { return null; }
+}
+
+function themeCourantPreferere() {
+  const memorise = themeMemorise();
+  if (memorise === "sombre" || memorise === "clair") return memorise;
+  return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "sombre" : "clair";
+}
+
+/* Met à jour la classe sur <body> ainsi que le libellé/icône de tous les
+   boutons de bascule présents sur la page (header + menu latéral). */
+function appliquerTheme(theme) {
+  document.body.classList.toggle("theme-sombre", theme === "sombre");
+  document.querySelectorAll("#btnTheme").forEach(el => {
+    el.textContent = theme === "sombre" ? "☀️" : "🌙";
+    el.setAttribute("aria-label", theme === "sombre" ? "Mode clair" : "Mode sombre");
+  });
+  document.querySelectorAll("#drawerTheme").forEach(el => {
+    el.textContent = theme === "sombre" ? "☀️ Mode clair" : "🌙 Mode sombre";
+  });
+}
+
+export function basculerTheme() {
+  const nouveau = document.body.classList.contains("theme-sombre") ? "clair" : "sombre";
+  try { localStorage.setItem(CLE_THEME, nouveau); } catch { /* ignoré */ }
+  appliquerTheme(nouveau);
+  return nouveau;
+}
+
+function initTheme() {
+  appliquerTheme(themeCourantPreferere());
+  document.querySelectorAll("#btnTheme, #drawerTheme").forEach(el => {
+    el.addEventListener("click", (e) => { e.preventDefault(); basculerTheme(); });
+  });
+  // Si l'utilisateur n'a jamais fait de choix explicite, on suit les
+  // changements de préférence système en direct.
+  if (!themeMemorise() && window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+      if (!themeMemorise()) appliquerTheme(e.matches ? "sombre" : "clair");
+    });
+  }
+}
+
+// Appliqué immédiatement au chargement du module, avant DOMContentLoaded,
+// pour éviter un flash de thème clair suivi d'un passage en sombre.
+appliquerTheme(themeCourantPreferere());
+
 /* ══════════ FAVORIS (stockage local) ══════════ */
 const CLE_FAVORIS = "malaga_favoris";
 
@@ -634,6 +690,7 @@ function initOuvertureAnnoncePartagee() {
 
 /* ══════════ INITIALISATION GÉNÉRALE ══════════ */
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   initDrawer();
   initAuthUI();
   majBadgeFavoris();
