@@ -20,6 +20,24 @@ export function estFavori(id) {
   return getFavoris().includes(id);
 }
 
+/* Retire du stockage local les favoris dont l'annonce n'existe plus côté Firestore
+   (supprimée, ou passée "occupé" donc sortie de la liste publique), pour éviter
+   d'accumuler des ids obsolètes. Appelée par app.js à chaque mise à jour temps réel
+   des annonces. */
+export function purgerFavorisInexistants(idsExistants) {
+  try {
+    const favoris = getFavoris();
+    const ensemble = new Set(idsExistants || []);
+    const filtres = favoris.filter(id => ensemble.has(id));
+    if (filtres.length !== favoris.length) {
+      localStorage.setItem(CLE_FAVORIS, JSON.stringify(filtres));
+      majBadgeFavoris();
+    }
+  } catch (err) {
+    console.error("Purge des favoris obsolètes impossible :", err);
+  }
+}
+
 /* Réinitialise toutes les préférences locales de l'appareil (favoris, identifiant
    visiteur anonyme, notifications déjà vues/activées). Utilisé par parametres.html. */
 export function viderDonneesLocales() {
