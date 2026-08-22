@@ -114,6 +114,13 @@
     <div id="carteMap"></div>
   </div>
 
+  <div class="legende-prix" id="legendePrix">
+    <span><i style="background:#009E60"></i> &lt; 100k</span>
+    <span><i style="background:#2563EB"></i> 100k–300k</span>
+    <span><i style="background:#F97316"></i> 300k–500k</span>
+    <span><i style="background:#7C3AED"></i> 500k et +</span>
+  </div>
+
   <!-- Filtres -->
   <div class="filters-bar">
     <select id="filterCommune"><option value="">Toutes les communes</option></select>
@@ -436,6 +443,30 @@
       min-width: 0 !important;
       height: auto !important;
     }
+
+    /* ═══ Bulles de prix sur la carte, colorées par palier de loyer ═══
+       (surcharge volontairement en !important + double-classe, sans dépendre
+       du contenu exact de style.css pour .marker-prix, qu'on ne modifie pas) */
+    .marker-prix.prix-t1 { background: #009E60 !important; } /* < 100k : vert, couleur de marque */
+    .marker-prix.prix-t2 { background: #2563EB !important; } /* 100k–300k : bleu */
+    .marker-prix.prix-t3 { background: #F97316 !important; } /* 300k–500k : orange */
+    .marker-prix.prix-t4 { background: #7C3AED !important; } /* 500k et + : violet, haut de gamme */
+    .marker-prix.occupe { background: #9CA3AF !important; }  /* occupé : gris, quel que soit le prix */
+
+    .legende-prix{display:flex;flex-wrap:wrap;gap:10px 16px;justify-content:center;
+      max-width:1200px;margin:0 auto 14px;padding:0 20px;font-size:11px;color:#666;}
+    .legende-prix span{display:inline-flex;align-items:center;gap:5px;}
+    .legende-prix i{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+    /* ═══ Cartes statistiques d'accueil : palette distincte des boutons
+       "premium" jaune/doré (Rechercher, bouton central +, badges filtres),
+       pour rester identifiable sans se confondre avec eux ═══ */
+    .stats-section .stat-item.stat-dispo{border-color:#009E60 !important;}
+    .stats-section .stat-item.stat-dispo .stat-num{color:#009E60 !important;}
+    .stats-section .stat-item.stat-zone{border-color:#2563EB !important;}
+    .stats-section .stat-item.stat-zone .stat-num{color:#2563EB !important;}
+    .stats-section .stat-item.stat-public{border-color:#7C3AED !important;}
+    .stats-section .stat-item.stat-public .stat-num{color:#7C3AED !important;}
   </style>
 
 

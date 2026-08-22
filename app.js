@@ -135,8 +135,19 @@ function afficherMessageCarteVide(texte) {
   else { el.style.display = "none"; }
 }
 
+/* Palier de couleur des bulles de prix sur la carte — cohérent avec la légende
+   affichée sous la carte (#legendePrix) et avec les cartes stats de l'accueil. */
+function palierPrix(prix) {
+  if (prix < 100000) return "prix-t1";       // vert
+  if (prix < 300000) return "prix-t2";       // bleu
+  if (prix < 500000) return "prix-t3";       // orange
+  return "prix-t4";                          // violet (haut de gamme)
+}
+
 function iconMarqueur(annonce) {
-  const classe = annonce.statut === "disponible" ? "marker-prix" : "marker-prix occupe";
+  const classe = annonce.statut === "disponible"
+    ? `marker-prix ${palierPrix(annonce.prix)}`
+    : "marker-prix occupe";
   return L.divIcon({
     className: "",
     html: `<div class="${classe}">${Math.round(annonce.prix / 1000)}k</div>`,
