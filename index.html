@@ -152,7 +152,31 @@
   </section>
 
   <style>
-    .btn-catalogues{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:6px;
+    /* ═══ Couleurs des filtres rapides — mêmes familles que le panneau
+       "Recherches avancées" juste en dessous (fa-loc/fa-type/fa-budget/fa-equip),
+       pour rester cohérent visuellement dans toute la page ═══ */
+    .filters-bar select, .filters-bar input{border-width:1.5px !important;border-style:solid !important;}
+
+    .filters-bar #filterCommune, .filters-bar #filterArrondissement{
+      background:#EFF6FF !important; border-color:#93C5FD !important; color:#1E40AF !important;}
+    .filters-bar #filterCommune:focus, .filters-bar #filterArrondissement:focus{border-color:#1E40AF !important;}
+
+    .filters-bar #filterType{
+      background:#FFF7ED !important; border-color:#FDBA74 !important; color:#B45309 !important;}
+    .filters-bar #filterType:focus{border-color:#B45309 !important;}
+
+    .filters-bar #filterPrix, .filters-bar #filterPrixExact{
+      background:#FFFBEB !important; border-color:#FDE68A !important; color:#92660A !important;}
+    .filters-bar #filterPrix:focus, .filters-bar #filterPrixExact:focus{border-color:#B8860B !important;}
+
+    .filters-bar #filterVendeur{
+      background:#F0FDFA !important; border-color:#5EEAD4 !important; color:#0F766E !important;}
+    .filters-bar #filterVendeur:focus{border-color:#0F766E !important;}
+
+    /* ═══ Bouton "Les catalogues" : pleine largeur et bien centré, même si le
+       conteneur .filters-bar (dans style.css) n'est pas en display:grid ═══ */
+    .btn-catalogues{width:100% !important;grid-column:1/-1;margin-top:4px;
+      display:flex;align-items:center;justify-content:center;gap:6px;
       background:#fff;border:1.5px solid var(--gris-bordure,#ddd);border-radius:10px;padding:9px;
       font-size:13px;font-weight:700;color:var(--texte,#222);cursor:pointer;transition:.15s;}
     .btn-catalogues:hover{border-color:var(--vert,#0F766E);color:var(--vert,#0F766E);}
