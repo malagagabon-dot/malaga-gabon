@@ -4,7 +4,7 @@
    et de la barre de navigation basse, utilisée par toutes les pages.
 ═══════════════════════════════════════════ */
 
-import { auth, db, onAuthStateChanged, signOut, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, increment, collection, query, where, onSnapshot, orderBy, limit } from "./firebase-config.js";
+import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc, deleteDoc, updateDoc, serverTimestamp, increment, collection, query, where, onSnapshot, orderBy, limit } from "./firebase-config.js";
 import { getProfil } from "./auth.js";
 import { escapeHTML, formatPrix } from "./malaga-reference.js";
 
@@ -52,6 +52,41 @@ function identifiantActuel() {
   return auth.currentUser ? auth.currentUser.uid : idVisiteur();
 }
 
+/* ══════════ MIGRATION DES LIKES ANONYMES VERS LE COMPTE CONNECTÉ ══════════
+   Anomalie corrigée : un même "like" pouvait se retrouver sous deux
+   identifiants Firestore différents (l'id anonyme puis l'uid, ou l'inverse),
+   selon que la personne était connectée ou non au moment du clic. Résultat :
+   deux documents "likes" distincts pour la même annonce → deux liens/messages
+   WhatsApp envoyés au propriétaire pour un seul geste.
+   Dès qu'un utilisateur se connecte, on reprend chaque annonce présente dans
+   ses favoris locaux et, si un like anonyme existe encore pour cette annonce
+   sous l'ancien identifiant, on le transfère (copie + suppression) vers
+   l'identifiant définitif (uid). Best-effort : ne bloque jamais l'affichage. */
+async function migrerLikesAnonymesVersUid(uid) {
+  if (!db) return;
+  const idAnonyme = idVisiteur();
+  if (!idAnonyme || idAnonyme === uid) return;
+
+  const favoris = getFavoris();
+  for (const annonceId of favoris) {
+    try {
+      const ancienRef = doc(db, "likes", `${annonceId}_${idAnonyme}`);
+      const ancienSnap = await getDoc(ancienRef);
+      if (!ancienSnap.exists()) continue;
+
+      const nouveauRef = doc(db, "likes", `${annonceId}_${uid}`);
+      const nouveauSnap = await getDoc(nouveauRef);
+      if (!nouveauSnap.exists()) {
+        const donnees = ancienSnap.data();
+        await setDoc(nouveauRef, { ...donnees, utilisateurId: uid, identifiant: uid });
+      }
+      await deleteDoc(ancienRef);
+    } catch (err) {
+      console.error(`Migration du like anonyme pour l'annonce ${annonceId} impossible :`, err);
+    }
+  }
+}
+
 /* ══════════ TOGGLE FAVORI ══════════
    `annonce` : soit un id (rétrocompatibilité), soit l'objet annonce complet
    { id, proprietaireId, proprietaireNom, proprietaireEmail, titre }.
@@ -76,11 +111,28 @@ export function toggleFavori(annonce) {
 
   // Proposition WhatsApp déclenchée en synchrone, dans le même geste utilisateur
   // que le clic (nécessaire pour éviter le blocage de popup des navigateurs).
-  if (ajout) proposerPartageWhatsApp(a, likeId);
+  // Garde-fou anti-doublon : un même likeId ne propose l'envoi WhatsApp qu'une
+  // seule fois par session d'onglet (double-clic, ré-affichage, etc.).
+  if (ajout && likeId && !dejaPropose(likeId)) {
+    marquerPropose(likeId);
+    proposerPartageWhatsApp(a, likeId);
+  }
 
   synchroniserLikeFirestore(a, ajout, likeId).catch((err) => console.error("Synchronisation du like impossible :", err));
 
   return favoris.includes(id);
+}
+
+const CLE_LIKES_PROPOSES = "malaga_likes_proposes_session";
+function dejaPropose(likeId) {
+  try { return (JSON.parse(sessionStorage.getItem(CLE_LIKES_PROPOSES)) || []).includes(likeId); }
+  catch { return false; }
+}
+function marquerPropose(likeId) {
+  try {
+    const liste = JSON.parse(sessionStorage.getItem(CLE_LIKES_PROPOSES)) || [];
+    if (!liste.includes(likeId)) { liste.push(likeId); sessionStorage.setItem(CLE_LIKES_PROPOSES, JSON.stringify(liste)); }
+  } catch { /* ignoré */ }
 }
 
 /* ══════════ PROPOSITION D'ENVOI DU LIKE AU PROPRIÉTAIRE PAR WHATSAPP ══════════
@@ -439,6 +491,8 @@ function initAuthUI() {
       return;
     }
 
+    migrerLikesAnonymesVersUid(user.uid);
+
     const profil = await getProfil(user.uid);
     const nom = profil?.nom || "Mon compte";
     if (avatar) {
@@ -494,6 +548,72 @@ function initScrollNav() {
   majVisibilite();
 }
 
+/* ══════════ OUVERTURE DIRECTE D'UNE FICHE ANNONCE (lien partagé) ══════════
+   Corrige l'anomalie : les cartes "like reçu" / "demande de visite reçue" de
+   profil.html ne menaient jamais à l'annonce elle-même. Elles pointent
+   désormais vers "index.html?annonce=ID" ; au chargement de index.html, si ce
+   paramètre est présent, on récupère l'annonce dans Firestore et on l'affiche
+   directement dans la modale de détail existante (#detailModal/#detailPanneau),
+   sans attendre que l'utilisateur la retrouve lui-même dans la liste/carte.
+   Best-effort : ne bloque jamais l'affichage du reste du site en cas d'échec. */
+function injecterStylesFicheAnnoncePartagee() {
+  if (document.getElementById("styleFichePartagee")) return;
+  const style = document.createElement("style");
+  style.id = "styleFichePartagee";
+  style.textContent = `
+    .fiche-partagee{padding:20px;max-width:520px;}
+    .fiche-partagee .fp-fermer{position:absolute;top:14px;right:14px;background:rgba(0,0,0,.08);border:none;
+      width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;}
+    .fiche-partagee .fp-photo{width:100%;height:200px;object-fit:cover;border-radius:12px;margin-bottom:14px;background:var(--gris-fond,#f2f2f2);}
+    .fiche-partagee h2{font-size:17px;font-weight:800;margin-bottom:6px;}
+    .fiche-partagee .fp-prix{font-size:16px;font-weight:800;color:var(--vert,#009E60);margin-bottom:4px;}
+    .fiche-partagee .fp-meta{font-size:12.5px;color:var(--gris-clair,#777);margin-bottom:12px;}
+    .fiche-partagee .fp-desc{font-size:13.5px;line-height:1.5;color:#333;margin-bottom:16px;white-space:pre-line;}
+  `;
+  document.head.appendChild(style);
+}
+
+async function afficherFicheAnnoncePartagee(id) {
+  const modal = document.getElementById("detailModal");
+  const panneau = document.getElementById("detailPanneau");
+  if (!modal || !panneau || !db) return;
+
+  injecterStylesFicheAnnoncePartagee();
+  panneau.innerHTML = `<div class="fiche-partagee"><div class="spinner">Chargement de l'annonce…</div></div>`;
+  modal.classList.add("ouverte");
+
+  try {
+    const snap = await getDoc(doc(db, "annonces", id));
+    if (!snap.exists()) {
+      panneau.innerHTML = `<div class="fiche-partagee"><button type="button" class="fp-fermer" id="fpFermer">✕</button><p>Cette annonce n'est plus disponible.</p></div>`;
+    } else {
+      const a = snap.data();
+      const meta = [a.quartier, a.commune, a.statut === "occupe" ? "🔴 Occupé" : "🟢 Disponible"].filter(Boolean).join(" · ");
+      panneau.innerHTML = `
+        <div class="fiche-partagee">
+          <button type="button" class="fp-fermer" id="fpFermer">✕</button>
+          ${a.photos?.[0] ? `<img src="${escapeHTML(a.photos[0])}" alt="" class="fp-photo">` : ""}
+          <h2>${escapeHTML(a.titre || "Annonce")}</h2>
+          <div class="fp-prix">${formatPrix ? formatPrix(a.prix) : a.prix}</div>
+          <div class="fp-meta">📍 ${escapeHTML(meta)}</div>
+          ${a.description ? `<div class="fp-desc">${escapeHTML(a.description)}</div>` : ""}
+        </div>`;
+    }
+  } catch (err) {
+    console.error("Impossible de charger l'annonce partagée :", err);
+    panneau.innerHTML = `<div class="fiche-partagee"><button type="button" class="fp-fermer" id="fpFermer">✕</button><p>Impossible de charger cette annonce pour le moment.</p></div>`;
+  }
+
+  const fermer = () => modal.classList.remove("ouverte");
+  panneau.querySelector("#fpFermer")?.addEventListener("click", fermer);
+  modal.addEventListener("click", (e) => { if (e.target === modal) fermer(); }, { once: true });
+}
+
+function initOuvertureAnnoncePartagee() {
+  const id = new URLSearchParams(location.search).get("annonce");
+  if (id) afficherFicheAnnoncePartagee(id);
+}
+
 /* ══════════ INITIALISATION GÉNÉRALE ══════════ */
 document.addEventListener("DOMContentLoaded", () => {
   initDrawer();
@@ -503,6 +623,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initNotificationsLikesVus();
   initDrawerNotifs();
   initEcouteNotificationsGlobales();
+  initOuvertureAnnoncePartagee();
 
   // Marque l'onglet actif de la barre basse selon la page courante
   const page = location.pathname.split("/").pop() || "index.html";

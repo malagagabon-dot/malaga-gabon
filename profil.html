@@ -82,6 +82,13 @@
 
     .btn-deconnexion{width:100%;margin-top:26px;background:transparent;border:1.5px solid var(--rouge);
       color:var(--rouge);font-weight:700;}
+
+    /* ===== Bannière de mise en avant (arrivée via lien like/demande) ===== */
+    .banniere-cible{max-width:1000px;margin:14px auto 0;padding:0 20px;}
+    .banniere-cible-carte{background:#FFF8E1;border:1.5px solid var(--jaune);border-radius:14px;
+      padding:14px 16px;display:flex;flex-direction:column;gap:8px;}
+    .banniere-cible-titre{font-size:13.5px;font-weight:800;color:#1A2332;}
+    .banniere-cible-boutons{display:flex;gap:8px;}
   </style>
 </head>
 <body>
@@ -145,6 +152,9 @@
       </div>
     </div>
   </div>
+
+  <!-- ===== BANNIÈRE DE MISE EN AVANT (arrivée via lien ?like= ou ?demande=) ===== -->
+  <div id="banniereCiblage"></div>
 
   <!-- ===== STATS ===== -->
   <div class="profil-stats" id="profilStats">
@@ -351,6 +361,37 @@
     }
     injecterStylesLightbox();
 
+    /* Affiche, tout en haut de la page (avant les stats et avant la carte
+       "Modifier"), un résumé immédiat de la personne à l'origine du like ou de
+       la demande de visite qui a amené le propriétaire ici via le lien WhatsApp.
+       Corrige l'anomalie : jusqu'ici, rien ne signalait clairement de quelle
+       annonce / de qui il s'agissait avant d'atteindre la carte tout en bas. */
+    function afficherBanniereCiblage(item, type) {
+      const conteneur = document.getElementById("banniereCiblage");
+      if (!item) { conteneur.innerHTML = ""; return; }
+
+      const nom = escapeHTML(item.nomAffiche || item.chercheurNom || "Une personne");
+      const annonce = escapeHTML(item.annonceTitre || "votre annonce");
+      const texte = type === "like"
+        ? `❤️ ${nom} a aimé « ${annonce} »`
+        : `📅 ${nom} souhaite visiter « ${annonce} »`;
+      const lienAnnonce = item.annonceId
+        ? `<a href="index.html?annonce=${encodeURIComponent(item.annonceId)}" class="btn btn-outline" style="flex:1;padding:8px;font-size:12.5px;text-align:center;">🏠 Voir l'annonce</a>`
+        : "";
+      const ancre = type === "like" ? `like-${item.id}` : `demande-${item.id}`;
+
+      conteneur.innerHTML = `
+        <div class="banniere-cible">
+          <div class="banniere-cible-carte">
+            <div class="banniere-cible-titre">${texte}</div>
+            <div class="banniere-cible-boutons">
+              ${lienAnnonce}
+              <a href="#${ancre}" class="btn btn-vert" style="flex:1;padding:8px;font-size:12.5px;text-align:center;">👀 Voir les détails</a>
+            </div>
+          </div>
+        </div>`;
+    }
+
     let uidCourant = null;
     let profilCourant = null;
     let photoEnAttente = null; // fichier choisi mais pas encore enregistré
@@ -399,8 +440,6 @@
       const q = query(collection(db, "annonces"), where("proprietaireId", "==", uidCourant));
       onSnapshot(q, (snap) => {
         document.getElementById("statAnnonces").textContent = snap.size;
-        const totalLikes = snap.docs.reduce((somme, d) => somme + (d.data().nbLikes || 0), 0);
-        document.getElementById("statLikesRecus").textContent = totalLikes;
       });
     }
 
@@ -529,6 +568,7 @@
         rendreDemandesRecues();
         const idCible = new URLSearchParams(location.search).get("demande");
         if (idCible) {
+          afficherBanniereCiblage(toutesLesDemandesRecues.find(d => d.id === idCible), "demande");
           setTimeout(() => document.getElementById(`demande-${idCible}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
         }
       }, () => {
@@ -574,6 +614,7 @@
             <span class="badge-rdv ${d.statut}">${escapeHTML(LABEL_STATUT[d.statut] || d.statut)}</span>
           </div>
           ${d.message ? `<div class="rdv-detail">📝 ${escapeHTML(d.message)}</div>` : ""}
+          ${d.annonceId ? `<a href="index.html?annonce=${encodeURIComponent(d.annonceId)}" class="btn btn-outline" style="margin-top:10px;width:100%;padding:8px;font-size:12.5px;text-align:center;">🏠 Voir l'annonce</a>` : ""}
           ${enAttente ? `
             <div style="display:flex;gap:8px;margin-top:10px;">
               <button type="button" class="btn btn-vert" style="flex:1;padding:8px;font-size:12.5px;" data-action="confirmee" data-id="${d.id}">✅ Accepter</button>
@@ -615,9 +656,11 @@
       onSnapshot(q, (snap) => {
         toutesLesLikesRecues = snap.docs.map(d => ({ id: d.id, ...d.data() }))
           .sort((a, b) => (b.dateLike?.toMillis?.() || 0) - (a.dateLike?.toMillis?.() || 0));
+        document.getElementById("statLikesRecus").textContent = toutesLesLikesRecues.length;
         rendreLikesRecus();
         const idCible = new URLSearchParams(location.search).get("like");
         if (idCible) {
+          afficherBanniereCiblage(toutesLesLikesRecues.find(l => l.id === idCible), "like");
           setTimeout(() => document.getElementById(`like-${idCible}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
         }
       }, () => {
@@ -644,6 +687,7 @@
             <span class="badge-rdv ${l.vu ? "confirmee" : "en_attente"}">${l.vu ? "✅ Vu" : "🆕 Nouveau"}</span>
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;">
+            ${l.annonceId ? `<a href="index.html?annonce=${encodeURIComponent(l.annonceId)}" class="btn btn-outline" style="flex:1;padding:8px;font-size:12.5px;text-align:center;">🏠 Voir l'annonce</a>` : ""}
             <button type="button" class="btn ${l.vu ? "btn-outline" : "btn-vert"}" style="flex:1;padding:8px;font-size:12.5px;" data-action="voir-like" data-id="${l.id}">
               ${l.vu ? "💬 Démarrer une discussion" : "👀 Voir ce like"}
             </button>
