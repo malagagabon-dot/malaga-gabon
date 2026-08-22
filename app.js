@@ -14,7 +14,7 @@ import {
   ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
   EQUIPEMENTS, PALIERS_PIECES, escapeHTML, getBadgeVendeur
 } from "./malaga-reference.js";
-import { estFavori, toggleFavori } from "./nav.js";
+import { estFavori, toggleFavori, purgerFavorisInexistants } from "./nav.js";
 
 let utilisateurCourant = null;
 let profilCourant = null;
@@ -144,6 +144,28 @@ function palierPrix(prix) {
   return "prix-t4";                          // violet (haut de gamme)
 }
 
+// Palette de couleurs élégantes attribuées de façon stable à chaque type de bien
+// (Villa, Studio, Local commercial, etc.) : un même type garde toujours la même
+// couleur, sans dépendre de la liste exacte des types définis dans malaga-reference.js.
+const PALETTE_TYPES_BIEN = [
+  "#0F766E", // émeraude
+  "#B45309", // ambre
+  "#1E3A8A", // bleu saphir
+  "#7C2D12", // terracotta
+  "#6D28D9", // violet
+  "#9D174D", // bordeaux
+  "#065F46", // vert forêt
+  "#92400E", // bronze
+  "#374151", // ardoise
+  "#0369A1", // bleu profond
+];
+function couleurTypeBien(type) {
+  const s = (type || "Autre").toString();
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  return PALETTE_TYPES_BIEN[hash % PALETTE_TYPES_BIEN.length];
+}
+
 function iconMarqueur(annonce) {
   const classe = annonce.statut === "disponible"
     ? `marker-prix ${palierPrix(annonce.prix)}`
@@ -165,6 +187,7 @@ function ecouterAnnoncesTempsReel() {
   );
   onSnapshot(q, (snap) => {
     toutesLesAnnonces = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    purgerFavorisInexistants(toutesLesAnnonces.map(a => a.id));
     rendreTout();
     mettreAJourStats();
     construireCatalogues();
@@ -418,8 +441,11 @@ function rendreListe(liste) {
 
   liste.forEach(a => {
     const carte = document.createElement("div");
-    carte.className = "carte-annonce";
+    const paletteType = couleurTypeBien(a.type);
+    const paletteTier = palierPrix(a.prix);
+    carte.className = `carte-annonce ${paletteTier}`;
     carte.id = `carte-${a.id}`;
+    carte.style.setProperty("--couleur-type", paletteType);
     const photo = a.photos && a.photos[0];
     const badgeVendeur = getBadgeVendeur(a);
     carte.innerHTML = `

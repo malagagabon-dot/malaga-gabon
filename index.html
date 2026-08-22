@@ -339,6 +339,25 @@
         repeating-linear-gradient(135deg, rgba(0,0,0,.012) 0 2px, transparent 2px 26px) !important;
     }
 
+    /* ===== Cartes d'annonces — cadre coloré selon le type de bien, prix coloré selon la tranche =====
+       --couleur-type est posée en JS (app.js) par carte, de façon stable par type de bien.
+       Les classes prix-t1..t4 (déjà utilisées pour les marqueurs de la carte) donnent la couleur du prix. */
+    .carte-annonce{
+      border:2px solid var(--couleur-type, rgba(11,59,46,.28)) !important;
+      border-radius:14px !important;
+      box-shadow:0 4px 14px rgba(11,59,46,.10) !important;
+      background:#fff !important;
+      transition:box-shadow .15s,transform .15s;
+    }
+    .carte-annonce:hover{
+      box-shadow:0 6px 18px rgba(11,59,46,.18) !important;
+      transform:translateY(-1px);
+    }
+    .carte-annonce.prix-t1 .prix{color:#009E60 !important;}
+    .carte-annonce.prix-t2 .prix{color:#2563EB !important;}
+    .carte-annonce.prix-t3 .prix{color:#F97316 !important;}
+    .carte-annonce.prix-t4 .prix{color:#7C3AED !important;}
+
     /* ===== Typographie générale — identité plus originale et professionnelle ===== */
     body{font-family:'Plus Jakarta Sans',-apple-system,sans-serif !important;}
     .logo-text{font-family:'Playfair Display',Georgia,serif !important;font-weight:800 !important;letter-spacing:.4px;}
