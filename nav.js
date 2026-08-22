@@ -48,8 +48,15 @@ export function basculerTheme() {
 
 function initTheme() {
   appliquerTheme(themeCourantPreferere());
-  document.querySelectorAll("#btnTheme, #drawerTheme").forEach(el => {
-    el.addEventListener("click", (e) => { e.preventDefault(); basculerTheme(); });
+  // Délégation sur document plutôt qu'un addEventListener direct sur chaque
+  // bouton : le clic est capté même si #btnTheme/#drawerTheme sont recréés
+  // ou remplacés par un autre script après le chargement initial de la page
+  // (ce qui rendrait un binding direct silencieusement inopérant).
+  document.addEventListener("click", (e) => {
+    const cible = e.target.closest("#btnTheme, #drawerTheme");
+    if (!cible) return;
+    e.preventDefault();
+    basculerTheme();
   });
   // Si l'utilisateur n'a jamais fait de choix explicite, on suit les
   // changements de préférence système en direct.
@@ -688,17 +695,25 @@ function initOuvertureAnnoncePartagee() {
   if (id) afficherFicheAnnoncePartagee(id);
 }
 
-/* ══════════ INITIALISATION GÉNÉRALE ══════════ */
+/* ══════════ INITIALISATION GÉNÉRALE ══════════
+   Chaque fonction d'init est isolée dans son propre try/catch : une erreur
+   dans l'une (ex. initAuthUI si Firebase répond mal) ne doit plus jamais
+   empêcher silencieusement les suivantes (ex. initTheme) de s'exécuter. */
+function initSansBloquer(fn, nom) {
+  try { fn(); }
+  catch (err) { console.error(`Initialisation "${nom}" impossible :`, err); }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  initTheme();
-  initDrawer();
-  initAuthUI();
-  majBadgeFavoris();
-  initScrollNav();
-  initNotificationsLikesVus();
-  initDrawerNotifs();
-  initEcouteNotificationsGlobales();
-  initOuvertureAnnoncePartagee();
+  initSansBloquer(initTheme, "initTheme");
+  initSansBloquer(initDrawer, "initDrawer");
+  initSansBloquer(initAuthUI, "initAuthUI");
+  initSansBloquer(majBadgeFavoris, "majBadgeFavoris");
+  initSansBloquer(initScrollNav, "initScrollNav");
+  initSansBloquer(initNotificationsLikesVus, "initNotificationsLikesVus");
+  initSansBloquer(initDrawerNotifs, "initDrawerNotifs");
+  initSansBloquer(initEcouteNotificationsGlobales, "initEcouteNotificationsGlobales");
+  initSansBloquer(initOuvertureAnnoncePartagee, "initOuvertureAnnoncePartagee");
 
   // Marque l'onglet actif de la barre basse selon la page courante
   const page = location.pathname.split("/").pop() || "index.html";
