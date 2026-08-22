@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="img/favicon-180.png">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260819c">
+  <link rel="stylesheet" href="style.css?v=20260822b">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -71,6 +71,7 @@
       <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;">🏘️ Gérer mes annonces</a>
       <a href="admin.html" class="drawer-link" id="drawerAdmin" style="display:none;">🛠️ Panneau admin</a>
       <div class="drawer-sep"></div>
+      <a href="#" class="drawer-link" id="drawerTheme">🌙 Mode sombre</a>
       <a href="#" class="drawer-link" id="drawerNotifs">🔔 Activer les notifications</a>
       <a href="parametres.html" class="drawer-link">⚙️ Paramètres</a>
       <div class="drawer-sep"></div>
@@ -96,6 +97,7 @@
         </span>
       </a>
       <div class="header-actions" id="navActions">
+        <button class="icon-btn" id="btnTheme" aria-label="Mode sombre">🌙</button>
         <button class="icon-btn" id="btnFavorisHeader" aria-label="Favoris">
           ❤️<span class="badge-favoris" id="badgeFavorisHeader"></span>
         </button>
@@ -577,6 +579,76 @@
     .stats-section .stat-item.stat-public .stat-num{color:#7C3AED !important;}
   </style>
 
+  <!-- ═══ Mode sombre : surcharges des styles propres à cette page (fond,
+       panneau "Recherches avancées" en couleurs pastel, catalogues, filtres
+       colorés) qui étaient jusqu'ici toujours clairs, quel que soit le thème.
+       Placé après tous les autres <style> ci-dessus afin de bien les
+       surcharger dans la cascade. ═══ -->
+  <style>
+    /* Fond général de la page */
+    body.theme-sombre{
+      background:
+        radial-gradient(circle at 15% 0%, rgba(0,158,96,.08) 0%, transparent 45%),
+        radial-gradient(circle at 100% 15%, rgba(242,185,12,.06) 0%, transparent 40%),
+        radial-gradient(circle at 0% 80%, rgba(37,99,235,.10) 0%, transparent 45%),
+        linear-gradient(180deg,#10151C 0%,#0B0F15 100%) !important;
+      background-attachment:fixed !important;
+    }
+
+    /* Bouton "Les catalogues" et cartes catalogue */
+    body.theme-sombre .btn-catalogues{background:#1A2130 !important;}
+    body.theme-sombre .catalogue-carte{background:#1A2130 !important;}
+    body.theme-sombre .catalogue-carte .logo{background:#232C3D !important;}
+
+    /* Panneau "Recherches avancées" */
+    body.theme-sombre .fa-body{background:#151B26 !important;}
+    body.theme-sombre .fa-champ label{color:#AEB8C7 !important;}
+    body.theme-sombre .fa-check{color:var(--texte) !important;}
+    body.theme-sombre .fa-champ input,
+    body.theme-sombre .fa-champ select{
+      background:#1A2130 !important; border-color:#2A3444 !important; color:var(--texte) !important;
+    }
+    body.theme-sombre .fa-equip .chip:not(.actif){background:#1A2130 !important;}
+
+    /* Palette par section, adaptée en teintes sombres translucides */
+    body.theme-sombre .fa-loc{background:rgba(59,130,246,.12) !important;border-color:rgba(59,130,246,.35) !important;}
+    body.theme-sombre .fa-loc h4{color:#93C5FD !important;}
+
+    body.theme-sombre .fa-type{background:rgba(251,146,60,.12) !important;border-color:rgba(251,146,60,.35) !important;}
+    body.theme-sombre .fa-type h4{color:#FDBA74 !important;}
+
+    body.theme-sombre .fa-construction{background:rgba(139,92,246,.14) !important;border-color:rgba(139,92,246,.35) !important;}
+    body.theme-sombre .fa-construction h4{color:#C4B5FD !important;}
+
+    body.theme-sombre .fa-budget{background:rgba(217,164,6,.14) !important;border-color:rgba(217,164,6,.35) !important;}
+    body.theme-sombre .fa-budget h4{color:#FDE68A !important;}
+
+    body.theme-sombre .fa-equip{background:rgba(45,212,191,.12) !important;border-color:rgba(45,212,191,.35) !important;}
+    body.theme-sombre .fa-equip h4{color:#5EEAD4 !important;}
+
+    /* Filtres rapides colorés (commune, type, prix, vendeur) */
+    body.theme-sombre .filters-bar #filterCommune, body.theme-sombre .filters-bar #filterArrondissement{
+      background:rgba(59,130,246,.14) !important; border-color:rgba(59,130,246,.4) !important; color:#93C5FD !important;}
+    body.theme-sombre .filters-bar #filterType{
+      background:rgba(251,146,60,.14) !important; border-color:rgba(251,146,60,.4) !important; color:#FDBA74 !important;}
+    body.theme-sombre .filters-bar #filterPrix, body.theme-sombre .filters-bar #filterPrixExact{
+      background:rgba(250,204,21,.14) !important; border-color:rgba(250,204,21,.4) !important; color:#FDE68A !important;}
+    body.theme-sombre .filters-bar #filterVendeur{
+      background:rgba(45,212,191,.14) !important; border-color:rgba(45,212,191,.4) !important; color:#5EEAD4 !important;}
+
+    /* Sélecteur de mode d'affichage (grille/liste) et libellés discrets */
+    body.theme-sombre .vue-modes button{background:#1A2130 !important;}
+    body.theme-sombre .type-tag{color:var(--gris-clair) !important;}
+    body.theme-sombre .carte-info .desc-liste{color:var(--gris-clair) !important;}
+    body.theme-sombre .legende-prix{color:var(--gris-clair) !important;}
+
+    /* Cartes statistiques d'accueil : teintes éclaircies pour rester lisibles
+       sur fond sombre (les couleurs d'origine, prévues pour un fond clair,
+       perdaient en contraste). */
+    body.theme-sombre .stats-section .stat-item.stat-dispo .stat-num{color:#34D399 !important;}
+    body.theme-sombre .stats-section .stat-item.stat-zone .stat-num{color:#60A5FA !important;}
+    body.theme-sombre .stats-section .stat-item.stat-public .stat-num{color:#C4B5FD !important;}
+  </style>
 
   <!-- Contenu : liste des annonces -->
   <div class="split-layout">
@@ -747,7 +819,7 @@
   <!-- Notifications email automatiques (voir emailjs-config.js) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script type="module" src="nav.js?v=20260819b"></script>
+  <script type="module" src="nav.js?v=20260822a"></script>
   <script type="module" src="app.js?v=20260819b"></script>
   <script src="grille-adaptive.js?v=20260819b"></script>
   <script type="module" src="contact-signalement.js?v=20260819b"></script>

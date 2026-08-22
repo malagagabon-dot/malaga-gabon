@@ -18,6 +18,13 @@
   --gris-clair: #9CA3AF;
   --rouge: #EF4444;
   --radius: 12px;
+  /* Couleur foncée FIXE (ne change jamais avec le thème) : utilisée pour le
+     texte posé sur des fonds toujours colorés (jaune, dégradés), afin que ce
+     texte reste lisible même quand --texte s'éclaircit en mode sombre. */
+  --texte-fixe: #1A2332;
+  /* Fond du footer, volontairement indépendant du thème (déjà sombre en
+     mode clair, donc pas besoin de le faire varier). */
+  --fond-pied: #1A2332;
 }
 
 body {
@@ -68,7 +75,7 @@ a { color: inherit; }
 .icon-btn:active { transform: scale(.94); }
 
 .avatar-btn.avatar-initiales {
-  background: var(--jaune); color: var(--texte); font-weight: 800; font-size: 13px;
+  background: var(--jaune); color: var(--texte-fixe); font-weight: 800; font-size: 13px;
   border-color: var(--jaune-fonce);
 }
 
@@ -133,7 +140,7 @@ a { color: inherit; }
 .bn-central .bn-icon {
   width: 46px; height: 46px; border-radius: 50%;
   background: linear-gradient(135deg, var(--jaune) 0%, var(--jaune-fonce) 100%);
-  color: var(--texte); display: flex; align-items: center; justify-content: center;
+  color: var(--texte-fixe); display: flex; align-items: center; justify-content: center;
   font-size: 24px; font-weight: 900; box-shadow: 0 3px 10px rgba(0,0,0,.2);
   margin-top: -22px; border: 3px solid white;
 }
@@ -157,7 +164,7 @@ body { padding-bottom: 68px; }
 
 .btn:active { transform: scale(.97); }
 
-.btn-jaune { background: var(--jaune); color: var(--texte); }
+.btn-jaune { background: var(--jaune); color: var(--texte-fixe); }
 .btn-jaune:hover { background: var(--jaune-fonce); }
 
 .btn-blanc { background: rgba(255,255,255,.18); color: white; border: 1.5px solid rgba(255,255,255,.4); }
@@ -461,7 +468,7 @@ body { padding-bottom: 68px; }
 
 /* ===== FOOTER ===== */
 .footer {
-  background: var(--texte); color: white; text-align: center; padding: 24px 20px;
+  background: var(--fond-pied); color: white; text-align: center; padding: 24px 20px;
   font-size: 13px; line-height: 2; margin-top: 30px;
 }
 .footer .brand { font-size: 16px; font-weight: 800; color: var(--jaune); letter-spacing: 2px; margin-bottom: 6px; }
@@ -545,3 +552,109 @@ body { padding-bottom: 68px; }
 .stat-public .stat-num {
   color: #C49A00;
 }
+
+/* ═══════════════════════════════════════════
+   MODE SOMBRE
+   Activé via la classe .theme-sombre sur <body> (voir nav.js).
+   Le header et le bandeau du menu latéral restent en dégradé vert
+   dans les deux modes (identité de marque).
+═══════════════════════════════════════════ */
+body.theme-sombre {
+  --gris-fond: #10151C;
+  --gris-bordure: #2A3444;
+  --gris-clair: #8E9AAB;
+  --texte: #EAEDF2;
+}
+
+body.theme-sombre .drawer,
+body.theme-sombre .bottom-nav,
+body.theme-sombre .stats-section,
+body.theme-sombre .stats-section .stat-item,
+body.theme-sombre .carte-annonce,
+body.theme-sombre .form-card,
+body.theme-sombre .ligne-annonce,
+body.theme-sombre .modal-panneau,
+body.theme-sombre .filters-bar input,
+body.theme-sombre .filters-bar select,
+body.theme-sombre .champ input,
+body.theme-sombre .champ select,
+body.theme-sombre .champ textarea,
+body.theme-sombre .chip,
+body.theme-sombre .toggle-statut button,
+body.theme-sombre .role-carte {
+  background: #1A2130;
+}
+
+body.theme-sombre .drawer-link:hover,
+body.theme-sombre .drawer-link.actif,
+body.theme-sombre .role-carte.selectionne,
+body.theme-sombre .upload-zone:hover,
+body.theme-sombre .upload-zone.survol {
+  background: #123024;
+}
+
+body.theme-sombre .upload-zone {
+  background: #161C27;
+}
+
+body.theme-sombre .mini-modal-header h2,
+body.theme-sombre .form-card h2,
+body.theme-sombre .section-header h2 {
+  color: #34D399;
+}
+
+body.theme-sombre .modal-close {
+  background: #232C3D;
+  color: var(--texte);
+}
+body.theme-sombre .modal-close:hover { background: #2A3444; }
+
+body.theme-sombre .btn-outline { background: transparent; }
+
+body.theme-sombre .carte-annonce .visuel,
+body.theme-sombre .previsu-item,
+body.theme-sombre .ligne-annonce .miniature {
+  background: #232C3D;
+}
+
+body.theme-sombre .erreur-msg { background: #3B1B1B; color: #FCA5A5; }
+body.theme-sombre .succes-msg { background: #12301F; color: #6EE7B7; }
+
+body.theme-sombre .badge-disponible { background: #12301F; }
+body.theme-sombre .badge-occupe { background: #3B1B1B; }
+body.theme-sombre .badge-vendeur-entreprise { background: #16233F; color: #93C5FD; }
+body.theme-sombre .badge-vendeur-verifie { background: #12301F; }
+body.theme-sombre .badge-vendeur-particulier { background: rgba(255,255,255,.08); color: var(--texte); }
+
+body.theme-sombre .etat-vide { color: var(--gris-clair); }
+
+body.theme-sombre .icon-btn {
+  background: rgba(255,255,255,.1);
+  border-color: rgba(255,255,255,.22);
+}
+
+/* Contrôles natifs (select, checkbox, scrollbars) : indique au navigateur de
+   dessiner ses propres widgets dans une variante sombre, pour un rendu
+   professionnel et cohérent même sur les <select> non stylés ailleurs. */
+body.theme-sombre { color-scheme: dark; }
+
+/* Texte des placeholders, plus doux que le texte plein en mode sombre */
+body.theme-sombre ::placeholder { color: var(--gris-clair); opacity: .8; }
+
+/* Champ de recherche du héros : pas de fond défini par défaut (le navigateur
+   utilise du blanc), ce qui rendait le texte illisible une fois --texte
+   éclairci en mode sombre. */
+body.theme-sombre .search-bar input {
+  background: #1A2130;
+  color: var(--texte);
+}
+
+/* Bouton "rouge" (annuler/supprimer) : la version pastel claire d'origine
+   jurait sur fond sombre — on la remplace par une variante sombre assortie
+   aux badges "occupé"/erreur déjà adaptés plus haut. */
+body.theme-sombre .btn-rouge { background: #3B1B1B; color: #FCA5A5; }
+body.theme-sombre .btn-rouge:hover { background: #4A2222; }
+
+/* Bouton mode sombre du header : rotation douce de l'icône au clic */
+#btnTheme { transition: transform .25s ease, background .15s; }
+#btnTheme:active { transform: rotate(20deg) scale(.9); }
