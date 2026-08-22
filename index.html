@@ -324,13 +324,52 @@
   </section>
 
   <style>
+    /* ===== Fond général de l'application — plus original qu'un blanc plat ===== */
+    body{
+      background:
+        radial-gradient(circle at 15% 0%, rgba(0,158,96,.10) 0%, transparent 45%),
+        radial-gradient(circle at 100% 15%, rgba(242,185,12,.12) 0%, transparent 40%),
+        radial-gradient(circle at 0% 80%, rgba(37,99,235,.08) 0%, transparent 45%),
+        linear-gradient(180deg,#F7F8FA 0%,#F1F3F6 100%) !important;
+      background-attachment:fixed !important;
+    }
+    .hero{
+      background:
+        linear-gradient(160deg, rgba(11,59,46,.06) 0%, transparent 55%),
+        repeating-linear-gradient(135deg, rgba(0,0,0,.015) 0 2px, transparent 2px 26px) !important;
+    }
+
     /* ===== Portes d'entrée Propriétaire / Chercheur (accueil) ===== */
     .home-roles{max-width:520px;margin:18px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-    .home-role-carte{background:rgba(255,255,255,.97);border:2px solid transparent;border-radius:14px;padding:16px 10px;text-align:center;text-decoration:none;color:inherit;transition:transform .15s,border-color .15s;}
-    .home-role-carte:hover{transform:translateY(-2px);border-color:var(--vert,#009E60);}
-    .home-role-carte .icone{font-size:26px;margin-bottom:6px;}
-    .home-role-carte .titre{font-weight:800;font-size:14px;color:#111;}
-    .home-role-carte .desc{font-size:11.5px;color:#666;margin-top:3px;}
+    .home-role-carte{
+      position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.25);border-radius:14px;
+      padding:16px 10px;text-align:center;text-decoration:none;color:#fff;
+      transition:transform .18s,box-shadow .18s;isolation:isolate;
+    }
+    .home-role-carte::before{
+      content:"";position:absolute;inset:0;z-index:0;
+      background:linear-gradient(120deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 70%, rgba(255,255,255,.18) 100%);
+      pointer-events:none;
+    }
+    .home-role-carte:hover{transform:translateY(-3px) scale(1.01);}
+    .home-role-carte .icone{font-size:26px;margin-bottom:6px;position:relative;z-index:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25));}
+    .home-role-carte .titre{font-weight:800;font-size:14px;color:#fff;position:relative;z-index:1;text-shadow:0 1px 3px rgba(0,0,0,.25);}
+    .home-role-carte .desc{font-size:11.5px;color:rgba(255,255,255,.9);margin-top:3px;position:relative;z-index:1;}
+
+    /* Propriétaire — doré / luxe */
+    .home-roles a:nth-child(1){
+      background:linear-gradient(135deg,#7a4e00 0%,#C9922B 45%,#F2D27A 100%);
+      box-shadow:0 6px 18px rgba(122,78,0,.35), inset 0 1px 0 rgba(255,255,255,.4);
+    }
+    .home-roles a:nth-child(1):hover{box-shadow:0 10px 24px rgba(122,78,0,.45), inset 0 1px 0 rgba(255,255,255,.5);}
+
+    /* Chercheur — bleu saphir / luxe */
+    .home-roles a:nth-child(2){
+      background:linear-gradient(135deg,#0B1F4D 0%,#1E3A8A 45%,#3B6FE0 100%);
+      box-shadow:0 6px 18px rgba(11,31,77,.35), inset 0 1px 0 rgba(255,255,255,.25);
+    }
+    .home-roles a:nth-child(2):hover{box-shadow:0 10px 24px rgba(11,31,77,.45), inset 0 1px 0 rgba(255,255,255,.35);}
+
     @media(max-width:480px){.home-roles{padding:0 16px;}}
 
     /* ===== Filtres avancés : panneau en ligne, ouvert par défaut ===== */
