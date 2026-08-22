@@ -55,8 +55,8 @@
 
   <div class="page-form">
     <div class="form-card">
-      <h2>Publier une annonce</h2>
-      <p class="sous-titre">Remplissez les détails de votre logement à louer</p>
+      <h2 id="titrePage">Publier une annonce</h2>
+      <p class="sous-titre" id="sousTitrePage">Remplissez les détails de votre logement à louer</p>
 
       <div id="erreurMsg" class="erreur-msg"></div>
 
@@ -279,6 +279,18 @@
 
         <button type="submit" class="btn btn-vert btn-full" id="btnPublier" style="margin-top:10px;">Publier l'annonce</button>
       </form>
+
+      <!-- Écran affiché après une publication réussie : au lieu de rediriger
+           tout de suite, on laisse le propriétaire enchaîner l'ajout de ses
+           biens un par un (utile en particulier juste après une inscription,
+           pour construire tout son catalogue). -->
+      <div id="ecranSucces" style="display:none;text-align:center;padding:30px 10px;">
+        <div style="font-size:42px;margin-bottom:10px;">✅</div>
+        <h2 style="font-size:17px;margin-bottom:8px;">Bien publié avec succès !</h2>
+        <p class="sous-titre" style="margin-bottom:22px;">Vous pouvez ajouter un autre bien maintenant, ou vous arrêter là — vos annonces vous attendent dans votre profil.</p>
+        <button type="button" class="btn btn-vert btn-full" id="btnAjouterAutreBien" style="margin-bottom:10px;">➕ Ajouter un autre bien</button>
+        <a href="mes-annonces.html" class="btn btn-outline btn-full">🏘️ Terminer et voir mes annonces</a>
+      </div>
     </div>
   </div>
 
@@ -350,6 +362,12 @@
     let moyensPaiementChoisis = new Set();
 
     protegerPage((user) => { utilisateurCourant = user; }, "proprietaire");
+
+    // Message d'accueil spécifique juste après une inscription (voir connexion.html)
+    if (new URLSearchParams(window.location.search).get("premiereFois") === "1") {
+      document.getElementById("titrePage").textContent = "Bienvenue ! Publions votre premier bien";
+      document.getElementById("sousTitrePage").textContent = "Ajoutez toutes les infos de ce logement — vous pourrez en ajouter d'autres juste après.";
+    }
 
     // Remplissage des listes déroulantes
     document.getElementById("type").innerHTML = TYPES_BIEN.map(t => `<option>${t}</option>`).join("");
@@ -526,6 +544,13 @@
     };
 
     // Soumission du formulaire
+    document.getElementById("btnAjouterAutreBien").addEventListener("click", () => {
+      // Rechargement simple : le formulaire, la carte, les photos et les
+      // sélections (équipements, moyens de paiement) repartent à zéro proprement,
+      // sans avoir à réinitialiser chaque état à la main.
+      window.location.href = "publier.html";
+    });
+
     document.getElementById("formAnnonce").addEventListener("submit", async (e) => {
       e.preventDefault();
       const erreurMsg = document.getElementById("erreurMsg");
@@ -634,7 +659,9 @@
           tel: document.getElementById("whatsapp").value.trim()
         });
 
-        window.location.href = "mes-annonces.html";
+        document.getElementById("formAnnonce").style.display = "none";
+        document.getElementById("ecranSucces").style.display = "block";
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } catch (err) {
         console.error(err);
         erreurMsg.textContent = "Une erreur est survenue lors de la publication. Réessayez.";
