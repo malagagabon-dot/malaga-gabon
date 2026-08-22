@@ -6,7 +6,7 @@
   <title>Connexion — MALAGA</title>
   <meta name="theme-color" content="#009E60">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260822e">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     .champ-mdp-wrap{
@@ -85,17 +85,18 @@
       <button class="drawer-close" id="fermerDrawer">✕</button>
     </div>
     <nav class="drawer-nav">
-      <a href="index.html" class="drawer-link">🏠 Accueil</a>
-      <a href="index.html#liste-annonces" class="drawer-link">📋 Toutes les annonces</a>
-      <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;">🏘️ Gérer mes annonces</a>
+      <a href="index.html" class="drawer-link" data-i18n>🏠 Accueil</a>
+      <a href="index.html#liste-annonces" class="drawer-link" data-i18n>📋 Toutes les annonces</a>
+      <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;" data-i18n>🏘️ Gérer mes annonces</a>
       <div class="drawer-sep"></div>
-      <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
-      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
-      <a href="mailto:malagagabon@gmail.com" class="drawer-link">✉️ Nous écrire</a>
+      <a href="#" class="drawer-link" id="drawerLang">🌐 English</a>
+      <a href="tel:+24160141924" class="drawer-link" data-i18n>📞 Nous appeler</a>
+      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link" data-i18n>💬 WhatsApp</a>
+      <a href="mailto:malagagabon@gmail.com" class="drawer-link" data-i18n>✉️ Nous écrire</a>
       <div class="drawer-sep"></div>
-      <a href="connexion.html" class="drawer-link actif" id="drawerConnexion">👤 Se connecter</a>
+      <a href="connexion.html" class="drawer-link actif" id="drawerConnexion" data-i18n>👤 Se connecter</a>
     </nav>
-    <div class="drawer-footer">MALAGA 🇬🇦 — Libreville, Gabon</div>
+    <div class="drawer-footer" data-i18n>MALAGA 🇬🇦 — Libreville, Gabon</div>
   </aside>
 
   <header class="header">
@@ -104,20 +105,23 @@
       <a href="index.html" class="logo-link">
         <img src="img/logo.png" alt="MALAGA" class="logo-img">
         <span class="logo-text-wrap">
-          <span class="logo-text">MALAGA</span>
-          <span class="slogan">Maison à louer au Gabon 🇬🇦</span>
+          <span class="logo-text" data-i18n>MALAGA</span>
+          <span class="slogan" data-i18n>Maison à louer au Gabon 🇬🇦</span>
         </span>
       </a>
       <a href="index.html" class="icon-btn" aria-label="Accueil">🏠</a>
+      <div class="header-actions">
+        <button class="icon-btn" id="btnLang" aria-label="Passer en anglais">🌐</button>
+      </div>
     </div>
   </header>
 
   <nav class="bottom-nav">
-    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span>Accueil</span></a>
-    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span>Carte</span></a>
+    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span data-i18n>Accueil</span></a>
+    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span data-i18n>Carte</span></a>
     <a href="connexion.html?inscription=1&role=proprietaire" class="bn-item bn-central"><span class="bn-icon">➕</span></a>
-    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span>Favoris</span></a>
-    <a href="connexion.html" class="bn-item actif" id="bnProfil" data-page="connexion.html"><span class="bn-icon">👤</span><span id="bnProfilLabel">Profil</span></a>
+    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span data-i18n>Favoris</span></a>
+    <a href="connexion.html" class="bn-item actif" id="bnProfil" data-page="connexion.html"><span class="bn-icon">👤</span><span id="bnProfilLabel" data-i18n>Profil</span></a>
   </nav>
 
   <div class="page-form">
@@ -125,8 +129,8 @@
 
       <!-- Onglets -->
       <div class="chips" style="margin-bottom:20px;">
-        <div class="chip actif" id="ongletConnexion" style="flex:1;text-align:center;">Se connecter</div>
-        <div class="chip" id="ongletInscription" style="flex:1;text-align:center;">Créer un compte</div>
+        <div class="chip actif" id="ongletConnexion" style="flex:1;text-align:center;" data-i18n>Se connecter</div>
+        <div class="chip" id="ongletInscription" style="flex:1;text-align:center;" data-i18n>Créer un compte</div>
       </div>
 
       <div id="erreurMsg" class="erreur-msg"></div>
@@ -134,148 +138,148 @@
 
       <!-- ===== FORMULAIRE CONNEXION ===== -->
       <form id="formConnexion">
-        <h2>Bon retour 👋</h2>
-        <p class="sous-titre">Connectez-vous à votre compte MALAGA</p>
+        <h2 data-i18n>Bon retour 👋</h2>
+        <p class="sous-titre" data-i18n>Connectez-vous à votre compte MALAGA</p>
 
         <div class="champ">
-          <label>Email</label>
-          <input type="email" id="connexionEmail" required placeholder="vous@exemple.com">
+          <label data-i18n>Email</label>
+          <input type="email" id="connexionEmail" required placeholder="vous@exemple.com" data-i18n-ph>
         </div>
         <div class="champ">
-          <label>Mot de passe</label>
+          <label data-i18n>Mot de passe</label>
           <div class="champ-mdp-wrap">
             <input type="password" id="connexionMdp" required placeholder="••••••••">
             <button type="button" class="btn-oeil" data-cible="connexionMdp" aria-label="Afficher le mot de passe">👁️</button>
           </div>
           <div class="mdp-oublie-wrap">
-            <a href="#" id="lienMdpOublie">Mot de passe oublié ?</a>
+            <a href="#" id="lienMdpOublie" data-i18n>Mot de passe oublié ?</a>
           </div>
         </div>
-        <button type="submit" class="btn btn-vert btn-full" id="btnConnexion">Se connecter</button>
+        <button type="submit" class="btn btn-vert btn-full" id="btnConnexion" data-i18n>Se connecter</button>
       </form>
 
       <!-- ===== FORMULAIRE MOT DE PASSE OUBLIÉ ===== -->
       <form id="formMdpOublie" style="display:none;">
-        <h2>Mot de passe oublié 🔑</h2>
-        <p class="sous-titre">Entrez votre email, nous vous enverrons un lien de réinitialisation</p>
+        <h2 data-i18n>Mot de passe oublié 🔑</h2>
+        <p class="sous-titre" data-i18n>Entrez votre email, nous vous enverrons un lien de réinitialisation</p>
 
         <div class="champ">
-          <label>Email</label>
-          <input type="email" id="mdpOublieEmail" required placeholder="vous@exemple.com">
+          <label data-i18n>Email</label>
+          <input type="email" id="mdpOublieEmail" required placeholder="vous@exemple.com" data-i18n-ph>
         </div>
-        <button type="submit" class="btn btn-vert btn-full" id="btnMdpOublie">Envoyer le lien</button>
-        <button type="button" class="btn btn-full" id="btnAnnulerMdpOublie" style="margin-top:10px;background:transparent;border:1px solid var(--border,#e2e8f0);">Annuler</button>
+        <button type="submit" class="btn btn-vert btn-full" id="btnMdpOublie" data-i18n>Envoyer le lien</button>
+        <button type="button" class="btn btn-full" id="btnAnnulerMdpOublie" style="margin-top:10px;background:transparent;border:1px solid var(--border,#e2e8f0);" data-i18n>Annuler</button>
       </form>
 
       <!-- ===== FORMULAIRE INSCRIPTION ===== -->
       <form id="formInscription" style="display:none;">
-        <h2>Créer un compte</h2>
-        <p class="sous-titre">Choisissez votre profil pour commencer</p>
+        <h2 data-i18n>Créer un compte</h2>
+        <p class="sous-titre" data-i18n>Choisissez votre profil pour commencer</p>
 
         <div class="role-choix">
           <div class="role-carte" data-role="proprietaire">
             <div class="icone">🏠</div>
-            <div class="titre">Propriétaire</div>
-            <div class="desc">Je publie des logements à louer</div>
+            <div class="titre" data-i18n>Propriétaire</div>
+            <div class="desc" data-i18n>Je publie des logements à louer</div>
           </div>
           <div class="role-carte" data-role="chercheur">
             <div class="icone">🔍</div>
-            <div class="titre">Chercheur</div>
-            <div class="desc">Je cherche un logement</div>
+            <div class="titre" data-i18n>Chercheur</div>
+            <div class="desc" data-i18n>Je cherche un logement</div>
           </div>
         </div>
 
         <!-- ===== Sous-choix (uniquement pour un compte Propriétaire) : Particulier ou Agence/Entreprise ===== -->
         <div id="compteTypeWrap" style="display:none;">
-          <label style="font-size:12.5px;font-weight:700;color:#444;display:block;margin-bottom:8px;">Vous publiez en tant que...</label>
+          <label style="font-size:12.5px;font-weight:700;color:#444;display:block;margin-bottom:8px;" data-i18n>Vous publiez en tant que...</label>
           <div class="compte-type-choix">
             <div class="compte-type-carte" data-compte-type="particulier">
               <div class="icone">🙍</div>
-              <div class="titre">Particulier</div>
-              <div class="desc">Je loue mon propre bien</div>
+              <div class="titre" data-i18n>Particulier</div>
+              <div class="desc" data-i18n>Je loue mon propre bien</div>
             </div>
             <div class="compte-type-carte" data-compte-type="entreprise">
               <div class="icone">🏢</div>
-              <div class="titre">Agence / Entreprise</div>
-              <div class="desc">Je gère un catalogue de biens</div>
+              <div class="titre" data-i18n>Agence / Entreprise</div>
+              <div class="desc" data-i18n>Je gère un catalogue de biens</div>
             </div>
           </div>
         </div>
 
         <!-- ===== Champs additionnels : profil Agence / Entreprise ===== -->
         <div id="entrepriseExtra" style="display:none;">
-          <h3 style="font-size:14px;margin:0 0 10px;color:var(--vert);">🏢 Profil de votre agence / entreprise</h3>
+          <h3 style="font-size:14px;margin:0 0 10px;color:var(--vert);" data-i18n>🏢 Profil de votre agence / entreprise</h3>
 
           <div class="champ-logo-edit">
             <div class="apercu" id="apercuLogo">🏢</div>
             <div>
               <input type="file" id="inputLogo" accept="image/*" hidden>
-              <button type="button" class="btn btn-outline" id="btnChoisirLogo" style="padding:8px 14px;font-size:12.5px;">📷 Ajouter le logo</button>
+              <button type="button" class="btn btn-outline" id="btnChoisirLogo" style="padding:8px 14px;font-size:12.5px;" data-i18n>📷 Ajouter le logo</button>
             </div>
           </div>
 
           <div class="champ">
-            <label>Raison sociale *</label>
-            <input type="text" id="entRaisonSociale" placeholder="Ex : Gabon Immo Services">
+            <label data-i18n>Raison sociale *</label>
+            <input type="text" id="entRaisonSociale" placeholder="Ex : Gabon Immo Services" data-i18n-ph>
           </div>
           <div class="champ">
-            <label>Slogan</label>
-            <input type="text" id="entSlogan" placeholder="Ex : Votre partenaire immobilier de confiance">
+            <label data-i18n>Slogan</label>
+            <input type="text" id="entSlogan" placeholder="Ex : Votre partenaire immobilier de confiance" data-i18n-ph>
           </div>
           <div class="champ">
-            <label>Type de structure *</label>
+            <label data-i18n>Type de structure *</label>
             <select id="entType">
-              <option value="Agence immobilière">Agence immobilière</option>
-              <option value="Société privée">Société privée</option>
+              <option value="Agence immobilière" data-i18n>Agence immobilière</option>
+              <option value="Société privée" data-i18n>Société privée</option>
             </select>
           </div>
           <div class="grille-2">
             <div class="champ">
-              <label>Téléphone du service commercial *</label>
-              <input type="tel" id="entTel" placeholder="+241 XX XX XX XX">
+              <label data-i18n>Téléphone du service commercial *</label>
+              <input type="tel" id="entTel" placeholder="+241 XX XX XX XX" data-i18n-ph>
             </div>
             <div class="champ">
-              <label>Email du service commercial</label>
-              <input type="email" id="entEmail" placeholder="contact@entreprise.ga">
+              <label data-i18n>Email du service commercial</label>
+              <input type="email" id="entEmail" placeholder="contact@entreprise.ga" data-i18n-ph>
             </div>
           </div>
           <div class="champ">
-            <label>Adresse du service commercial</label>
-            <input type="text" id="entAdresse" placeholder="Ex : Immeuble X, Centre-ville, Libreville">
+            <label data-i18n>Adresse du service commercial</label>
+            <input type="text" id="entAdresse" placeholder="Ex : Immeuble X, Centre-ville, Libreville" data-i18n-ph>
           </div>
 
           <div class="champ">
-            <label>📍 Localisation du siège / bureaux *</label>
+            <label data-i18n>📍 Localisation du siège / bureaux *</label>
             <div class="geoloc-zone">
-              <div class="geoloc-statut" id="geolocStatut">Aucune localisation enregistrée</div>
-              <button type="button" class="btn btn-outline" id="btnGeolocaliser" style="width:100%;">🛰️ Utiliser ma position GPS actuelle</button>
+              <div class="geoloc-statut" id="geolocStatut" data-i18n>Aucune localisation enregistrée</div>
+              <button type="button" class="btn btn-outline" id="btnGeolocaliser" style="width:100%;" data-i18n>🛰️ Utiliser ma position GPS actuelle</button>
               <div class="geoloc-carte" id="geolocCarte"></div>
-              <p class="geoloc-hint">Une fois localisé, vous pouvez affiner en glissant le repère sur la carte. Cette position sera visible publiquement pour permettre aux visiteurs de venir jusqu'à vos bureaux (Google Maps, itinéraire, WhatsApp).</p>
+              <p class="geoloc-hint" data-i18n>Une fois localisé, vous pouvez affiner en glissant le repère sur la carte. Cette position sera visible publiquement pour permettre aux visiteurs de venir jusqu'à vos bureaux (Google Maps, itinéraire, WhatsApp).</p>
             </div>
           </div>
 
-          <p class="sous-titre" style="margin-top:-6px;">
+          <p class="sous-titre" style="margin-top:-6px;" data-i18n>
             ℹ️ Votre profil (logo, contact, localisation) sera visible dès la création de votre compte, avec un catalogue prêt à recevoir vos annonces. Le badge
             « 🏢 Professionnel vérifié » s'affichera une fois votre profil validé par l'équipe MALAGA.
           </p>
         </div>
 
         <div class="champ">
-          <label>Nom complet</label>
-          <input type="text" id="inscriptionNom" required placeholder="Ex : Jean Mbadinga">
+          <label data-i18n>Nom complet</label>
+          <input type="text" id="inscriptionNom" required placeholder="Ex : Jean Mbadinga" data-i18n-ph>
         </div>
         <div class="champ">
-          <label>Téléphone</label>
-          <input type="tel" id="inscriptionTel" required placeholder="+241 XX XX XX XX">
+          <label data-i18n>Téléphone</label>
+          <input type="tel" id="inscriptionTel" required placeholder="+241 XX XX XX XX" data-i18n-ph>
         </div>
         <div class="champ">
-          <label>Email</label>
-          <input type="email" id="inscriptionEmail" required placeholder="vous@exemple.com">
+          <label data-i18n>Email</label>
+          <input type="email" id="inscriptionEmail" required placeholder="vous@exemple.com" data-i18n-ph>
         </div>
         <div class="champ">
-          <label>Mot de passe</label>
+          <label data-i18n>Mot de passe</label>
           <div class="champ-mdp-wrap">
-            <input type="password" id="inscriptionMdp" required placeholder="6 caractères minimum">
+            <input type="password" id="inscriptionMdp" required placeholder="6 caractères minimum" data-i18n-ph>
             <button type="button" class="btn-oeil" data-cible="inscriptionMdp" aria-label="Afficher le mot de passe">👁️</button>
           </div>
         </div>
@@ -284,7 +288,7 @@
              via le formulaire complet "Publier une annonce" (une seule source de
              vérité pour les champs d'un bien, pas de formulaire dupliqué ici). ===== -->
         <div class="champ" id="proprioInfoPublier" style="display:none;background:#F0FBF6;border:1px solid #cdeee0;border-radius:12px;padding:12px 14px;">
-          <span style="font-size:12.5px;line-height:1.5;color:#1a6b4d;">
+          <span style="font-size:12.5px;line-height:1.5;color:#1a6b4d;" data-i18n>
             🏠 Une fois votre compte créé, vous serez dirigé(e) vers le formulaire de publication pour ajouter votre premier bien (photos, localisation, moyens de paiement...). Vous pourrez ensuite en ajouter d'autres, un par un, à tout moment.
           </span>
         </div>
@@ -292,23 +296,23 @@
         <label class="champ" style="display:flex;align-items:flex-start;gap:10px;background:#f7f7f7;border-radius:12px;padding:12px 14px;margin-top:6px;cursor:pointer;">
           <input type="checkbox" id="accepteCGU" style="margin-top:3px;flex-shrink:0;">
           <span style="font-size:12.5px;line-height:1.5;color:#444;">
-            J'ai lu et j'accepte les <a href="cgu.html" target="_blank" rel="noopener" style="color:var(--vert);font-weight:700;">Conditions Générales d'Utilisation</a>.
+            J'ai lu et j'accepte les <a href="cgu.html" target="_blank" rel="noopener" style="color:var(--vert);font-weight:700;" data-i18n>Conditions Générales d'Utilisation</a>.
             Je comprends que MALAGA est une plateforme de mise en relation : le paiement du loyer et les modalités
-            (caution, avance, durée...) sont convenus <strong>directement avec le propriétaire, par WhatsApp/téléphone,
+            (caution, avance, durée...) sont convenus <strong data-i18n>directement avec le propriétaire, par WhatsApp/téléphone,
             après une visite ou rencontre en personne</strong> — et que MALAGA n'intervient pas dans cette transaction
             et n'en est pas responsable.
           </span>
         </label>
 
-        <button type="submit" class="btn btn-vert btn-full" id="btnInscription">Créer mon compte</button>
+        <button type="submit" class="btn btn-vert btn-full" id="btnInscription" data-i18n>Créer mon compte</button>
       </form>
 
     </div>
   </div>
 
   <footer class="footer">
-    <div class="brand">MALAGA 🇬🇦</div>
-    <p>📞 +241 60 14 19 24 &nbsp;|&nbsp; ✉️ malagagabon@gmail.com</p>
+    <div class="brand" data-i18n>MALAGA 🇬🇦</div>
+    <p data-i18n>📞 +241 60 14 19 24 &nbsp;|&nbsp; ✉️ malagagabon@gmail.com</p>
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -628,6 +632,6 @@
       }
     });
   </script>
-  <script type="module" src="nav.js"></script>
+  <script type="module" src="nav.js?v=20260822c"></script>
 </body>
 </html>

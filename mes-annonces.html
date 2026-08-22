@@ -6,7 +6,7 @@
   <title>Mes annonces — MALAGA</title>
   <meta name="theme-color" content="#009E60">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260822e">
 </head>
 <body>
 
@@ -17,21 +17,22 @@
       <button class="drawer-close" id="fermerDrawer">✕</button>
     </div>
     <nav class="drawer-nav">
-      <a href="index.html" class="drawer-link">🏠 Accueil</a>
-      <a href="profil.html" class="drawer-link">🙍 Mon profil</a>
-      <a href="mes-annonces.html" class="drawer-link actif">🏘️ Gérer mes annonces</a>
-      <a href="publier.html" class="drawer-link">➕ Publier une annonce</a>
+      <a href="index.html" class="drawer-link" data-i18n>🏠 Accueil</a>
+      <a href="profil.html" class="drawer-link" data-i18n>🙍 Mon profil</a>
+      <a href="mes-annonces.html" class="drawer-link actif" data-i18n>🏘️ Gérer mes annonces</a>
+      <a href="publier.html" class="drawer-link" data-i18n>➕ Publier une annonce</a>
       <div class="drawer-sep"></div>
-      <a href="#" class="drawer-link" id="drawerNotifs">🔔 Activer les notifications</a>
-      <a href="parametres.html" class="drawer-link">⚙️ Paramètres</a>
+      <a href="#" class="drawer-link" id="drawerNotifs" data-i18n>🔔 Activer les notifications</a>
+      <a href="parametres.html" class="drawer-link" data-i18n>⚙️ Paramètres</a>
       <div class="drawer-sep"></div>
-      <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
-      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
-      <a href="mailto:malagagabon@gmail.com" class="drawer-link">✉️ Nous écrire</a>
+      <a href="#" class="drawer-link" id="drawerLang">🌐 English</a>
+      <a href="tel:+24160141924" class="drawer-link" data-i18n>📞 Nous appeler</a>
+      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link" data-i18n>💬 WhatsApp</a>
+      <a href="mailto:malagagabon@gmail.com" class="drawer-link" data-i18n>✉️ Nous écrire</a>
       <div class="drawer-sep"></div>
-      <a href="connexion.html" class="drawer-link" id="drawerConnexion">🚪 Se déconnecter</a>
+      <a href="connexion.html" class="drawer-link" id="drawerConnexion" data-i18n>🚪 Se déconnecter</a>
     </nav>
-    <div class="drawer-footer">MALAGA 🇬🇦 — Libreville, Gabon</div>
+    <div class="drawer-footer" data-i18n>MALAGA 🇬🇦 — Libreville, Gabon</div>
   </aside>
 
   <header class="header">
@@ -40,11 +41,12 @@
       <a href="index.html" class="logo-link">
         <img src="img/logo.png" alt="MALAGA" class="logo-img">
         <span class="logo-text-wrap">
-          <span class="logo-text">MALAGA</span>
-          <span class="slogan">Maison à louer au Gabon 🇬🇦</span>
+          <span class="logo-text" data-i18n>MALAGA</span>
+          <span class="slogan" data-i18n>Maison à louer au Gabon 🇬🇦</span>
         </span>
       </a>
       <div class="header-actions">
+        <button class="icon-btn" id="btnLang" aria-label="Passer en anglais">🌐</button>
         <a href="publier.html" class="icon-btn" aria-label="Publier">➕</a>
         <a href="connexion.html" class="icon-btn avatar-btn" id="btnCompte" aria-label="Mon compte">👤</a>
       </div>
@@ -52,52 +54,52 @@
   </header>
 
   <nav class="bottom-nav">
-    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span>Accueil</span></a>
-    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span>Carte</span></a>
+    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span data-i18n>Accueil</span></a>
+    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span data-i18n>Carte</span></a>
     <a href="publier.html" class="bn-item bn-central"><span class="bn-icon">➕</span></a>
-    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span>Favoris</span></a>
-    <a href="connexion.html" class="bn-item" id="bnProfil" data-page="profil.html"><span class="bn-icon">👤</span><span id="bnProfilLabel">Profil</span></a>
+    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span data-i18n>Favoris</span></a>
+    <a href="connexion.html" class="bn-item" id="bnProfil" data-page="profil.html"><span class="bn-icon">👤</span><span id="bnProfilLabel" data-i18n>Profil</span></a>
   </nav>
 
   <div class="dashboard-header">
-    <h1>Mes annonces</h1>
-    <p id="sousTitreDashboard">Chargement…</p>
+    <h1 data-i18n>Mes annonces</h1>
+    <p id="sousTitreDashboard" data-i18n>Chargement…</p>
   </div>
 
   <div class="liste-dashboard" id="listeDashboard">
-    <div class="spinner">Chargement de vos annonces…</div>
+    <div class="spinner" data-i18n>Chargement de vos annonces…</div>
   </div>
 
   <!-- Modal modification -->
   <div class="modal-overlay" id="modalModifier">
     <div class="modal-panneau">
       <div class="form-card">
-        <h2>Modifier l'annonce</h2>
-        <p class="sous-titre">Les photos et la position ne se modifient pas ici — supprimez et republiez si besoin.</p>
+        <h2 data-i18n>Modifier l'annonce</h2>
+        <p class="sous-titre" data-i18n>Les photos et la position ne se modifient pas ici — supprimez et republiez si besoin.</p>
         <form id="formModifier">
-          <div class="champ"><label>Titre</label><input type="text" id="modTitre" required></div>
+          <div class="champ"><label data-i18n>Titre</label><input type="text" id="modTitre" required></div>
           <div class="grille-2">
-            <div class="champ"><label>Loyer mensuel (FCFA)</label><input type="number" id="modPrix" required></div>
-            <div class="champ"><label>Statut</label>
+            <div class="champ"><label data-i18n>Loyer mensuel (FCFA)</label><input type="number" id="modPrix" required></div>
+            <div class="champ"><label data-i18n>Statut</label>
               <select id="modStatut">
-                <option value="disponible">Disponible</option>
-                <option value="occupe">Occupé</option>
+                <option value="disponible" data-i18n>Disponible</option>
+                <option value="occupe" data-i18n>Occupé</option>
               </select>
             </div>
           </div>
-          <div class="champ"><label>Description</label><textarea id="modDescription" required></textarea></div>
+          <div class="champ"><label data-i18n>Description</label><textarea id="modDescription" required></textarea></div>
           <div class="champ">
-            <label>💳 Moyens de paiement acceptés</label>
+            <label data-i18n>💳 Moyens de paiement acceptés</label>
             <div class="chips" id="modChipsMoyensPaiement"></div>
           </div>
           <div class="grille-2">
-            <div class="champ"><label>N° de villa / porte / appartement</label><input type="text" id="modNumeroBien" placeholder="Ex : Villa B12, Appt 4"></div>
-            <div class="champ"><label>Étage</label><select id="modEtage"></select></div>
+            <div class="champ"><label data-i18n>N° de villa / porte / appartement</label><input type="text" id="modNumeroBien" placeholder="Ex : Villa B12, Appt 4" data-i18n-ph></div>
+            <div class="champ"><label data-i18n>Étage</label><select id="modEtage"></select></div>
           </div>
-          <div class="champ"><label>Vue</label><select id="modVue"></select></div>
+          <div class="champ"><label data-i18n>Vue</label><select id="modVue"></select></div>
           <div style="display:flex;gap:10px;">
-            <button type="button" class="btn btn-blanc" id="btnAnnulerModif" style="flex:1;">Annuler</button>
-            <button type="submit" class="btn btn-vert" style="flex:1;">Enregistrer</button>
+            <button type="button" class="btn btn-blanc" id="btnAnnulerModif" style="flex:1;" data-i18n>Annuler</button>
+            <button type="submit" class="btn btn-vert" style="flex:1;" data-i18n>Enregistrer</button>
           </div>
         </form>
       </div>
@@ -333,8 +335,8 @@
   </script>
 
   <footer class="footer">
-    <div class="brand">MALAGA 🇬🇦</div>
+    <div class="brand" data-i18n>MALAGA 🇬🇦</div>
   </footer>
-  <script type="module" src="nav.js"></script>
+  <script type="module" src="nav.js?v=20260822c"></script>
 </body>
 </html>

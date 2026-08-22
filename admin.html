@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="light">
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -26,25 +26,25 @@
     <div class="login-logo">
       <img src="img/logo.png" alt="MALAGA" class="logo-img-login">
     </div>
-    <p class="login-sub">Panneau d'administration</p>
+    <p class="login-sub" data-i18n>Panneau d'administration</p>
     <div class="form-group">
-      <label>Email administrateur</label>
-      <input type="email" id="adminEmail" placeholder="admin@malaga.gabon" />
+      <label data-i18n>Email administrateur</label>
+      <input type="email" id="adminEmail" placeholder="admin@malaga.gabon" data-i18n-ph />
     </div>
     <div class="form-group">
-      <label>Mot de passe</label>
+      <label data-i18n>Mot de passe</label>
       <div class="champ-mdp-wrap">
         <input type="password" id="adminPassword" placeholder="••••••••" />
         <button type="button" class="btn-oeil" data-cible="adminPassword" aria-label="Afficher le mot de passe">👁️</button>
       </div>
     </div>
-    <div class="login-error hidden" id="loginError">❌ Email ou mot de passe incorrect</div>
-    <div class="login-success hidden" id="loginResetSuccess">✅ Email de réinitialisation envoyé ! Vérifiez votre boîte de réception (et vos spams).</div>
+    <div class="login-error hidden" id="loginError" data-i18n>❌ Email ou mot de passe incorrect</div>
+    <div class="login-success hidden" id="loginResetSuccess" data-i18n>✅ Email de réinitialisation envoyé ! Vérifiez votre boîte de réception (et vos spams).</div>
     <button class="btn-primary full-width" onclick="adminLogin()">
-      <span id="loginBtnText">Se connecter</span>
+      <span id="loginBtnText" data-i18n>Se connecter</span>
     </button>
     <div style="text-align:right;margin-top:10px;">
-      <a href="#" id="lienMdpOublieAdmin" style="font-size:13px;color:#009E60;text-decoration:none;font-weight:600;">Mot de passe oublié ?</a>
+      <a href="#" id="lienMdpOublieAdmin" style="font-size:13px;color:#009E60;text-decoration:none;font-weight:600;" data-i18n>Mot de passe oublié ?</a>
     </div>
   </div>
 </div>
@@ -106,7 +106,7 @@
   <div class="sidebar-footer">
     <div class="admin-avatar">👤</div>
     <div class="admin-info">
-      <strong id="adminName">Administrateur</strong>
+      <strong id="adminName" data-i18n>Administrateur</strong>
       <small id="adminEmailDisplay">—</small>
     </div>
   </div>
@@ -118,9 +118,9 @@
   <!-- Topbar -->
   <header class="topbar">
     <button class="burger-admin" id="burgerAdmin">☰</button>
-    <div class="topbar-title" id="topbarTitle">Tableau de bord</div>
+    <div class="topbar-title" id="topbarTitle" data-i18n>Tableau de bord</div>
     <div class="topbar-right">
-      <button class="btn-theme" id="themeToggle" onclick="toggleTheme()">🌙</button>
+      <button class="btn-theme" id="btnLang" aria-label="Passer en anglais">🌐</button>
       <span class="topbar-date" id="topbarDate"></span>
     </div>
   </header>
@@ -128,8 +128,8 @@
   <!-- ═══ PAGE : DASHBOARD ═══ -->
   <div class="page active" id="page-dashboard">
     <div class="page-header">
-      <h1>Tableau de bord</h1>
-      <p>Bienvenue dans l'administration MALAGA</p>
+      <h1 data-i18n>Tableau de bord</h1>
+      <p data-i18n>Bienvenue dans l'administration MALAGA</p>
     </div>
 
     <!-- KPI Cards -->
@@ -138,28 +138,28 @@
         <div class="kpi-icon green">🏠</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiAnnonces">—</div>
-          <div class="kpi-label">Annonces actives</div>
+          <div class="kpi-label" data-i18n>Annonces actives</div>
         </div>
       </div>
       <div class="kpi-card clickable" role="button" tabindex="0" onclick="allerVersKpi('utilisateurs')" onkeydown="if(event.key==='Enter'){allerVersKpi('utilisateurs')}">
         <div class="kpi-icon blue">👥</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiUsers">—</div>
-          <div class="kpi-label">Utilisateurs</div>
+          <div class="kpi-label" data-i18n>Utilisateurs</div>
         </div>
       </div>
       <div class="kpi-card clickable" role="button" tabindex="0" onclick="allerVersKpi('stats')" onkeydown="if(event.key==='Enter'){allerVersKpi('stats')}">
         <div class="kpi-icon yellow">👁️</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiVues">—</div>
-          <div class="kpi-label">Vues totales</div>
+          <div class="kpi-label" data-i18n>Vues totales</div>
         </div>
       </div>
       <div class="kpi-card clickable" role="button" tabindex="0" onclick="allerVersKpi('signalements')" onkeydown="if(event.key==='Enter'){allerVersKpi('signalements')}">
         <div class="kpi-icon red">🚨</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiSignal">—</div>
-          <div class="kpi-label">Signalements</div>
+          <div class="kpi-label" data-i18n>Signalements</div>
         </div>
       </div>
     </div>
@@ -167,22 +167,22 @@
     <!-- Dernières annonces -->
     <div class="card">
       <div class="card-header">
-        <h2>Dernières annonces</h2>
-        <button class="btn-outline-sm" onclick="showPage('annonces')">Voir tout →</button>
+        <h2 data-i18n>Dernières annonces</h2>
+        <button class="btn-outline-sm" onclick="showPage('annonces')" data-i18n>Voir tout →</button>
       </div>
       <div class="table-wrap">
         <table class="admin-table" id="dashAnnoncesTable">
           <thead>
             <tr>
-              <th>Bien</th>
-              <th>Ville</th>
-              <th>Prix</th>
-              <th>Statut</th>
-              <th>Actions</th>
+              <th data-i18n>Bien</th>
+              <th data-i18n>Ville</th>
+              <th data-i18n>Prix</th>
+              <th data-i18n>Statut</th>
+              <th data-i18n>Actions</th>
             </tr>
           </thead>
           <tbody id="dashAnnoncesBody">
-            <tr><td colspan="5" class="table-empty">Chargement...</td></tr>
+            <tr><td colspan="5" class="table-empty" data-i18n>Chargement...</td></tr>
           </tbody>
         </table>
       </div>
@@ -191,11 +191,11 @@
     <!-- Signalements récents -->
     <div class="card">
       <div class="card-header">
-        <h2>🚨 Signalements récents</h2>
-        <button class="btn-outline-sm" onclick="showPage('signalements')">Voir tout →</button>
+        <h2 data-i18n>🚨 Signalements récents</h2>
+        <button class="btn-outline-sm" onclick="showPage('signalements')" data-i18n>Voir tout →</button>
       </div>
       <div id="dashSignalements" class="signal-list">
-        <p class="table-empty">Aucun signalement récent</p>
+        <p class="table-empty" data-i18n>Aucun signalement récent</p>
       </div>
     </div>
   </div>
@@ -203,29 +203,29 @@
   <!-- ═══ PAGE : ANNONCES ═══ -->
   <div class="page" id="page-annonces">
     <div class="page-header">
-      <h1>Gestion des annonces</h1>
+      <h1 data-i18n>Gestion des annonces</h1>
       <div class="header-actions">
-        <button class="btn-outline" onclick="supprimerAnnoncesDemo()">🗑️ Supprimer les démos</button>
-        <button class="btn-outline" onclick="semerAnnoncesDemo()">🌱 Ajouter des annonces démo</button>
-        <button class="btn-primary" onclick="showPage('publier')">+ Publier une annonce</button>
+        <button class="btn-outline" onclick="supprimerAnnoncesDemo()" data-i18n>🗑️ Supprimer les démos</button>
+        <button class="btn-outline" onclick="semerAnnoncesDemo()" data-i18n>🌱 Ajouter des annonces démo</button>
+        <button class="btn-primary" onclick="showPage('publier')" data-i18n>+ Publier une annonce</button>
       </div>
     </div>
 
     <!-- Filtres -->
     <div class="filters-bar">
-      <input type="text" class="filter-input" id="filterAnnonce" placeholder="🔍 Rechercher..." oninput="filtrerAnnonces()" />
+      <input type="text" class="filter-input" id="filterAnnonce" placeholder="🔍 Rechercher..." oninput="filtrerAnnonces()" data-i18n-ph />
       <select class="filter-select" id="filterStatut" onchange="filtrerAnnonces()">
-        <option value="">Tous les statuts</option>
-        <option value="disponible">🟢 Disponible</option>
-        <option value="occupe">🔴 Occupé</option>
+        <option value="" data-i18n>Tous les statuts</option>
+        <option value="disponible" data-i18n>🟢 Disponible</option>
+        <option value="occupe" data-i18n>🔴 Occupé</option>
       </select>
       <select class="filter-select" id="filterVille" onchange="filtrerAnnonces()">
-        <option value="">Toutes les communes</option>
-        <option>Libreville</option>
-        <option>Akanda</option>
-        <option>Owendo</option>
+        <option value="" data-i18n>Toutes les communes</option>
+        <option data-i18n>Libreville</option>
+        <option data-i18n>Akanda</option>
+        <option data-i18n>Owendo</option>
       </select>
-      <button class="btn-outline" type="button" onclick="toggleFiltresAvancesAdmin()">🎛️ Filtres avancés</button>
+      <button class="btn-outline" type="button" onclick="toggleFiltresAvancesAdmin()" data-i18n>🎛️ Filtres avancés</button>
     </div>
 
     <!-- Filtres avancés (repliable) — mêmes sections et couleurs que le site public -->
@@ -233,84 +233,84 @@
       <div class="fa-admin-body">
 
         <section class="fa-admin-section fa-admin-loc">
-          <h4>📍 Localisation</h4>
+          <h4 data-i18n>📍 Localisation</h4>
           <div class="fa-admin-grid">
             <div class="form-group">
-              <label>Quartier / rue</label>
-              <input type="text" id="faaTexteLoc" placeholder="Ex : Angondjé" oninput="filtrerAnnonces()">
+              <label data-i18n>Quartier / rue</label>
+              <input type="text" id="faaTexteLoc" placeholder="Ex : Angondjé" oninput="filtrerAnnonces()" data-i18n-ph>
             </div>
             <div class="form-group">
-              <label>Caractère de la zone</label>
-              <select id="faaZone" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+              <label data-i18n>Caractère de la zone</label>
+              <select id="faaZone" onchange="filtrerAnnonces()"><option value="" data-i18n>Indifférent</option></select>
             </div>
           </div>
         </section>
 
         <section class="fa-admin-section fa-admin-type">
-          <h4>🏠 Type &amp; capacités</h4>
+          <h4 data-i18n>🏠 Type &amp; capacités</h4>
           <div class="fa-admin-grid">
             <div class="form-group">
-              <label>Type de bien</label>
-              <select id="faaType" onchange="filtrerAnnonces()"><option value="">Tous</option></select>
+              <label data-i18n>Type de bien</label>
+              <select id="faaType" onchange="filtrerAnnonces()"><option value="" data-i18n>Tous</option></select>
             </div>
             <div class="form-group">
-              <label>Chambres (min.)</label>
-              <select id="faaChambres" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+              <label data-i18n>Chambres (min.)</label>
+              <select id="faaChambres" onchange="filtrerAnnonces()"><option value="" data-i18n>Indifférent</option></select>
             </div>
             <div class="form-group">
-              <label>Salons (min.)</label>
-              <select id="faaSalons" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+              <label data-i18n>Salons (min.)</label>
+              <select id="faaSalons" onchange="filtrerAnnonces()"><option value="" data-i18n>Indifférent</option></select>
             </div>
             <div class="form-group">
-              <label>Douches (min.)</label>
-              <select id="faaDouches" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+              <label data-i18n>Douches (min.)</label>
+              <select id="faaDouches" onchange="filtrerAnnonces()"><option value="" data-i18n>Indifférent</option></select>
             </div>
             <div class="form-group">
-              <label>Cuisine</label>
-              <select id="faaCuisineType" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+              <label data-i18n>Cuisine</label>
+              <select id="faaCuisineType" onchange="filtrerAnnonces()"><option value="" data-i18n>Indifférent</option></select>
             </div>
             <div class="form-group">
-              <label>Douche (type)</label>
-              <select id="faaDoucheType" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+              <label data-i18n>Douche (type)</label>
+              <select id="faaDoucheType" onchange="filtrerAnnonces()"><option value="" data-i18n>Indifférent</option></select>
             </div>
           </div>
         </section>
 
         <section class="fa-admin-section fa-admin-const">
-          <h4>🧱 Construction &amp; finitions</h4>
+          <h4 data-i18n>🧱 Construction &amp; finitions</h4>
           <div class="fa-admin-grid">
             <div class="form-group">
-              <label>Matériau</label>
-              <select id="faaMateriau" onchange="filtrerAnnonces()"><option value="">Indifférent</option></select>
+              <label data-i18n>Matériau</label>
+              <select id="faaMateriau" onchange="filtrerAnnonces()"><option value="" data-i18n>Indifférent</option></select>
             </div>
             <div class="form-group">
-              <label>Couleur murale</label>
-              <select id="faaCouleur" onchange="filtrerAnnonces()"><option value="">Indifférente</option></select>
+              <label data-i18n>Couleur murale</label>
+              <select id="faaCouleur" onchange="filtrerAnnonces()"><option value="" data-i18n>Indifférente</option></select>
             </div>
             <div class="form-group">
-              <label>Terrasse</label>
+              <label data-i18n>Terrasse</label>
               <select id="faaTerrasse" onchange="filtrerAnnonces()">
-                <option value="">Indifférent</option><option value="oui">Oui</option><option value="non">Non</option>
+                <option value="" data-i18n>Indifférent</option><option value="oui" data-i18n>Oui</option><option value="non" data-i18n>Non</option>
               </select>
             </div>
             <div class="form-group">
-              <label>Sol carrelé</label>
+              <label data-i18n>Sol carrelé</label>
               <select id="faaCarreaux" onchange="filtrerAnnonces()">
-                <option value="">Indifférent</option><option value="oui">Oui</option><option value="non">Non</option>
+                <option value="" data-i18n>Indifférent</option><option value="oui" data-i18n>Oui</option><option value="non" data-i18n>Non</option>
               </select>
             </div>
           </div>
         </section>
 
         <section class="fa-admin-section fa-admin-budget">
-          <h4>💰 Budget</h4>
+          <h4 data-i18n>💰 Budget</h4>
           <div class="fa-admin-grid">
             <div class="form-group">
-              <label>Prix min. (FCFA)</label>
+              <label data-i18n>Prix min. (FCFA)</label>
               <input type="number" id="faaPrixMin" min="0" oninput="filtrerAnnonces()">
             </div>
             <div class="form-group">
-              <label>Prix max. (FCFA)</label>
+              <label data-i18n>Prix max. (FCFA)</label>
               <input type="number" id="faaPrixMax" min="0" oninput="filtrerAnnonces()">
             </div>
           </div>
@@ -318,7 +318,7 @@
 
       </div>
       <div class="fa-admin-footer">
-        <button class="btn-outline" type="button" onclick="reinitialiserFiltresAvancesAdmin()">Réinitialiser</button>
+        <button class="btn-outline" type="button" onclick="reinitialiserFiltresAvancesAdmin()" data-i18n>Réinitialiser</button>
       </div>
     </div>
 
@@ -327,18 +327,18 @@
         <table class="admin-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Bien</th>
-              <th>Propriétaire</th>
-              <th>Ville</th>
-              <th>Prix / mois</th>
-              <th>Vues</th>
-              <th>Statut</th>
-              <th>Actions</th>
+              <th data-i18n>ID</th>
+              <th data-i18n>Bien</th>
+              <th data-i18n>Propriétaire</th>
+              <th data-i18n>Ville</th>
+              <th data-i18n>Prix / mois</th>
+              <th data-i18n>Vues</th>
+              <th data-i18n>Statut</th>
+              <th data-i18n>Actions</th>
             </tr>
           </thead>
           <tbody id="annoncesTableBody">
-            <tr><td colspan="8" class="table-empty">Chargement...</td></tr>
+            <tr><td colspan="8" class="table-empty" data-i18n>Chargement...</td></tr>
           </tbody>
         </table>
       </div>
@@ -348,15 +348,15 @@
   <!-- ═══ PAGE : UTILISATEURS ═══ -->
   <div class="page" id="page-utilisateurs">
     <div class="page-header">
-      <h1>Gestion des utilisateurs</h1>
+      <h1 data-i18n>Gestion des utilisateurs</h1>
     </div>
     <div class="filters-bar">
-      <input type="text" class="filter-input" id="filterUser" placeholder="🔍 Rechercher un utilisateur..." oninput="filtrerUsers()" />
+      <input type="text" class="filter-input" id="filterUser" placeholder="🔍 Rechercher un utilisateur..." oninput="filtrerUsers()" data-i18n-ph />
       <select class="filter-select" id="filterRole" onchange="filtrerUsers()">
-        <option value="">Tous les rôles</option>
-        <option value="proprietaire">Propriétaire</option>
-        <option value="locataire">Locataire</option>
-        <option value="admin">Admin</option>
+        <option value="" data-i18n>Tous les rôles</option>
+        <option value="proprietaire" data-i18n>Propriétaire</option>
+        <option value="locataire" data-i18n>Locataire</option>
+        <option value="admin" data-i18n>Admin</option>
       </select>
     </div>
     <div class="card">
@@ -364,16 +364,16 @@
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Nom</th>
-              <th>Email</th>
-              <th>Téléphone</th>
-              <th>Rôle</th>
-              <th>Inscrit le</th>
-              <th>Actions</th>
+              <th data-i18n>Nom</th>
+              <th data-i18n>Email</th>
+              <th data-i18n>Téléphone</th>
+              <th data-i18n>Rôle</th>
+              <th data-i18n>Inscrit le</th>
+              <th data-i18n>Actions</th>
             </tr>
           </thead>
           <tbody id="usersTableBody">
-            <tr><td colspan="6" class="table-empty">Chargement...</td></tr>
+            <tr><td colspan="6" class="table-empty" data-i18n>Chargement...</td></tr>
           </tbody>
         </table>
       </div>
@@ -383,8 +383,8 @@
   <!-- ═══ PAGE : ENTREPRISES ═══ -->
   <div class="page" id="page-entreprises">
     <div class="page-header">
-      <h1>🏢 Comptes professionnels</h1>
-      <p>Agences et entreprises inscrites — vérification et suivi de leur catalogue</p>
+      <h1 data-i18n>🏢 Comptes professionnels</h1>
+      <p data-i18n>Agences et entreprises inscrites — vérification et suivi de leur catalogue</p>
     </div>
 
     <!-- KPI Cards -->
@@ -393,39 +393,39 @@
         <div class="kpi-icon blue">🏢</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiEntreprisesTotal">—</div>
-          <div class="kpi-label">Comptes professionnels</div>
+          <div class="kpi-label" data-i18n>Comptes professionnels</div>
         </div>
       </div>
       <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerEntreprisesParStatut('attente')" onkeydown="if(event.key==='Enter'){filtrerEntreprisesParStatut('attente')}">
         <div class="kpi-icon yellow">⏳</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiEntreprisesAttente">—</div>
-          <div class="kpi-label">En attente de vérification</div>
+          <div class="kpi-label" data-i18n>En attente de vérification</div>
         </div>
       </div>
       <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerEntreprisesParStatut('verifie')" onkeydown="if(event.key==='Enter'){filtrerEntreprisesParStatut('verifie')}">
         <div class="kpi-icon green">✅</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiEntreprisesVerifiees">—</div>
-          <div class="kpi-label">Vérifiés</div>
+          <div class="kpi-label" data-i18n>Vérifiés</div>
         </div>
       </div>
       <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerEntreprisesParStatut('suspendu')" onkeydown="if(event.key==='Enter'){filtrerEntreprisesParStatut('suspendu')}">
         <div class="kpi-icon red">⛔</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiEntreprisesSuspendues">—</div>
-          <div class="kpi-label">Suspendus</div>
+          <div class="kpi-label" data-i18n>Suspendus</div>
         </div>
       </div>
     </div>
 
     <div class="filters-bar">
-      <input type="text" class="filter-input" id="filterEntreprise" placeholder="🔍 Rechercher une entreprise..." oninput="filtrerEntreprises()" />
+      <input type="text" class="filter-input" id="filterEntreprise" placeholder="🔍 Rechercher une entreprise..." oninput="filtrerEntreprises()" data-i18n-ph />
       <select class="filter-select" id="filterStatutEntreprise" onchange="filtrerEntreprises()">
-        <option value="">Tous les statuts</option>
-        <option value="attente">⏳ En attente</option>
-        <option value="verifie">✅ Vérifié</option>
-        <option value="suspendu">⛔ Suspendu</option>
+        <option value="" data-i18n>Tous les statuts</option>
+        <option value="attente" data-i18n>⏳ En attente</option>
+        <option value="verifie" data-i18n>✅ Vérifié</option>
+        <option value="suspendu" data-i18n>⛔ Suspendu</option>
       </select>
     </div>
 
@@ -434,17 +434,17 @@
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Entreprise</th>
-              <th>Type</th>
-              <th>Contact commercial</th>
-              <th>Biens publiés</th>
-              <th>Statut</th>
-              <th>Inscrit le</th>
-              <th>Actions</th>
+              <th data-i18n>Entreprise</th>
+              <th data-i18n>Type</th>
+              <th data-i18n>Contact commercial</th>
+              <th data-i18n>Biens publiés</th>
+              <th data-i18n>Statut</th>
+              <th data-i18n>Inscrit le</th>
+              <th data-i18n>Actions</th>
             </tr>
           </thead>
           <tbody id="entreprisesTableBody">
-            <tr><td colspan="7" class="table-empty">Chargement...</td></tr>
+            <tr><td colspan="7" class="table-empty" data-i18n>Chargement...</td></tr>
           </tbody>
         </table>
       </div>
@@ -454,23 +454,23 @@
   <!-- ═══ PAGE : SIGNALEMENTS ═══ -->
   <div class="page" id="page-signalements">
     <div class="page-header">
-      <h1>🚨 Signalements</h1>
+      <h1 data-i18n>🚨 Signalements</h1>
     </div>
     <div class="card">
       <div class="table-wrap">
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>Annonce concernée</th>
-              <th>Signalé par</th>
-              <th>Description</th>
-              <th>Actions</th>
+              <th data-i18n>Date</th>
+              <th data-i18n>Type</th>
+              <th data-i18n>Annonce concernée</th>
+              <th data-i18n>Signalé par</th>
+              <th data-i18n>Description</th>
+              <th data-i18n>Actions</th>
             </tr>
           </thead>
           <tbody id="signalementsBody">
-            <tr><td colspan="6" class="table-empty">Aucun signalement</td></tr>
+            <tr><td colspan="6" class="table-empty" data-i18n>Aucun signalement</td></tr>
           </tbody>
         </table>
       </div>
@@ -480,8 +480,8 @@
   <!-- ═══ PAGE : RÉSERVATIONS ═══ -->
   <div class="page" id="page-reservations">
     <div class="page-header">
-      <h1>💳 Demandes de visite</h1>
-      <p>Validation manuelle des paiements Airtel Money / Moov Money, en temps réel.</p>
+      <h1 data-i18n>💳 Demandes de visite</h1>
+      <p data-i18n>Validation manuelle des paiements Airtel Money / Moov Money, en temps réel.</p>
     </div>
 
     <div class="kpi-grid">
@@ -489,60 +489,60 @@
         <div class="kpi-icon yellow">🟡</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiResAttente">0</div>
-          <div class="kpi-label">En attente</div>
+          <div class="kpi-label" data-i18n>En attente</div>
         </div>
       </div>
       <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerReservationsParStatut('confirmee')" onkeydown="if(event.key==='Enter'){filtrerReservationsParStatut('confirmee')}">
         <div class="kpi-icon blue">🔵</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiResProgrammees">0</div>
-          <div class="kpi-label">Visites programmées</div>
+          <div class="kpi-label" data-i18n>Visites programmées</div>
         </div>
       </div>
       <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerReservationsParStatut('__aujourdhui__')" onkeydown="if(event.key==='Enter'){filtrerReservationsParStatut('__aujourdhui__')}">
         <div class="kpi-icon green">📅</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiResJour">0</div>
-          <div class="kpi-label">Reçues aujourd'hui</div>
+          <div class="kpi-label" data-i18n>Reçues aujourd'hui</div>
         </div>
       </div>
     </div>
 
     <div class="filters-bar">
       <select class="filter-select" id="filterResStatut" onchange="filtrerReservations()">
-        <option value="en_attente">🟡 En attente</option>
-        <option value="confirmee">🔵 Programmées</option>
-        <option value="refusee">🚫 Refusées</option>
-        <option value="expiree">⌛ Expirées</option>
+        <option value="en_attente" data-i18n>🟡 En attente</option>
+        <option value="confirmee" data-i18n>🔵 Programmées</option>
+        <option value="refusee" data-i18n>🚫 Refusées</option>
+        <option value="expiree" data-i18n>⌛ Expirées</option>
       </select>
       <span class="btn-theme" id="toggleSonRes" title="Activer/couper le son des notifications" style="cursor:pointer;">🔔</span>
     </div>
 
     <div id="listeReservations" class="card" style="padding:1rem 1.25rem;">
-      <p class="table-empty">Connexion au flux temps réel…</p>
+      <p class="table-empty" data-i18n>Connexion au flux temps réel…</p>
     </div>
   </div>
 
   <!-- ═══ PAGE : MESSAGES ═══ -->
   <div class="page" id="page-messages">
     <div class="page-header">
-      <h1>✉️ Messages reçus</h1>
+      <h1 data-i18n>✉️ Messages reçus</h1>
     </div>
     <div class="card">
       <div class="table-wrap">
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Nom</th>
-              <th>Téléphone</th>
-              <th>Sujet</th>
-              <th>Message</th>
-              <th>Actions</th>
+              <th data-i18n>Date</th>
+              <th data-i18n>Nom</th>
+              <th data-i18n>Téléphone</th>
+              <th data-i18n>Sujet</th>
+              <th data-i18n>Message</th>
+              <th data-i18n>Actions</th>
             </tr>
           </thead>
           <tbody id="messagesBody">
-            <tr><td colspan="6" class="table-empty">Aucun message</td></tr>
+            <tr><td colspan="6" class="table-empty" data-i18n>Aucun message</td></tr>
           </tbody>
         </table>
       </div>
@@ -552,23 +552,23 @@
   <!-- ═══ PAGE : STATS ═══ -->
   <div class="page" id="page-stats">
     <div class="page-header">
-      <h1>📈 Statistiques</h1>
+      <h1 data-i18n>📈 Statistiques</h1>
     </div>
     <div class="stats-grid">
       <div class="card stat-card">
-        <h3>Annonces par ville</h3>
+        <h3 data-i18n>Annonces par ville</h3>
         <div id="chartVilles" class="chart-bars"></div>
       </div>
       <div class="card stat-card">
-        <h3>Annonces par type de bien</h3>
+        <h3 data-i18n>Annonces par type de bien</h3>
         <div id="chartTypes" class="chart-bars"></div>
       </div>
       <div class="card stat-card">
-        <h3>Statuts des annonces</h3>
+        <h3 data-i18n>Statuts des annonces</h3>
         <div id="chartStatuts" class="chart-bars"></div>
       </div>
       <div class="card stat-card">
-        <h3>Top 5 annonces (vues)</h3>
+        <h3 data-i18n>Top 5 annonces (vues)</h3>
         <div id="chartTop" class="chart-bars"></div>
       </div>
     </div>
@@ -577,16 +577,16 @@
   <!-- ═══ PAGE : CLASSEMENT (likes) ═══ -->
   <div class="page" id="page-classement">
     <div class="page-header">
-      <h1>🔥 Classement des likes</h1>
+      <h1 data-i18n>🔥 Classement des likes</h1>
     </div>
 
     <!-- Filtres -->
     <div class="filters-bar">
-      <input type="text" class="filter-input" id="filterClassement" placeholder="🔍 Rechercher un bien ou un propriétaire..." oninput="rendreClassement()" />
+      <input type="text" class="filter-input" id="filterClassement" placeholder="🔍 Rechercher un bien ou un propriétaire..." oninput="rendreClassement()" data-i18n-ph />
       <select class="filter-select" id="filterPeriodeClassement" onchange="changerPeriodeClassement()">
-        <option value="tout">Depuis toujours</option>
-        <option value="semaine">Cette semaine</option>
-        <option value="mois">Ce mois-ci</option>
+        <option value="tout" data-i18n>Depuis toujours</option>
+        <option value="semaine" data-i18n>Cette semaine</option>
+        <option value="mois" data-i18n>Ce mois-ci</option>
       </select>
     </div>
 
@@ -595,16 +595,16 @@
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Rang</th>
-              <th>Bien</th>
-              <th>Propriétaire</th>
-              <th>Ville</th>
-              <th class="th-tri" onclick="trierClassement('likes')">❤️ Likes ⇅</th>
-              <th>Actions</th>
+              <th data-i18n>Rang</th>
+              <th data-i18n>Bien</th>
+              <th data-i18n>Propriétaire</th>
+              <th data-i18n>Ville</th>
+              <th class="th-tri" onclick="trierClassement('likes')" data-i18n>❤️ Likes ⇅</th>
+              <th data-i18n>Actions</th>
             </tr>
           </thead>
           <tbody id="classementTableBody">
-            <tr><td colspan="6" class="table-empty">Chargement...</td></tr>
+            <tr><td colspan="6" class="table-empty" data-i18n>Chargement...</td></tr>
           </tbody>
         </table>
       </div>
@@ -614,8 +614,8 @@
   <!-- ═══ PAGE : NOTIFICATIONS ═══ -->
   <div class="page" id="page-notifications">
     <div class="page-header">
-      <h1>🔔 Notifications</h1>
-      <p>Diffusez une annonce à tous les utilisateurs ayant activé les notifications sur le site.</p>
+      <h1 data-i18n>🔔 Notifications</h1>
+      <p data-i18n>Diffusez une annonce à tous les utilisateurs ayant activé les notifications sur le site.</p>
     </div>
 
     <div class="kpi-grid">
@@ -623,47 +623,47 @@
         <div class="kpi-icon green">🔔</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiNotifsActives">0</div>
-          <div class="kpi-label">Notifications activées</div>
+          <div class="kpi-label" data-i18n>Notifications activées</div>
         </div>
       </div>
       <div class="kpi-card">
         <div class="kpi-icon blue">👥</div>
         <div class="kpi-info">
           <div class="kpi-num" id="kpiNotifsTotal">0</div>
-          <div class="kpi-label">Visiteurs/utilisateurs suivis</div>
+          <div class="kpi-label" data-i18n>Visiteurs/utilisateurs suivis</div>
         </div>
       </div>
     </div>
 
     <div class="card form-card">
-      <h3 style="margin-bottom:12px;">📢 Envoyer une notification à tous</h3>
+      <h3 style="margin-bottom:12px;" data-i18n>📢 Envoyer une notification à tous</h3>
       <div class="form-grid">
         <div class="form-group full-col">
-          <label>Titre</label>
-          <input type="text" id="notifGlobaleTitre" placeholder="Ex : Nouveauté sur MALAGA" />
+          <label data-i18n>Titre</label>
+          <input type="text" id="notifGlobaleTitre" placeholder="Ex : Nouveauté sur MALAGA" data-i18n-ph />
         </div>
         <div class="form-group full-col">
-          <label>Message</label>
-          <textarea id="notifGlobaleMessage" rows="3" placeholder="Ex : De nouvelles annonces viennent d'être publiées à Akanda !"></textarea>
+          <label data-i18n>Message</label>
+          <textarea id="notifGlobaleMessage" rows="3" placeholder="Ex : De nouvelles annonces viennent d'être publiées à Akanda !" data-i18n-ph></textarea>
         </div>
       </div>
-      <button class="btn-primary" id="btnEnvoyerNotifGlobale" onclick="envoyerNotificationGlobale()">📢 Envoyer à tous</button>
+      <button class="btn-primary" id="btnEnvoyerNotifGlobale" onclick="envoyerNotificationGlobale()" data-i18n>📢 Envoyer à tous</button>
     </div>
 
     <div class="card">
-      <h3 style="margin:0 0 12px;padding:1rem 1.25rem 0;">🕓 Historique des envois</h3>
+      <h3 style="margin:0 0 12px;padding:1rem 1.25rem 0;" data-i18n>🕓 Historique des envois</h3>
       <div class="table-wrap">
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Titre</th>
-              <th>Message</th>
-              <th>Envoyé par</th>
+              <th data-i18n>Date</th>
+              <th data-i18n>Titre</th>
+              <th data-i18n>Message</th>
+              <th data-i18n>Envoyé par</th>
             </tr>
           </thead>
           <tbody id="notifsGlobalesBody">
-            <tr><td colspan="4" class="table-empty">Chargement...</td></tr>
+            <tr><td colspan="4" class="table-empty" data-i18n>Chargement...</td></tr>
           </tbody>
         </table>
       </div>
@@ -673,101 +673,101 @@
   <!-- ═══ PAGE : PUBLIER ═══ -->
   <div class="page" id="page-publier">
     <div class="page-header">
-      <h1>Publier une annonce</h1>
+      <h1 data-i18n>Publier une annonce</h1>
       <div class="header-actions">
-        <button class="btn-outline" onclick="showPage('annonces')">← Retour</button>
+        <button class="btn-outline" onclick="showPage('annonces')" data-i18n>← Retour</button>
       </div>
     </div>
     <div class="card form-card">
       <div class="form-grid">
         <div class="form-group">
-          <label>Type de bien *</label>
+          <label data-i18n>Type de bien *</label>
           <select id="pubType" onchange="adapterPubFormulaireAuType()">
-            <option value="">Choisir</option>
-            <option>Maison</option>
-            <option>Appartement</option>
-            <option>Studio</option>
-            <option>Villa</option>
-            <option>Chambre</option>
-            <option>Bureau</option>
-            <option>Local commercial</option>
-            <option>Box</option>
+            <option value="" data-i18n>Choisir</option>
+            <option data-i18n>Maison</option>
+            <option data-i18n>Appartement</option>
+            <option data-i18n>Studio</option>
+            <option data-i18n>Villa</option>
+            <option data-i18n>Chambre</option>
+            <option data-i18n>Bureau</option>
+            <option data-i18n>Local commercial</option>
+            <option data-i18n>Box</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Ville *</label>
+          <label data-i18n>Ville *</label>
           <select id="pubVille">
-            <option value="">Choisir</option>
-            <option>Libreville</option>
-            <option>Port-Gentil</option>
-            <option>Franceville</option>
-            <option>Oyem</option>
-            <option>Moanda</option>
-            <option>Mouila</option>
-            <option>Lambaréné</option>
-            <option>Tchibanga</option>
-            <option>Koulamoutou</option>
-            <option>Makokou</option>
+            <option value="" data-i18n>Choisir</option>
+            <option data-i18n>Libreville</option>
+            <option data-i18n>Port-Gentil</option>
+            <option data-i18n>Franceville</option>
+            <option data-i18n>Oyem</option>
+            <option data-i18n>Moanda</option>
+            <option data-i18n>Mouila</option>
+            <option data-i18n>Lambaréné</option>
+            <option data-i18n>Tchibanga</option>
+            <option data-i18n>Koulamoutou</option>
+            <option data-i18n>Makokou</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Quartier *</label>
-          <input type="text" id="pubQuartier" placeholder="Ex: Akanda, Batterie IV..." />
+          <label data-i18n>Quartier *</label>
+          <input type="text" id="pubQuartier" placeholder="Ex: Akanda, Batterie IV..." data-i18n-ph />
         </div>
         <div class="form-group">
-          <label>Arrondissement</label>
-          <input type="text" id="pubArrondissement" placeholder="Ex: 2e arrondissement" />
+          <label data-i18n>Arrondissement</label>
+          <input type="text" id="pubArrondissement" placeholder="Ex: 2e arrondissement" data-i18n-ph />
         </div>
         <div class="form-group">
-          <label>Prix mensuel (FCFA) *</label>
-          <input type="number" id="pubPrix" placeholder="Ex: 150000" />
+          <label data-i18n>Prix mensuel (FCFA) *</label>
+          <input type="number" id="pubPrix" placeholder="Ex: 150000" data-i18n-ph />
         </div>
         <div class="form-group">
-          <label>Surface (m²)</label>
-          <input type="number" id="pubSurface" placeholder="Ex: 80" />
+          <label data-i18n>Surface (m²)</label>
+          <input type="number" id="pubSurface" placeholder="Ex: 80" data-i18n-ph />
         </div>
         <div class="form-group" id="pubGroupeChambres">
-          <label>Nombre de chambres</label>
-          <input type="number" id="pubChambres" placeholder="Ex: 2" min="0" />
+          <label data-i18n>Nombre de chambres</label>
+          <input type="number" id="pubChambres" placeholder="Ex: 2" min="0" data-i18n-ph />
         </div>
         <div class="form-group" id="pubGroupeSdb">
-          <label>Salles de bain</label>
-          <input type="number" id="pubSdb" placeholder="Ex: 1" min="0" />
+          <label data-i18n>Salles de bain</label>
+          <input type="number" id="pubSdb" placeholder="Ex: 1" min="0" data-i18n-ph />
         </div>
         <div class="form-group">
-          <label>WhatsApp du propriétaire *</label>
-          <input type="tel" id="pubTel" placeholder="+241 6 XX XX XX" />
+          <label data-i18n>WhatsApp du propriétaire *</label>
+          <input type="tel" id="pubTel" placeholder="+241 6 XX XX XX" data-i18n-ph />
         </div>
         <div class="form-group">
-          <label>Nom du propriétaire / de l'agence</label>
-          <input type="text" id="pubProprioNom" placeholder="Ex: Agence Malaga Immo" />
+          <label data-i18n>Nom du propriétaire / de l'agence</label>
+          <input type="text" id="pubProprioNom" placeholder="Ex: Agence Malaga Immo" data-i18n-ph />
         </div>
         <div class="form-group">
-          <label>Email du propriétaire</label>
-          <input type="email" id="pubProprioEmail" placeholder="proprietaire@exemple.com" />
+          <label data-i18n>Email du propriétaire</label>
+          <input type="email" id="pubProprioEmail" placeholder="proprietaire@exemple.com" data-i18n-ph />
         </div>
         <div class="form-group">
-          <label>N° de villa / porte / appartement</label>
-          <input type="text" id="pubNumeroBien" placeholder="Ex : Villa B12, Appt 4" />
+          <label data-i18n>N° de villa / porte / appartement</label>
+          <input type="text" id="pubNumeroBien" placeholder="Ex : Villa B12, Appt 4" data-i18n-ph />
         </div>
         <div class="form-group">
-          <label>Étage</label>
+          <label data-i18n>Étage</label>
           <select id="pubEtage"></select>
         </div>
         <div class="form-group">
-          <label>Vue</label>
+          <label data-i18n>Vue</label>
           <select id="pubVue"></select>
         </div>
         <div class="form-group full-col">
-          <label>Titre de l'annonce *</label>
-          <input type="text" id="pubTitre" placeholder="Ex: Belle villa meublée avec jardin à Akanda" />
+          <label data-i18n>Titre de l'annonce *</label>
+          <input type="text" id="pubTitre" placeholder="Ex: Belle villa meublée avec jardin à Akanda" data-i18n-ph />
         </div>
         <div class="form-group full-col">
-          <label>Description</label>
-          <textarea id="pubDesc" rows="4" placeholder="Décrivez le bien : équipements, état, accès, particularités..."></textarea>
+          <label data-i18n>Description</label>
+          <textarea id="pubDesc" rows="4" placeholder="Décrivez le bien : équipements, état, accès, particularités..." data-i18n-ph></textarea>
         </div>
         <div class="form-group full-col">
-          <label>Équipements / Tags</label>
+          <label data-i18n>Équipements / Tags</label>
           <div class="tags-picker" id="tagsPicker">
             <label class="tag-opt"><input type="checkbox" value="Meublé" /> Meublé</label>
             <label class="tag-opt"><input type="checkbox" value="Climatisé" /> Climatisé</label>
@@ -784,16 +784,16 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Statut</label>
+          <label data-i18n>Statut</label>
           <select id="pubStatut">
-            <option value="disponible">🟢 Disponible</option>
-            <option value="réservé">🟡 Réservé</option>
-            <option value="masqué">⚫ Masqué</option>
+            <option value="disponible" data-i18n>🟢 Disponible</option>
+            <option value="réservé" data-i18n>🟡 Réservé</option>
+            <option value="masqué" data-i18n>⚫ Masqué</option>
           </select>
         </div>
         <div class="form-group full-col">
-          <label>Position exacte sur la carte * <span style="font-weight:400;color:#888;">(obligatoire — chaque annonce doit être géolocalisée)</span></label>
-          <button type="button" class="btn-outline" id="pubBtnMaPosition" style="margin-bottom:8px;">📍 Utiliser ma position actuelle</button>
+          <label>Position exacte sur la carte * <span style="font-weight:400;color:#888;" data-i18n>(obligatoire — chaque annonce doit être géolocalisée)</span></label>
+          <button type="button" class="btn-outline" id="pubBtnMaPosition" style="margin-bottom:8px;" data-i18n>📍 Utiliser ma position actuelle</button>
           <div id="pubMiniMap" style="width:100%;height:240px;border-radius:10px;overflow:hidden;border:1px solid #ddd;"></div>
           <input type="hidden" id="pubLat" />
           <input type="hidden" id="pubLng" />
@@ -801,14 +801,14 @@
       </div>
 
       <div class="ia-gen-zone">
-        <button class="btn-ia-gen" onclick="genererTitreIA()">✨ Générer titre et description avec l'IA</button>
-        <span class="ia-hint">L'IA génère automatiquement un titre accrocheur et une description professionnelle</span>
+        <button class="btn-ia-gen" onclick="genererTitreIA()" data-i18n>✨ Générer titre et description avec l'IA</button>
+        <span class="ia-hint" data-i18n>L'IA génère automatiquement un titre accrocheur et une description professionnelle</span>
       </div>
 
       <div class="form-actions">
-        <button class="btn-outline" onclick="resetForm()">Réinitialiser</button>
+        <button class="btn-outline" onclick="resetForm()" data-i18n>Réinitialiser</button>
         <button class="btn-primary" onclick="publierAnnonce()">
-          <span id="pubBtnText">📤 Publier l'annonce</span>
+          <span id="pubBtnText" data-i18n>📤 Publier l'annonce</span>
         </button>
       </div>
     </div>
@@ -819,124 +819,124 @@
 <!-- ═══ MODAL MODIFIER ANNONCE ═══ -->
 <div class="modal-overlay hidden" id="modalModifierAnnonce">
   <div class="modal" style="max-width:640px;width:92%;max-height:88vh;overflow-y:auto;">
-    <h3>✏️ Modifier l'annonce</h3>
+    <h3 data-i18n>✏️ Modifier l'annonce</h3>
     <div class="form-grid">
       <div class="form-group full-col">
-        <label>Titre *</label>
+        <label data-i18n>Titre *</label>
         <input type="text" id="modTitre" />
       </div>
       <div class="form-group">
-        <label>Type de bien *</label>
+        <label data-i18n>Type de bien *</label>
         <select id="modType" onchange="adapterModFormulaireAuType()">
-          <option>Maison</option>
-          <option>Appartement</option>
-          <option>Studio</option>
-          <option>Villa</option>
-          <option>Chambre</option>
-          <option>Bureau</option>
-          <option>Local commercial</option>
-          <option>Box</option>
+          <option data-i18n>Maison</option>
+          <option data-i18n>Appartement</option>
+          <option data-i18n>Studio</option>
+          <option data-i18n>Villa</option>
+          <option data-i18n>Chambre</option>
+          <option data-i18n>Bureau</option>
+          <option data-i18n>Local commercial</option>
+          <option data-i18n>Box</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Commune *</label>
+        <label data-i18n>Commune *</label>
         <select id="modCommune">
-          <option>Libreville</option>
-          <option>Akanda</option>
-          <option>Owendo</option>
+          <option data-i18n>Libreville</option>
+          <option data-i18n>Akanda</option>
+          <option data-i18n>Owendo</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Arrondissement</label>
-        <input type="text" id="modArrondissement" placeholder="Ex: 2e arrondissement" />
+        <label data-i18n>Arrondissement</label>
+        <input type="text" id="modArrondissement" placeholder="Ex: 2e arrondissement" data-i18n-ph />
       </div>
       <div class="form-group">
-        <label>Quartier</label>
+        <label data-i18n>Quartier</label>
         <input type="text" id="modQuartier" />
       </div>
       <div class="form-group">
-        <label>Rue / point de repère</label>
+        <label data-i18n>Rue / point de repère</label>
         <input type="text" id="modPointRepere" />
       </div>
       <div class="form-group">
-        <label>Caractère de la zone</label>
-        <select id="modZoneCaractere"><option value="">Non précisé</option></select>
+        <label data-i18n>Caractère de la zone</label>
+        <select id="modZoneCaractere"><option value="" data-i18n>Non précisé</option></select>
       </div>
       <div class="form-group">
-        <label>Loyer mensuel (FCFA) *</label>
+        <label data-i18n>Loyer mensuel (FCFA) *</label>
         <input type="number" id="modPrix" />
       </div>
       <div class="form-group">
-        <label>Surface (m²)</label>
+        <label data-i18n>Surface (m²)</label>
         <input type="number" id="modSurface" />
       </div>
       <div class="form-group" id="modGroupeChambres">
-        <label>Chambres</label>
+        <label data-i18n>Chambres</label>
         <input type="number" id="modChambres" min="0" />
       </div>
       <div class="form-group" id="modGroupeSalons">
-        <label>Salons</label>
+        <label data-i18n>Salons</label>
         <input type="number" id="modSalons" min="0" />
       </div>
       <div class="form-group" id="modGroupeSdb">
-        <label>Salles de bain / douches</label>
+        <label data-i18n>Salles de bain / douches</label>
         <input type="number" id="modSdb" min="0" />
       </div>
       <div class="form-group">
-        <label>N° de villa / porte / appartement</label>
-        <input type="text" id="modNumeroBien" placeholder="Ex : Villa B12, Appt 4" />
+        <label data-i18n>N° de villa / porte / appartement</label>
+        <input type="text" id="modNumeroBien" placeholder="Ex : Villa B12, Appt 4" data-i18n-ph />
       </div>
       <div class="form-group">
-        <label>Étage</label>
+        <label data-i18n>Étage</label>
         <select id="modEtage"></select>
       </div>
       <div class="form-group">
-        <label>Vue</label>
+        <label data-i18n>Vue</label>
         <select id="modVue"></select>
       </div>
       <div class="form-group" id="modGroupeCuisine">
-        <label>Cuisine</label>
+        <label data-i18n>Cuisine</label>
         <select id="modCuisineType"></select>
       </div>
       <div class="form-group" id="modGroupeDouche">
-        <label>Douche</label>
+        <label data-i18n>Douche</label>
         <select id="modDoucheType"></select>
       </div>
       <div class="form-group">
-        <label>Matériau de construction</label>
+        <label data-i18n>Matériau de construction</label>
         <select id="modMateriau"></select>
       </div>
       <div class="form-group">
-        <label>Couleur peinture murale</label>
+        <label data-i18n>Couleur peinture murale</label>
         <select id="modCouleurMurale"></select>
       </div>
       <div class="form-group">
-        <label>Terrasse</label>
+        <label data-i18n>Terrasse</label>
         <select id="modTerrasse">
-          <option value="non">Non</option>
-          <option value="oui">Oui</option>
+          <option value="non" data-i18n>Non</option>
+          <option value="oui" data-i18n>Oui</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Sol carrelé</label>
+        <label data-i18n>Sol carrelé</label>
         <select id="modCarreaux">
-          <option value="non">Non</option>
-          <option value="oui">Oui</option>
+          <option value="non" data-i18n>Non</option>
+          <option value="oui" data-i18n>Oui</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Statut</label>
+        <label data-i18n>Statut</label>
         <select id="modStatut">
-          <option value="disponible">🟢 Disponible</option>
-          <option value="occupe">🔴 Occupé</option>
+          <option value="disponible" data-i18n>🟢 Disponible</option>
+          <option value="occupe" data-i18n>🔴 Occupé</option>
         </select>
       </div>
       <div class="form-group full-col">
-        <label>Description</label>
+        <label data-i18n>Description</label>
         <textarea id="modDescription" rows="4"></textarea>
       </div>
       <div class="form-group full-col">
-        <label>Équipements / Tags</label>
+        <label data-i18n>Équipements / Tags</label>
         <div class="tags-picker" id="modTagsPicker">
           <label class="tag-opt"><input type="checkbox" value="Meublé" /> Meublé</label>
           <label class="tag-opt"><input type="checkbox" value="Climatisé" /> Climatisé</label>
@@ -952,25 +952,25 @@
         </div>
       </div>
       <div class="form-group full-col">
-        <label>Photos de l'annonce</label>
+        <label data-i18n>Photos de l'annonce</label>
         <div class="photos-manager" id="modPhotosManager"></div>
         <div class="photos-add-row">
-          <button type="button" class="btn-outline" onclick="ajouterPhotoModif()">+ Ajouter une photo (URL)</button>
+          <button type="button" class="btn-outline" onclick="ajouterPhotoModif()" data-i18n>+ Ajouter une photo (URL)</button>
         </div>
-        <p class="photos-hint">Colle le lien (URL) de chaque photo. La 1ʳᵉ photo de la liste sert d'image principale sur le site public.</p>
+        <p class="photos-hint" data-i18n>Colle le lien (URL) de chaque photo. La 1ʳᵉ photo de la liste sert d'image principale sur le site public.</p>
       </div>
       <div class="form-group">
-        <label>Nom du propriétaire</label>
+        <label data-i18n>Nom du propriétaire</label>
         <input type="text" id="modProprioNom" />
       </div>
       <div class="form-group">
-        <label>Téléphone du propriétaire</label>
+        <label data-i18n>Téléphone du propriétaire</label>
         <input type="tel" id="modProprioTel" />
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn-outline" onclick="fermerModalModifier()">Annuler</button>
-      <button class="btn-primary" id="modBtnEnregistrer" onclick="enregistrerModificationAnnonce()">💾 Enregistrer</button>
+      <button class="btn-outline" onclick="fermerModalModifier()" data-i18n>Annuler</button>
+      <button class="btn-primary" id="modBtnEnregistrer" onclick="enregistrerModificationAnnonce()" data-i18n>💾 Enregistrer</button>
     </div>
   </div>
 </div>
@@ -978,11 +978,11 @@
 <!-- ═══ MODAL CONFIRMATION ═══ -->
 <div class="modal-overlay hidden" id="modalConfirm">
   <div class="modal">
-    <h3 id="modalTitle">Confirmation</h3>
-    <p id="modalMsg">Êtes-vous sûr ?</p>
+    <h3 id="modalTitle" data-i18n>Confirmation</h3>
+    <p id="modalMsg" data-i18n>Êtes-vous sûr ?</p>
     <div class="modal-actions">
-      <button class="btn-outline" onclick="fermerModal()">Annuler</button>
-      <button class="btn-danger" id="modalConfirmBtn">Confirmer</button>
+      <button class="btn-outline" onclick="fermerModal()" data-i18n>Annuler</button>
+      <button class="btn-danger" id="modalConfirmBtn" data-i18n>Confirmer</button>
     </div>
   </div>
 </div>
@@ -996,6 +996,12 @@
      différés automatiquement par le navigateur et s'exécutent avant DOMContentLoaded,
      donc window.MALAGA_REF est garanti disponible quand admin.js l'utilise. -->
 <script type="module">
+  // Branche le moteur de traduction FR/EN partagé (bouton #btnLang de la topbar) :
+  // nav.js applique automatiquement la langue mémorisée à tout élément [data-i18n]
+  // dès son chargement, puis à chaque bascule — les autres init (drawer, favoris...)
+  // qu'il tente au passage sont sans effet ici (aucun élément correspondant dans
+  // admin.html) et n'empêchent jamais ce chargement de fonctionner.
+  import "./nav.js?v=20260822c";
   import {
     ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
     TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES

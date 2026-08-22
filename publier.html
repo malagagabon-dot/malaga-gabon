@@ -6,7 +6,7 @@
   <title>Publier une annonce — MALAGA</title>
   <meta name="theme-color" content="#009E60">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260822e">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
@@ -18,17 +18,18 @@
       <button class="drawer-close" id="fermerDrawer">✕</button>
     </div>
     <nav class="drawer-nav">
-      <a href="index.html" class="drawer-link">🏠 Accueil</a>
-      <a href="mes-annonces.html" class="drawer-link">🏘️ Gérer mes annonces</a>
-      <a href="publier.html" class="drawer-link actif">➕ Publier une annonce</a>
+      <a href="index.html" class="drawer-link" data-i18n>🏠 Accueil</a>
+      <a href="mes-annonces.html" class="drawer-link" data-i18n>🏘️ Gérer mes annonces</a>
+      <a href="publier.html" class="drawer-link actif" data-i18n>➕ Publier une annonce</a>
       <div class="drawer-sep"></div>
-      <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
-      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
-      <a href="mailto:malagagabon@gmail.com" class="drawer-link">✉️ Nous écrire</a>
+      <a href="#" class="drawer-link" id="drawerLang">🌐 English</a>
+      <a href="tel:+24160141924" class="drawer-link" data-i18n>📞 Nous appeler</a>
+      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link" data-i18n>💬 WhatsApp</a>
+      <a href="mailto:malagagabon@gmail.com" class="drawer-link" data-i18n>✉️ Nous écrire</a>
       <div class="drawer-sep"></div>
-      <a href="connexion.html" class="drawer-link" id="drawerConnexion">🚪 Se déconnecter</a>
+      <a href="connexion.html" class="drawer-link" id="drawerConnexion" data-i18n>🚪 Se déconnecter</a>
     </nav>
-    <div class="drawer-footer">MALAGA 🇬🇦 — Libreville, Gabon</div>
+    <div class="drawer-footer" data-i18n>MALAGA 🇬🇦 — Libreville, Gabon</div>
   </aside>
 
   <header class="header">
@@ -37,247 +38,250 @@
       <a href="index.html" class="logo-link">
         <img src="img/logo.png" alt="MALAGA" class="logo-img">
         <span class="logo-text-wrap">
-          <span class="logo-text">MALAGA</span>
-          <span class="slogan">Maison à louer au Gabon 🇬🇦</span>
+          <span class="logo-text" data-i18n>MALAGA</span>
+          <span class="slogan" data-i18n>Maison à louer au Gabon 🇬🇦</span>
         </span>
       </a>
       <a href="mes-annonces.html" class="icon-btn" aria-label="Mes annonces">🏘️</a>
+      <div class="header-actions">
+        <button class="icon-btn" id="btnLang" aria-label="Passer en anglais">🌐</button>
+      </div>
     </div>
   </header>
 
   <nav class="bottom-nav">
-    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span>Accueil</span></a>
-    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span>Carte</span></a>
+    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span data-i18n>Accueil</span></a>
+    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span data-i18n>Carte</span></a>
     <a href="publier.html" class="bn-item bn-central actif"><span class="bn-icon">➕</span></a>
-    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span>Favoris</span></a>
-    <a href="mes-annonces.html" class="bn-item" id="bnProfil" data-page="mes-annonces.html"><span class="bn-icon">👤</span><span id="bnProfilLabel">Profil</span></a>
+    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span data-i18n>Favoris</span></a>
+    <a href="mes-annonces.html" class="bn-item" id="bnProfil" data-page="mes-annonces.html"><span class="bn-icon">👤</span><span id="bnProfilLabel" data-i18n>Profil</span></a>
   </nav>
 
   <div class="page-form">
     <div class="form-card">
-      <h2 id="titrePage">Publier une annonce</h2>
-      <p class="sous-titre" id="sousTitrePage">Remplissez les détails de votre logement à louer</p>
+      <h2 id="titrePage" data-i18n>Publier une annonce</h2>
+      <p class="sous-titre" id="sousTitrePage" data-i18n>Remplissez les détails de votre logement à louer</p>
 
       <div id="erreurMsg" class="erreur-msg"></div>
 
       <form id="formAnnonce">
         <div class="champ">
-          <label>Titre de l'annonce *</label>
-          <input type="text" id="titre" required placeholder="Ex : Belle villa meublée avec jardin">
+          <label data-i18n>Titre de l'annonce *</label>
+          <input type="text" id="titre" required placeholder="Ex : Belle villa meublée avec jardin" data-i18n-ph>
         </div>
 
         <div class="grille-2">
           <div class="champ">
-            <label>Type de bien *</label>
+            <label data-i18n>Type de bien *</label>
             <select id="type" required></select>
           </div>
           <div class="champ">
-            <label>Loyer mensuel (FCFA) *</label>
+            <label data-i18n>Loyer mensuel (FCFA) *</label>
             <input type="number" id="prix" required min="1000" placeholder="150000">
           </div>
         </div>
 
         <div class="champ">
-          <label>💳 Moyens de paiement acceptés</label>
+          <label data-i18n>💳 Moyens de paiement acceptés</label>
           <div class="chips" id="chipsMoyensPaiement"></div>
-          <div class="aide">Cochez les moyens que vous acceptez pour le règlement du loyer. Ils s'afficheront sur votre annonce.</div>
+          <div class="aide" data-i18n>Cochez les moyens que vous acceptez pour le règlement du loyer. Ils s'afficheront sur votre annonce.</div>
         </div>
 
         <div class="champ">
-          <label>Description *</label>
-          <textarea id="description" required placeholder="Décrivez le logement, son environnement, ses atouts..."></textarea>
+          <label data-i18n>Description *</label>
+          <textarea id="description" required placeholder="Décrivez le logement, son environnement, ses atouts..." data-i18n-ph></textarea>
         </div>
 
-        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">📍 Localisation</h3>
+        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);" data-i18n>📍 Localisation</h3>
 
         <div class="grille-2">
           <div class="champ">
-            <label>Commune *</label>
+            <label data-i18n>Commune *</label>
             <select id="commune" required></select>
           </div>
           <div class="champ">
-            <label>Arrondissement *</label>
+            <label data-i18n>Arrondissement *</label>
             <select id="arrondissement" required></select>
           </div>
         </div>
         <div class="champ">
-          <label>Quartier</label>
-          <input type="text" id="quartier" list="listeQuartiers" placeholder="Ex : Angondjé">
+          <label data-i18n>Quartier</label>
+          <input type="text" id="quartier" list="listeQuartiers" placeholder="Ex : Angondjé" data-i18n-ph>
           <datalist id="listeQuartiers"></datalist>
         </div>
 
         <div class="champ">
-          <label>Rue / point de repère</label>
-          <input type="text" id="pointRepere" placeholder="Ex : derrière la station Total d'Angondjé">
+          <label data-i18n>Rue / point de repère</label>
+          <input type="text" id="pointRepere" placeholder="Ex : derrière la station Total d'Angondjé" data-i18n-ph>
         </div>
 
         <div class="champ">
-          <label>Caractère de la zone</label>
+          <label data-i18n>Caractère de la zone</label>
           <select id="zoneCaractere"></select>
         </div>
 
         <div class="champ">
-          <label>Position exacte sur la carte *</label>
-          <div class="aide">Cliquez sur la carte pour placer le repère, ou utilisez votre position actuelle.</div>
-          <button type="button" class="btn btn-outline" id="btnMaPosition" style="margin:8px 0;">📍 Utiliser ma position actuelle</button>
+          <label data-i18n>Position exacte sur la carte *</label>
+          <div class="aide" data-i18n>Cliquez sur la carte pour placer le repère, ou utilisez votre position actuelle.</div>
+          <button type="button" class="btn btn-outline" id="btnMaPosition" style="margin:8px 0;" data-i18n>📍 Utiliser ma position actuelle</button>
           <div id="miniMap" class="mini-map"></div>
         </div>
 
-        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">🏠 Caractéristiques</h3>
+        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);" data-i18n>🏠 Caractéristiques</h3>
 
         <div class="champ">
-          <label>Surface (m²)</label>
+          <label data-i18n>Surface (m²)</label>
           <input type="number" id="surface" min="1" placeholder="75">
         </div>
 
         <div id="blocPieces">
           <div class="grille-2">
             <div class="champ">
-              <label>Chambres</label>
+              <label data-i18n>Chambres</label>
               <input type="number" id="chambres" min="0" placeholder="2">
             </div>
             <div class="champ">
-              <label>Salons</label>
+              <label data-i18n>Salons</label>
               <input type="number" id="salons" min="0" placeholder="1">
             </div>
           </div>
           <div class="grille-2">
             <div class="champ">
-              <label>Salles de bain / douches</label>
+              <label data-i18n>Salles de bain / douches</label>
               <input type="number" id="sdb" min="0" placeholder="1">
             </div>
             <div class="champ">
-              <label>Douche</label>
+              <label data-i18n>Douche</label>
               <select id="doucheType"></select>
             </div>
           </div>
           <div class="champ">
-            <label>Cuisine</label>
+            <label data-i18n>Cuisine</label>
             <select id="cuisineType"></select>
           </div>
         </div>
-        <div class="champ" id="avisTypeNonResidentiel" style="display:none;background:#FFF7E6;border:1px solid #FDE7B0;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#8a6b1f;">
+        <div class="champ" id="avisTypeNonResidentiel" style="display:none;background:#FFF7E6;border:1px solid #FDE7B0;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#8a6b1f;" data-i18n>
           ℹ️ Chambres, salons, cuisine et douche ne s'appliquent pas à ce type de bien — ces champs sont masqués.
         </div>
         <div class="champ">
-          <label>État du bâtiment</label>
+          <label data-i18n>État du bâtiment</label>
           <select id="etat"></select>
         </div>
 
         <div class="grille-2">
           <div class="champ">
-            <label>N° de villa / porte / appartement</label>
-            <input type="text" id="numeroBien" placeholder="Ex : Villa B12, Appt 4, Porte 3">
+            <label data-i18n>N° de villa / porte / appartement</label>
+            <input type="text" id="numeroBien" placeholder="Ex : Villa B12, Appt 4, Porte 3" data-i18n-ph>
           </div>
           <div class="champ">
-            <label>Étage</label>
+            <label data-i18n>Étage</label>
             <select id="etage"></select>
           </div>
         </div>
         <div class="champ">
-          <label>Vue</label>
+          <label data-i18n>Vue</label>
           <select id="vue"></select>
-          <div class="aide">Précisez si le logement offre une vue mer, forêt, ville…</div>
+          <div class="aide" data-i18n>Précisez si le logement offre une vue mer, forêt, ville…</div>
         </div>
 
         <div class="champ">
-          <label>Terrain clôturé ?</label>
+          <label data-i18n>Terrain clôturé ?</label>
           <div class="toggle-oui-non" id="toggleCloture">
-            <div class="chip" data-val="oui">Oui</div>
-            <div class="chip actif" data-val="non">Non</div>
+            <div class="chip" data-val="oui" data-i18n>Oui</div>
+            <div class="chip actif" data-val="non" data-i18n>Non</div>
           </div>
         </div>
 
         <div class="grille-2">
           <div class="champ">
-            <label>Alimentation en eau</label>
+            <label data-i18n>Alimentation en eau</label>
             <select id="eau"></select>
           </div>
           <div class="champ">
-            <label>Électricité</label>
+            <label data-i18n>Électricité</label>
             <select id="electricite"></select>
           </div>
         </div>
         <div class="champ">
-          <label>Compteur</label>
+          <label data-i18n>Compteur</label>
           <select id="compteur"></select>
         </div>
 
         <div class="champ">
-          <label>Équipements</label>
+          <label data-i18n>Équipements</label>
           <div class="chips" id="chipsEquipements"></div>
         </div>
 
-        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">🧱 Construction &amp; finitions</h3>
+        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);" data-i18n>🧱 Construction &amp; finitions</h3>
 
         <div class="grille-2">
           <div class="champ">
-            <label>Matériau de construction</label>
+            <label data-i18n>Matériau de construction</label>
             <select id="materiau"></select>
           </div>
           <div class="champ">
-            <label>Couleur de la peinture murale</label>
+            <label data-i18n>Couleur de la peinture murale</label>
             <select id="couleurMurale"></select>
           </div>
         </div>
         <div class="champ" id="champCouleurAutre" style="display:none;">
-          <label>Précisez la couleur</label>
-          <input type="text" id="couleurMuraleAutre" placeholder="Ex : Bleu marine">
+          <label data-i18n>Précisez la couleur</label>
+          <input type="text" id="couleurMuraleAutre" placeholder="Ex : Bleu marine" data-i18n-ph>
         </div>
 
         <div class="grille-2">
           <div class="champ">
-            <label>Terrasse ?</label>
+            <label data-i18n>Terrasse ?</label>
             <div class="toggle-oui-non" id="toggleTerrasse">
-              <div class="chip" data-val="oui">Oui</div>
-              <div class="chip actif" data-val="non">Non</div>
+              <div class="chip" data-val="oui" data-i18n>Oui</div>
+              <div class="chip actif" data-val="non" data-i18n>Non</div>
             </div>
           </div>
           <div class="champ">
-            <label>Sol carrelé ?</label>
+            <label data-i18n>Sol carrelé ?</label>
             <div class="toggle-oui-non" id="toggleCarreaux">
-              <div class="chip" data-val="oui">Oui</div>
-              <div class="chip actif" data-val="non">Non</div>
+              <div class="chip" data-val="oui" data-i18n>Oui</div>
+              <div class="chip actif" data-val="non" data-i18n>Non</div>
             </div>
           </div>
         </div>
 
-        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">📸 Photos et vidéo</h3>
+        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);" data-i18n>📸 Photos et vidéo</h3>
 
         <div class="champ">
-          <label>Photos (jusqu'à 10) *</label>
+          <label data-i18n>Photos (jusqu'à 10) *</label>
           <div class="upload-zone" id="zonePhotos">
             <div class="icone">📷</div>
-            <p>Cliquez pour ajouter des photos</p>
+            <p data-i18n>Cliquez pour ajouter des photos</p>
           </div>
           <input type="file" id="inputPhotos" accept="image/*" multiple hidden>
           <div class="previsu-grille" id="previsuPhotos"></div>
         </div>
 
         <div class="champ">
-          <label>Vidéo courte (5 secondes maximum, facultatif)</label>
+          <label data-i18n>Vidéo courte (5 secondes maximum, facultatif)</label>
           <div class="upload-zone" id="zoneVideo">
             <div class="icone">🎥</div>
-            <p>Cliquez pour ajouter une vidéo</p>
+            <p data-i18n>Cliquez pour ajouter une vidéo</p>
           </div>
           <input type="file" id="inputVideo" accept="video/*" hidden>
           <div class="previsu-grille" id="previsuVideo"></div>
         </div>
 
-        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);">📞 Contact</h3>
+        <h3 style="font-size:14px;margin:20px 0 10px;color:var(--vert);" data-i18n>📞 Contact</h3>
 
         <div class="grille-2">
           <div class="champ">
-            <label>Numéro WhatsApp *</label>
-            <input type="tel" id="whatsapp" required placeholder="+241 XX XX XX XX">
+            <label data-i18n>Numéro WhatsApp *</label>
+            <input type="tel" id="whatsapp" required placeholder="+241 XX XX XX XX" data-i18n-ph>
           </div>
           <div class="champ">
-            <label>Email de contact</label>
-            <input type="email" id="emailContact" placeholder="vous@exemple.com">
+            <label data-i18n>Email de contact</label>
+            <input type="email" id="emailContact" placeholder="vous@exemple.com" data-i18n-ph>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-vert btn-full" id="btnPublier" style="margin-top:10px;">Publier l'annonce</button>
+        <button type="submit" class="btn btn-vert btn-full" id="btnPublier" style="margin-top:10px;" data-i18n>Publier l'annonce</button>
       </form>
 
       <!-- Écran affiché après une publication réussie : au lieu de rediriger
@@ -286,10 +290,10 @@
            pour construire tout son catalogue). -->
       <div id="ecranSucces" style="display:none;text-align:center;padding:30px 10px;">
         <div style="font-size:42px;margin-bottom:10px;">✅</div>
-        <h2 style="font-size:17px;margin-bottom:8px;">Bien publié avec succès !</h2>
-        <p class="sous-titre" style="margin-bottom:22px;">Vous pouvez ajouter un autre bien maintenant, ou vous arrêter là — vos annonces vous attendent dans votre profil.</p>
-        <button type="button" class="btn btn-vert btn-full" id="btnAjouterAutreBien" style="margin-bottom:10px;">➕ Ajouter un autre bien</button>
-        <a href="mes-annonces.html" class="btn btn-outline btn-full">🏘️ Terminer et voir mes annonces</a>
+        <h2 style="font-size:17px;margin-bottom:8px;" data-i18n>Bien publié avec succès !</h2>
+        <p class="sous-titre" style="margin-bottom:22px;" data-i18n>Vous pouvez ajouter un autre bien maintenant, ou vous arrêter là — vos annonces vous attendent dans votre profil.</p>
+        <button type="button" class="btn btn-vert btn-full" id="btnAjouterAutreBien" style="margin-bottom:10px;" data-i18n>➕ Ajouter un autre bien</button>
+        <a href="mes-annonces.html" class="btn btn-outline btn-full" data-i18n>🏘️ Terminer et voir mes annonces</a>
       </div>
     </div>
   </div>
@@ -670,6 +674,6 @@
       }
     });
   </script>
-  <script type="module" src="nav.js"></script>
+  <script type="module" src="nav.js?v=20260822c"></script>
 </body>
 </html>

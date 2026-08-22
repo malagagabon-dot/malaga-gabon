@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="img/favicon-180.png">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260822e">
   <style>
     .param-hero{max-width:1000px;margin:0 auto;padding:24px 20px 4px;}
     .param-titre{font-size:20px;font-weight:800;color:var(--texte);}
@@ -52,20 +52,21 @@
       <button class="drawer-close" id="fermerDrawer">✕</button>
     </div>
     <nav class="drawer-nav">
-      <a href="index.html" class="drawer-link">🏠 Accueil</a>
-      <a href="profil.html" class="drawer-link">🙍 Mon profil</a>
-      <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;">🏘️ Gérer mes annonces</a>
+      <a href="index.html" class="drawer-link" data-i18n>🏠 Accueil</a>
+      <a href="profil.html" class="drawer-link" data-i18n>🙍 Mon profil</a>
+      <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;" data-i18n>🏘️ Gérer mes annonces</a>
       <div class="drawer-sep"></div>
-      <a href="#" class="drawer-link" id="drawerNotifs">🔔 Activer les notifications</a>
-      <a href="parametres.html" class="drawer-link actif">⚙️ Paramètres</a>
+      <a href="#" class="drawer-link" id="drawerNotifs" data-i18n>🔔 Activer les notifications</a>
+      <a href="parametres.html" class="drawer-link actif" data-i18n>⚙️ Paramètres</a>
       <div class="drawer-sep"></div>
-      <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
-      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
-      <a href="mailto:malagagabon@gmail.com" class="drawer-link">✉️ Nous écrire</a>
+      <a href="#" class="drawer-link" id="drawerLang">🌐 English</a>
+      <a href="tel:+24160141924" class="drawer-link" data-i18n>📞 Nous appeler</a>
+      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link" data-i18n>💬 WhatsApp</a>
+      <a href="mailto:malagagabon@gmail.com" class="drawer-link" data-i18n>✉️ Nous écrire</a>
       <div class="drawer-sep"></div>
-      <a href="connexion.html" class="drawer-link" id="drawerConnexion">🚪 Se déconnecter</a>
+      <a href="connexion.html" class="drawer-link" id="drawerConnexion" data-i18n>🚪 Se déconnecter</a>
     </nav>
-    <div class="drawer-footer">MALAGA 🇬🇦 — Libreville, Gabon</div>
+    <div class="drawer-footer" data-i18n>MALAGA 🇬🇦 — Libreville, Gabon</div>
   </aside>
 
   <header class="header">
@@ -74,35 +75,38 @@
       <a href="index.html" class="logo-link">
         <img src="img/logo.png" alt="MALAGA" class="logo-img">
         <span class="logo-text-wrap">
-          <span class="logo-text">MALAGA</span>
-          <span class="slogan">Maison à louer au Gabon 🇬🇦</span>
+          <span class="logo-text" data-i18n>MALAGA</span>
+          <span class="slogan" data-i18n>Maison à louer au Gabon 🇬🇦</span>
         </span>
       </a>
       <a href="index.html" class="icon-btn" aria-label="Accueil">🏠</a>
+      <div class="header-actions">
+        <button class="icon-btn" id="btnLang" aria-label="Passer en anglais">🌐</button>
+      </div>
     </div>
   </header>
 
   <nav class="bottom-nav">
-    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span>Accueil</span></a>
-    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span>Carte</span></a>
+    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span data-i18n>Accueil</span></a>
+    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span data-i18n>Carte</span></a>
     <a href="connexion.html?inscription=1&role=proprietaire" class="bn-item bn-central"><span class="bn-icon">➕</span></a>
-    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span>Favoris</span></a>
-    <a href="profil.html" class="bn-item" id="bnProfil" data-page="profil.html"><span class="bn-icon">👤</span><span id="bnProfilLabel">Profil</span></a>
+    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span data-i18n>Favoris</span></a>
+    <a href="profil.html" class="bn-item" id="bnProfil" data-page="profil.html"><span class="bn-icon">👤</span><span id="bnProfilLabel" data-i18n>Profil</span></a>
   </nav>
 
   <div class="param-hero">
-    <div class="param-titre">⚙️ Paramètres</div>
-    <div class="param-sous">Gérez vos notifications et vos données sur cet appareil.</div>
+    <div class="param-titre" data-i18n>⚙️ Paramètres</div>
+    <div class="param-sous" data-i18n>Gérez vos notifications et vos données sur cet appareil.</div>
   </div>
 
   <!-- ===== NOTIFICATIONS ===== -->
   <div class="param-section">
-    <h2>🔔 Notifications</h2>
+    <h2 data-i18n>🔔 Notifications</h2>
     <div class="param-carte">
       <div class="param-ligne">
         <div class="txt">
-          <strong>Activer les notifications</strong>
-          <p>Soyez averti(e) dès qu'un propriétaire réagit à un de vos likes, et recevez les actualités importantes de MALAGA.</p>
+          <strong data-i18n>Activer les notifications</strong>
+          <p data-i18n>Soyez averti(e) dès qu'un propriétaire réagit à un de vos likes, et recevez les actualités importantes de MALAGA.</p>
         </div>
         <label class="interrupteur">
           <input type="checkbox" id="switchNotifs">
@@ -114,41 +118,41 @@
 
   <!-- ===== DONNÉES LOCALES ===== -->
   <div class="param-section">
-    <h2>🗑️ Données sur cet appareil</h2>
+    <h2 data-i18n>🗑️ Données sur cet appareil</h2>
     <div class="param-carte">
       <div class="txt" style="margin-bottom:10px;">
-        <p style="font-size:12px;color:var(--gris-clair);line-height:1.6;">Vos favoris et vos préférences de notifications sont stockés uniquement sur cet appareil. Vous pouvez les réinitialiser à tout moment.</p>
+        <p style="font-size:12px;color:var(--gris-clair);line-height:1.6;" data-i18n>Vos favoris et vos préférences de notifications sont stockés uniquement sur cet appareil. Vous pouvez les réinitialiser à tout moment.</p>
       </div>
-      <button type="button" class="param-btn-danger" id="btnViderDonnees">Réinitialiser mes favoris et préférences</button>
+      <button type="button" class="param-btn-danger" id="btnViderDonnees" data-i18n>Réinitialiser mes favoris et préférences</button>
     </div>
   </div>
 
   <!-- ===== COMPTE ===== -->
   <div class="param-section">
-    <h2>👤 Compte</h2>
+    <h2 data-i18n>👤 Compte</h2>
     <div class="param-carte">
-      <a href="profil.html" class="param-btn" style="display:block;text-decoration:none;">🙍 Voir / modifier mon profil</a>
+      <a href="profil.html" class="param-btn" style="display:block;text-decoration:none;" data-i18n>🙍 Voir / modifier mon profil</a>
     </div>
   </div>
 
   <!-- ===== À PROPOS ===== -->
   <div class="param-section" style="padding-bottom:30px;">
-    <h2>ℹ️ À propos</h2>
+    <h2 data-i18n>ℹ️ À propos</h2>
     <div class="param-carte param-apropos">
       <p>
         MALAGA 🇬🇦 — Maison à louer au Gabon.<br>
-        Une question, un souci technique ? <a href="mailto:malagagabon@gmail.com">Écrivez-nous</a> ou contactez-nous sur <a href="https://wa.me/24160141924" target="_blank">WhatsApp</a>.
+        Une question, un souci technique ? <a href="mailto:malagagabon@gmail.com" data-i18n>Écrivez-nous</a> ou contactez-nous sur <a href="https://wa.me/24160141924" target="_blank" data-i18n>WhatsApp</a>.
       </p>
     </div>
   </div>
 
   <footer class="footer">
-    <div class="brand">MALAGA 🇬🇦</div>
+    <div class="brand" data-i18n>MALAGA 🇬🇦</div>
   </footer>
 
   <script type="module">
     import { auth, onAuthStateChanged, signOut } from "./firebase-config.js";
-    import { estNotifsActives, toggleNotifications, viderDonneesLocales } from "./nav.js";
+    import { estNotifsActives, toggleNotifications, viderDonneesLocales } from "./nav.js?v=20260822c";
 
     const switchNotifs = document.getElementById("switchNotifs");
     switchNotifs.checked = estNotifsActives();
@@ -182,6 +186,6 @@
       }
     });
   </script>
-  <script type="module" src="nav.js"></script>
+  <script type="module" src="nav.js?v=20260822c"></script>
 </body>
 </html>

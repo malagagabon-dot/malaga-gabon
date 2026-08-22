@@ -8,68 +8,518 @@ import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc, deleteDoc, 
 import { getProfil } from "./auth.js";
 import { escapeHTML, formatPrix } from "./malaga-reference.js";
 
-/* ══════════ MODE SOMBRE / CLAIR ══════════
-   Préférence mémorisée dans localStorage ("malaga_theme" : "sombre" | "clair").
-   Si l'utilisateur n'a jamais choisi, on suit la préférence système
-   (prefers-color-scheme). Le thème est appliqué au tout premier chargement
-   du module (avant même DOMContentLoaded) pour éviter un flash clair→sombre,
-   puis ré-appliqué/branché sur les boutons une fois le DOM prêt. */
-const CLE_THEME = "malaga_theme";
+/* ══════════ TRADUCTION FR / ANGLAIS ══════════
+   Préférence mémorisée dans localStorage ("malaga_lang" : "fr" | "en").
+   Le français reste la langue source : chaque texte traduisible porte
+   l'attribut data-i18n (contenu) ou data-i18n-ph (placeholder), et sert
+   lui-même de clé dans le dictionnaire TRADUCTIONS ci-dessous — pas besoin
+   d'inventer un identifiant par élément, juste d'ajouter l'attribut.
+   Appliqué au tout premier chargement du module (avant même
+   DOMContentLoaded) pour éviter un flash FR→EN, puis ré-appliqué une fois
+   le DOM prêt. */
+const CLE_LANGUE = "malaga_lang";
 
-function themeMemorise() {
-  try { return localStorage.getItem(CLE_THEME); } catch { return null; }
+const TRADUCTIONS = {
+  // Header / menu latéral
+  "Menu": "Menu",
+  "Maison à louer au Gabon 🇬🇦": "Homes for rent in Gabon 🇬🇦",
+  "🏠 Accueil": "🏠 Home",
+  "📋 Toutes les annonces": "📋 All listings",
+  "❤️ Mes favoris": "❤️ My favorites",
+  "➕ Publier une annonce": "➕ Post a listing",
+  "🏘️ Gérer mes annonces": "🏘️ Manage my listings",
+  "🛠️ Panneau admin": "🛠️ Admin panel",
+  "🔔 Activer les notifications": "🔔 Enable notifications",
+  "⚙️ Paramètres": "⚙️ Settings",
+  "📞 Nous appeler": "📞 Call us",
+  "💬 WhatsApp": "💬 WhatsApp",
+  "✉️ Nous écrire": "✉️ Write to us",
+  "🚩 Signaler un problème": "🚩 Report a problem",
+  "👤 Se connecter": "👤 Log in",
+  "🚪 Se déconnecter": "🚪 Log out",
+  "MALAGA 🇬🇦 — Libreville, Gabon": "MALAGA 🇬🇦 — Libreville, Gabon",
+  "Favoris": "Favorites",
+  "Mon compte": "My account",
+  // Hero / accueil
+  "Trouvez votre logement idéal à Libreville": "Find your ideal home in Libreville",
+  "Quartier, arrondissement, type de bien...": "Neighborhood, district, property type...",
+  "🔍 Rechercher": "🔍 Search",
+  "Propriétaire": "Landlord",
+  "Je publie des logements à louer": "I list homes for rent",
+  "Chercheur": "Seeker",
+  "Je cherche un logement": "I'm looking for a home",
+  // Stats
+  "🟢 Disponibles": "🟢 Available",
+  "📍 Zones couvertes": "📍 Areas covered",
+  "🆕 Publiées cette semaine": "🆕 Posted this week",
+  // Filtres rapides
+  "Toutes les communes": "All communes",
+  "Tous les arrondissements": "All districts",
+  "Tous les types": "All types",
+  "Budget max": "Max budget",
+  "Prix exact FCFA": "Exact price FCFA",
+  "Agences et entreprises": "Agencies and companies",
+  "🏢 Agences immobilières": "🏢 Real estate agencies",
+  "🏛️ Sociétés privées": "🏛️ Private companies",
+  "🏠 Particuliers": "🏠 Individuals",
+  "🏢 Les catalogues": "🏢 Catalogs",
+  // Recherches avancées
+  "🎛️ Recherches avancées": "🎛️ Advanced search",
+  "📍 Localisation": "📍 Location",
+  "Quartier": "Neighborhood",
+  "Ex : Angondjé": "E.g.: Angondjé",
+  "Rue / point de repère": "Street / landmark",
+  "Ex : Total d'Angondjé": "E.g.: Total Angondjé",
+  "Caractère de la zone": "Area character",
+  "Indifférent": "No preference",
+  "Indifférente": "No preference",
+  "Trier les annonces les plus proches de moi": "Sort listings closest to me",
+  "🏠 Type & capacités": "🏠 Type & capacity",
+  "Chambres (min.)": "Bedrooms (min.)",
+  "Salons (min.)": "Living rooms (min.)",
+  "Douches (min.)": "Showers (min.)",
+  "Type de douche": "Shower type",
+  "Cuisine": "Kitchen",
+  "🧱 Construction & finitions": "🧱 Construction & finish",
+  "Matériau de construction": "Construction material",
+  "Couleur de peinture murale": "Wall paint color",
+  "Terrasse": "Terrace",
+  "Avec terrasse": "With terrace",
+  "Sans terrasse": "Without terrace",
+  "Sol carrelé": "Tiled floor",
+  "Carrelé": "Tiled",
+  "Non carrelé": "Not tiled",
+  "💰 Budget": "💰 Budget",
+  "Prix min. (FCFA)": "Min. price (FCFA)",
+  "Prix max. (FCFA)": "Max. price (FCFA)",
+  "Sans limite": "No limit",
+  "✅ Équipements": "✅ Amenities",
+  "Réinitialiser": "Reset",
+  "Appliquer les filtres": "Apply filters",
+  // Liste des annonces
+  "Annonces disponibles": "Available listings",
+  "Chargement…": "Loading…",
+  "Liste détaillée": "Detailed list",
+  "Liste": "List",
+  "Miniature": "Thumbnail",
+  "Mini": "Mini",
+  "Moyenne": "Medium",
+  "Moyen": "Medium",
+  "Grande": "Large",
+  "Grand": "Large",
+  "Chargement des annonces en temps réel…": "Loading listings in real time…",
+  // Footer
+  "Mentions légales": "Legal notice",
+  "Confidentialité": "Privacy",
+  "CGU": "Terms of use",
+  // Modales
+  "✉️ Nous écrire": "✉️ Write to us",
+  "Nom *": "Name *",
+  "Votre nom": "Your name",
+  "Téléphone *": "Phone *",
+  "Sujet": "Subject",
+  "Ex: Question sur une annonce": "E.g.: Question about a listing",
+  "Message *": "Message *",
+  "Votre message...": "Your message...",
+  "✅ Message envoyé ! Nous vous répondrons rapidement.": "✅ Message sent! We'll reply shortly.",
+  "Envoyer": "Send",
+  "🚩 Signaler un problème": "🚩 Report a problem",
+  "Type de problème *": "Problem type *",
+  "Choisir...": "Choose...",
+  "Fausse annonce": "Fake listing",
+  "Numéro frauduleux": "Fraudulent phone number",
+  "Bien déjà loué": "Already rented",
+  "Contenu inapproprié": "Inappropriate content",
+  "Autre": "Other",
+  "Annonce concernée": "Related listing",
+  "Titre ou quartier de l'annonce (facultatif)": "Listing title or neighborhood (optional)",
+  "Votre nom": "Your name",
+  "Facultatif": "Optional",
+  "Description *": "Description *",
+  "Décrivez le problème...": "Describe the problem...",
+  "✅ Signalement envoyé. Merci de nous aider à garder MALAGA fiable.": "✅ Report sent. Thanks for helping keep MALAGA trustworthy.",
+  "Envoyer le signalement": "Send report",
+  "📅 Réserver une visite": "📅 Book a visit",
+  "C'est gratuit. Indiquez la date et l'heure souhaitées : votre demande est envoyée au propriétaire par WhatsApp, avec un lien pour qu'il accepte ou refuse directement le rendez-vous.":
+    "It's free. Pick your preferred date and time: your request is sent to the landlord via WhatsApp, with a link for them to accept or decline the appointment directly.",
+  "Date souhaitée *": "Preferred date *",
+  "Heure souhaitée *": "Preferred time *",
+  "Message (optionnel)": "Message (optional)",
+  "Précisions, questions sur le loyer ou les modalités de paiement...": "Details, questions about rent or payment terms...",
+  "📲 Envoyer via WhatsApp": "📲 Send via WhatsApp",
+  // Barre basse
+  "Profil": "Profile",
+  "Carte": "Map",
+
+  // --- Pages complémentaires (connexion, profil, mes-annonces, publier, parametres, admin) ---
+  "(obligatoire — chaque annonce doit être géolocalisée)": "(required — every listing must be geolocated)",
+  "+ Ajouter une photo (URL)": "+ Add a photo (URL)",
+  "+ Publier une annonce": "+ Post a listing",
+  "Accueil": "Home",
+  "Actions": "Actions",
+  "Activer les notifications": "Enable notifications",
+  "Admin": "Admin",
+  "Administrateur": "Administrator",
+  "Adresse du service commercial": "Sales department address",
+  "Agence / Entreprise": "Agency / Company",
+  "Agence immobilière": "Real estate agency",
+  "Agences et entreprises inscrites — vérification et suivi de leur catalogue": "Registered agencies and companies — verification and catalog tracking",
+  "Akanda": "Akanda",
+  "Alimentation en eau": "Water supply",
+  "Annonces actives": "Active listings",
+  "Annonces par type de bien": "Listings by property type",
+  "Annonces par ville": "Listings by city",
+  "Annuler": "Cancel",
+  "Appartement": "Apartment",
+  "Arrondissement": "District",
+  "Arrondissement *": "District *",
+  "Aucun message": "No messages",
+  "Aucun signalement": "No reports",
+  "Aucun signalement récent": "No recent reports",
+  "Aucune localisation enregistrée": "No location saved",
+  "Bien": "Property",
+  "Bien publié avec succès !": "Listing published successfully!",
+  "Biens publiés": "Listings posted",
+  "Bienvenue dans l'administration MALAGA": "Welcome to MALAGA administration",
+  "Bon retour 👋": "Welcome back 👋",
+  "Box": "Storage unit",
+  "Bureau": "Office",
+  "Ce mois-ci": "This month",
+  "Cette semaine": "This week",
+  "Chambre": "Bedroom",
+  "Chambres": "Bedrooms",
+  "Chargement de vos annonces…": "Loading your listings…",
+  "Chargement...": "Loading...",
+  "Choisir": "Choose",
+  "Choisissez votre profil pour commencer": "Choose your profile to get started",
+  "Cliquez pour ajouter des photos": "Click to add photos",
+  "Cliquez pour ajouter une vidéo": "Click to add a video",
+  "Cliquez sur la carte pour placer le repère, ou utilisez votre position actuelle.": "Click the map to place the marker, or use your current location.",
+  "Cochez les moyens que vous acceptez pour le règlement du loyer. Ils s'afficheront sur votre annonce.": "Check the payment methods you accept for rent. They'll be shown on your listing.",
+  "Colle le lien (URL) de chaque photo. La 1ʳᵉ photo de la liste sert d'image principale sur le site public.": "Paste the link (URL) of each photo. The 1st photo in the list is used as the main image on the public site.",
+  "Commune *": "Commune *",
+  "Comptes professionnels": "Professional accounts",
+  "Compteur": "Meter",
+  "Conditions Générales d'Utilisation": "Terms of Use",
+  "Confirmation": "Confirmation",
+  "Confirmer": "Confirm",
+  "Connectez-vous à votre compte MALAGA": "Log in to your MALAGA account",
+  "Connexion au flux temps réel…": "Connecting to the live feed…",
+  "Contact commercial": "Sales contact",
+  "Couleur de la peinture murale": "Wall paint color",
+  "Couleur murale": "Wall color",
+  "Couleur peinture murale": "Wall paint color",
+  "Créer mon compte": "Create my account",
+  "Créer un compte": "Create an account",
+  "Date": "Date",
+  "Depuis toujours": "All time",
+  "Dernières annonces": "Latest listings",
+  "Description": "Description",
+  "Diffusez une annonce à tous les utilisateurs ayant activé les notifications sur le site.": "Broadcast an announcement to all users who have enabled notifications on the site.",
+  "Disponibilité, modifications, suppression…": "Availability, edits, deletion…",
+  "Disponible": "Available",
+  "Douche": "Shower",
+  "Douche (type)": "Shower (type)",
+  "Email": "Email",
+  "Email administrateur": "Administrator email",
+  "Email de contact": "Contact email",
+  "Email du propriétaire": "Landlord's email",
+  "Email du service commercial": "Sales department email",
+  "En attente": "Pending",
+  "En attente de vérification": "Awaiting verification",
+  "Enregistrer": "Save",
+  "Entreprise": "Company",
+  "Entrez votre email, nous vous enverrons un lien de réinitialisation": "Enter your email, we'll send you a reset link",
+  "Envoyer le lien": "Send the link",
+  "Envoyé par": "Sent by",
+  "Franceville": "Franceville",
+  "Gestion des annonces": "Listings management",
+  "Gestion des utilisateurs": "User management",
+  "Gérer mes annonces publiées": "Manage my published listings",
+  "Gérez vos notifications et vos données sur cet appareil.": "Manage your notifications and data on this device.",
+  "ID": "ID",
+  "Inscrit le": "Joined on",
+  "Je gère un catalogue de biens": "I manage a catalog of properties",
+  "Je loue mon propre bien": "I rent out my own property",
+  "Koulamoutou": "Koulamoutou",
+  "L'IA génère automatiquement un titre accrocheur et une description professionnelle": "AI automatically generates a catchy title and a professional description",
+  "Lambaréné": "Lambaréné",
+  "Les photos et la position ne se modifient pas ici — supprimez et republiez si besoin.": "Photos and location can't be edited here — delete and repost if needed.",
+  "Libreville": "Libreville",
+  "Local commercial": "Commercial space",
+  "Locataire": "Tenant",
+  "Loyer mensuel (FCFA)": "Monthly rent (FCFA)",
+  "Loyer mensuel (FCFA) *": "Monthly rent (FCFA) *",
+  "MALAGA": "MALAGA",
+  "MALAGA 🇬🇦": "MALAGA 🇬🇦",
+  "Maison": "House",
+  "Makokou": "Makokou",
+  "Matériau": "Material",
+  "Mes annonces": "My listings",
+  "Message": "Message",
+  "Moanda": "Moanda",
+  "Modifier l'annonce": "Edit listing",
+  "Modifier mon profil": "Edit my profile",
+  "Mot de passe": "Password",
+  "Mot de passe oublié ?": "Forgot your password?",
+  "Mot de passe oublié 🔑": "Forgot password 🔑",
+  "Mouila": "Mouila",
+  "Nom": "Name",
+  "Nom complet": "Full name",
+  "Nom du propriétaire": "Landlord's name",
+  "Nom du propriétaire / de l'agence": "Landlord's / agency's name",
+  "Nombre de chambres": "Number of bedrooms",
+  "Non": "No",
+  "Non précisé": "Not specified",
+  "Notifications activées": "Notifications enabled",
+  "Numéro WhatsApp *": "WhatsApp number *",
+  "N° de villa / porte / appartement": "Villa / door / apartment number",
+  "Occupé": "Occupied",
+  "Oui": "Yes",
+  "Ouvrez un like pour le marquer comme vu : l'auteur reçoit alors une notification lui proposant de démarrer une discussion avec vous.": "Open a like to mark it as seen: the sender then gets a notification inviting them to start a conversation with you.",
+  "Owendo": "Owendo",
+  "Oyem": "Oyem",
+  "Panneau d'administration": "Admin panel",
+  "Particulier": "Individual",
+  "Photos (jusqu'à 10) *": "Photos (up to 10) *",
+  "Photos de l'annonce": "Listing photos",
+  "Port-Gentil": "Port-Gentil",
+  "Position exacte sur la carte *": "Exact position on the map *",
+  "Prix": "Price",
+  "Prix / mois": "Price / month",
+  "Prix mensuel (FCFA) *": "Monthly price (FCFA) *",
+  "Précisez la couleur": "Specify the color",
+  "Précisez si le logement offre une vue mer, forêt, ville…": "Specify if the home offers a sea, forest, or city view…",
+  "Publier l'annonce": "Post the listing",
+  "Publier une annonce": "Post a listing",
+  "Quartier *": "Neighborhood *",
+  "Quartier / rue": "Neighborhood / street",
+  "Raison sociale *": "Company name *",
+  "Rang": "Rank",
+  "Remplissez les détails de votre logement à louer": "Fill in the details of your home for rent",
+  "Reçues aujourd'hui": "Received today",
+  "Réinitialiser mes favoris et préférences": "Reset my favorites and preferences",
+  "Rôle": "Role",
+  "Salles de bain": "Bathrooms",
+  "Salles de bain / douches": "Bathrooms / showers",
+  "Salons": "Living rooms",
+  "Se connecter": "Log in",
+  "Signalements": "Reports",
+  "Signalé par": "Reported by",
+  "Slogan": "Slogan",
+  "Société privée": "Private company",
+  "Sol carrelé ?": "Tiled floor?",
+  "Soyez averti(e) dès qu'un propriétaire réagit à un de vos likes, et recevez les actualités importantes de MALAGA.": "Get notified as soon as a landlord reacts to one of your likes, and receive important MALAGA news.",
+  "Statut": "Status",
+  "Statuts des annonces": "Listing statuses",
+  "Studio": "Studio",
+  "Surface (m²)": "Floor area (m²)",
+  "Suspendus": "Suspended",
+  "Tableau de bord": "Dashboard",
+  "Tchibanga": "Tchibanga",
+  "Terrain clôturé ?": "Fenced plot?",
+  "Terrasse ?": "Terrace?",
+  "Titre": "Title",
+  "Titre *": "Title *",
+  "Titre de l'annonce *": "Listing title *",
+  "Top 5 annonces (vues)": "Top 5 listings (views)",
+  "Tous": "All",
+  "Tous les rôles": "All roles",
+  "Tous les statuts": "All statuses",
+  "Type": "Type",
+  "Type de bien": "Property type",
+  "Type de bien *": "Property type *",
+  "Type de structure *": "Structure type *",
+  "Téléphone": "Phone",
+  "Téléphone du propriétaire": "Landlord's phone",
+  "Téléphone du service commercial *": "Sales department phone *",
+  "Une fois localisé, vous pouvez affiner en glissant le repère sur la carte. Cette position sera visible publiquement pour permettre aux visiteurs de venir jusqu'à vos bureaux (Google Maps, itinéraire, WhatsApp).": "Once located, you can fine-tune it by dragging the marker on the map. This position will be publicly visible so visitors can find their way to your offices (Google Maps, directions, WhatsApp).",
+  "Utilisateurs": "Users",
+  "Validation manuelle des paiements Airtel Money / Moov Money, en temps réel.": "Manual validation of Airtel Money / Moov Money payments, in real time.",
+  "Vidéo courte (5 secondes maximum, facultatif)": "Short video (5 seconds max, optional)",
+  "Villa": "Villa",
+  "Ville": "City",
+  "Ville *": "City *",
+  "Visites programmées": "Scheduled visits",
+  "Visiteurs/utilisateurs suivis": "Tracked visitors/users",
+  "Voir tout →": "See all →",
+  "Vos favoris et vos préférences de notifications sont stockés uniquement sur cet appareil. Vous pouvez les réinitialiser à tout moment.": "Your favorites and notification preferences are stored only on this device. You can reset them at any time.",
+  "Votre photo, votre nom et votre téléphone": "Your photo, your name and your phone number",
+  "Vous pouvez ajouter un autre bien maintenant, ou vous arrêter là — vos annonces vous attendent dans votre profil.": "You can add another property now, or stop here — your listings are waiting for you in your profile.",
+  "Vous publiez en tant que...": "You're posting as...",
+  "Vue": "View",
+  "Vues": "Views",
+  "Vues totales": "Total views",
+  "Vérifiés": "Verified",
+  "WhatsApp": "WhatsApp",
+  "WhatsApp du propriétaire *": "Landlord's WhatsApp *",
+  "directement avec le propriétaire, par WhatsApp/téléphone,\n            après une visite ou rencontre en personne": "directly with the landlord, by WhatsApp/phone,\n            after a visit or in-person meeting",
+  "Écrivez-nous": "Write to us",
+  "Électricité": "Electricity",
+  "Équipements": "Amenities",
+  "Équipements / Tags": "Amenities / Tags",
+  "Étage": "Floor",
+  "État du bâtiment": "Building condition",
+  "Êtes-vous sûr ?": "Are you sure?",
+  "ℹ️ Chambres, salons, cuisine et douche ne s'appliquent pas à ce type de bien — ces champs sont masqués.": "ℹ️ Bedrooms, living rooms, kitchen and shower don't apply to this property type — these fields are hidden.",
+  "ℹ️ Votre profil (logo, contact, localisation) sera visible dès la création de votre compte, avec un catalogue prêt à recevoir vos annonces. Le badge\n            « 🏢 Professionnel vérifié » s'affichera une fois votre profil validé par l'équipe MALAGA.": "ℹ️ Your profile (logo, contact, location) will be visible as soon as your account is created, with a catalog ready to receive your listings. The badge\n            \"🏢 Verified professional\" will show once your profile is validated by the MALAGA team.",
+  "ℹ️ À propos": "ℹ️ About",
+  "← Retour": "← Back",
+  "⌛ Expirées": "⌛ Expired",
+  "⏳ En attente": "⏳ Pending",
+  "⚫ Masqué": "⚫ Hidden",
+  "⛔ Suspendu": "⛔ Suspended",
+  "✅ Email de réinitialisation envoyé ! Vérifiez votre boîte de réception (et vos spams).": "✅ Reset email sent! Check your inbox (and your spam folder).",
+  "✅ Vérifié": "✅ Verified",
+  "✉️ Messages reçus": "✉️ Messages received",
+  "✏️ Modifier": "✏️ Edit",
+  "✏️ Modifier l'annonce": "✏️ Edit listing",
+  "✨ Générer titre et description avec l'IA": "✨ Generate title and description with AI",
+  "❌ Email ou mot de passe incorrect": "❌ Incorrect email or password",
+  "❤️ Annonces likées": "❤️ Liked listings",
+  "❤️ Favoris": "❤️ Favorites",
+  "❤️ Likes ⇅": "❤️ Likes ⇅",
+  "➕ Ajouter un autre bien": "➕ Add another property",
+  "🌱 Ajouter des annonces démo": "🌱 Add demo listings",
+  "🎛️ Filtres avancés": "🎛️ Advanced filters",
+  "🏘️ Annonces": "🏘️ Listings",
+  "🏘️ Mes annonces": "🏘️ My listings",
+  "🏘️ Terminer et voir mes annonces": "🏘️ Finish and view my listings",
+  "🏠 Caractéristiques": "🏠 Features",
+  "🏠 Type &amp; capacités": "🏠 Type &amp; capacity",
+  "🏠 Une fois votre compte créé, vous serez dirigé(e) vers le formulaire de publication pour ajouter votre premier bien (photos, localisation, moyens de paiement...). Vous pourrez ensuite en ajouter d'autres, un par un, à tout moment.": "🏠 Once your account is created, you'll be taken to the listing form to add your first property (photos, location, payment methods...). You can then add others, one at a time, whenever you like.",
+  "🏢 Comptes professionnels": "🏢 Professional accounts",
+  "🏢 Profil de votre agence / entreprise": "🏢 Your agency / company profile",
+  "👤 Compte": "👤 Account",
+  "💳 Demandes de visite": "💳 Visit requests",
+  "💳 Moyens de paiement acceptés": "💳 Accepted payment methods",
+  "💾 Enregistrer": "💾 Save",
+  "📅 Demandes visite": "📅 Visit requests",
+  "📅 Mes demandes de visite": "📅 My visit requests",
+  "📈 Statistiques": "📈 Statistics",
+  "📍 Localisation du siège / bureaux *": "📍 Headquarters / office location *",
+  "📍 Utiliser ma position actuelle": "📍 Use my current location",
+  "📞 +241 60 14 19 24 &nbsp;|&nbsp; ✉️ malagagabon@gmail.com": "📞 +241 60 14 19 24 &nbsp;|&nbsp; ✉️ malagagabon@gmail.com",
+  "📞 Contact": "📞 Contact",
+  "📢 Envoyer une notification à tous": "📢 Send a notification to everyone",
+  "📢 Envoyer à tous": "📢 Send to everyone",
+  "📤 Publier l'annonce": "📤 Post the listing",
+  "📥 Demandes de visite reçues": "📥 Visit requests received",
+  "📷 Ajouter le logo": "📷 Add the logo",
+  "📷 Changer la photo": "📷 Change photo",
+  "📸 Photos et vidéo": "📸 Photos and video",
+  "🔔 Notifications": "🔔 Notifications",
+  "🔥 Classement des likes": "🔥 Likes leaderboard",
+  "🔥 Likes reçus": "🔥 Likes received",
+  "🔴 Occupé": "🔴 Occupied",
+  "🔵 Programmées": "🔵 Scheduled",
+  "🕓 Historique des envois": "🕓 Sending history",
+  "🗑️ Données sur cet appareil": "🗑️ Data on this device",
+  "🗑️ Supprimer les démos": "🗑️ Delete demos",
+  "🙍 Mon profil": "🙍 My profile",
+  "🙍 Voir / modifier mon profil": "🙍 View / edit my profile",
+  "🚨 Signalements": "🚨 Reports",
+  "🚨 Signalements récents": "🚨 Recent reports",
+  "🚫 Refusées": "🚫 Declined",
+  "🛰️ Utiliser ma position GPS actuelle": "🛰️ Use my current GPS location",
+  "🟡 En attente": "🟡 Pending",
+  "🟡 Réservé": "🟡 Reserved",
+  "🟢 Disponible": "🟢 Available",
+  "🧱 Construction &amp; finitions": "🧱 Construction &amp; finish",
+  "+241 6 XX XX XX": "+241 6 XX XX XX",
+  "+241 XX XX XX XX": "+241 XX XX XX XX",
+  "6 caractères minimum": "6 characters minimum",
+  "Décrivez le bien : équipements, état, accès, particularités...": "Describe the property: amenities, condition, access, special features...",
+  "Décrivez le logement, son environnement, ses atouts...": "Describe the home, its surroundings, its strengths...",
+  "Ex : Belle villa meublée avec jardin": "E.g.: Beautiful furnished villa with garden",
+  "Ex : Bleu marine": "E.g.: Navy blue",
+  "Ex : De nouvelles annonces viennent d'être publiées à Akanda !": "E.g.: New listings have just been posted in Akanda!",
+  "Ex : Gabon Immo Services": "E.g.: Gabon Immo Services",
+  "Ex : Immeuble X, Centre-ville, Libreville": "E.g.: Building X, Downtown, Libreville",
+  "Ex : Jean Mbadinga": "E.g.: Jean Mbadinga",
+  "Ex : Nouveauté sur MALAGA": "E.g.: New on MALAGA",
+  "Ex : Villa B12, Appt 4": "E.g.: Villa B12, Apt 4",
+  "Ex : Villa B12, Appt 4, Porte 3": "E.g.: Villa B12, Apt 4, Door 3",
+  "Ex : Votre partenaire immobilier de confiance": "E.g.: Your trusted real estate partner",
+  "Ex : derrière la station Total d'Angondjé": "E.g.: behind the Total station in Angondjé",
+  "Ex: 1": "E.g.: 1",
+  "Ex: 150000": "E.g.: 150000",
+  "Ex: 2": "E.g.: 2",
+  "Ex: 2e arrondissement": "E.g.: 2nd district",
+  "Ex: 80": "E.g.: 80",
+  "Ex: Agence Malaga Immo": "E.g.: Malaga Immo Agency",
+  "Ex: Akanda, Batterie IV...": "E.g.: Akanda, Batterie IV...",
+  "Ex: Belle villa meublée avec jardin à Akanda": "E.g.: Beautiful furnished villa with garden in Akanda",
+  "admin@malaga.gabon": "admin@malaga.gabon",
+  "contact@entreprise.ga": "contact@entreprise.ga",
+  "proprietaire@exemple.com": "proprietaire@exemple.com",
+  "vous@exemple.com": "vous@exemple.com",
+  "🔍 Rechercher un bien ou un propriétaire...": "🔍 Search a property or landlord...",
+  "🔍 Rechercher un utilisateur...": "🔍 Search a user...",
+  "🔍 Rechercher une entreprise...": "🔍 Search a company...",
+  "🔍 Rechercher...": "🔍 Search...",
+};
+
+function langueMemorisee() {
+  try { return localStorage.getItem(CLE_LANGUE); } catch { return null; }
 }
 
-function themeCourantPreferere() {
-  const memorise = themeMemorise();
-  if (memorise === "sombre" || memorise === "clair") return memorise;
-  return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "sombre" : "clair";
+function langueCourantePreferere() {
+  const memorisee = langueMemorisee();
+  if (memorisee === "fr" || memorisee === "en") return memorisee;
+  return "fr";
 }
 
-/* Met à jour la classe sur <body> ainsi que le libellé/icône de tous les
-   boutons de bascule présents sur la page (header + menu latéral). */
-function appliquerTheme(theme) {
-  document.body.classList.toggle("theme-sombre", theme === "sombre");
-  document.querySelectorAll("#btnTheme").forEach(el => {
-    el.textContent = theme === "sombre" ? "☀️" : "🌙";
-    el.setAttribute("aria-label", theme === "sombre" ? "Mode clair" : "Mode sombre");
+/* Applique la langue : traduit tout élément marqué data-i18n (texte) ou
+   data-i18n-ph (placeholder) en utilisant le texte français d'origine
+   (mémorisé dans data-i18n-src la première fois) comme clé du dictionnaire. */
+function appliquerLangue(langue) {
+  document.documentElement.setAttribute("lang", langue);
+
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    if (!el.dataset.i18nSrc) el.dataset.i18nSrc = el.textContent;
+    const source = el.dataset.i18nSrc;
+    const cle = source.trim();
+    el.textContent = (langue === "en" && TRADUCTIONS[cle]) ? TRADUCTIONS[cle] : source;
   });
-  document.querySelectorAll("#drawerTheme").forEach(el => {
-    el.textContent = theme === "sombre" ? "☀️ Mode clair" : "🌙 Mode sombre";
+
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => {
+    if (!el.dataset.i18nPhSrc) el.dataset.i18nPhSrc = el.getAttribute("placeholder") || "";
+    const source = el.dataset.i18nPhSrc;
+    el.setAttribute("placeholder", (langue === "en" && TRADUCTIONS[source]) ? TRADUCTIONS[source] : source);
+  });
+
+  document.querySelectorAll("#btnLang").forEach(el => {
+    el.setAttribute("aria-label", langue === "en" ? "Switch to French" : "Passer en anglais");
+  });
+  document.querySelectorAll("#drawerLang").forEach(el => {
+    el.textContent = langue === "en" ? "🌐 Français" : "🌐 English";
   });
 }
 
-export function basculerTheme() {
-  const nouveau = document.body.classList.contains("theme-sombre") ? "clair" : "sombre";
-  try { localStorage.setItem(CLE_THEME, nouveau); } catch { /* ignoré */ }
-  appliquerTheme(nouveau);
-  return nouveau;
+export function basculerLangue() {
+  const nouvelle = langueCourantePreferere() === "en" ? "fr" : "en";
+  try { localStorage.setItem(CLE_LANGUE, nouvelle); } catch { /* ignoré */ }
+  appliquerLangue(nouvelle);
+  return nouvelle;
 }
 
-function initTheme() {
-  appliquerTheme(themeCourantPreferere());
+function initLangue() {
+  appliquerLangue(langueCourantePreferere());
   // Délégation sur document plutôt qu'un addEventListener direct sur chaque
-  // bouton : le clic est capté même si #btnTheme/#drawerTheme sont recréés
-  // ou remplacés par un autre script après le chargement initial de la page
-  // (ce qui rendrait un binding direct silencieusement inopérant).
+  // bouton : le clic est capté même si #btnLang/#drawerLang sont recréés ou
+  // remplacés par un autre script après le chargement initial de la page.
   document.addEventListener("click", (e) => {
-    const cible = e.target.closest("#btnTheme, #drawerTheme");
+    const cible = e.target.closest("#btnLang, #drawerLang");
     if (!cible) return;
     e.preventDefault();
-    basculerTheme();
+    basculerLangue();
   });
-  // Si l'utilisateur n'a jamais fait de choix explicite, on suit les
-  // changements de préférence système en direct.
-  if (!themeMemorise() && window.matchMedia) {
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-      if (!themeMemorise()) appliquerTheme(e.matches ? "sombre" : "clair");
-    });
-  }
 }
 
 // Appliqué immédiatement au chargement du module, avant DOMContentLoaded,
-// pour éviter un flash de thème clair suivi d'un passage en sombre.
-appliquerTheme(themeCourantPreferere());
+// pour éviter un flash de texte français suivi d'un passage en anglais.
+appliquerLangue(langueCourantePreferere());
 
 /* ══════════ FAVORIS (stockage local) ══════════ */
 const CLE_FAVORIS = "malaga_favoris";
@@ -705,7 +1155,7 @@ function initSansBloquer(fn, nom) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  initSansBloquer(initTheme, "initTheme");
+  initSansBloquer(initLangue, "initLangue");
   initSansBloquer(initDrawer, "initDrawer");
   initSansBloquer(initAuthUI, "initAuthUI");
   initSansBloquer(majBadgeFavoris, "majBadgeFavoris");

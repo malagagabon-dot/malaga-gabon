@@ -6,7 +6,7 @@
   <title>Mon profil — MALAGA</title>
   <meta name="theme-color" content="#009E60">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260822e">
   <style>
     /* ===== En-tête profil ===== */
     .profil-hero{max-width:1000px;margin:0 auto;padding:24px 20px 4px;}
@@ -100,20 +100,21 @@
       <button class="drawer-close" id="fermerDrawer">✕</button>
     </div>
     <nav class="drawer-nav">
-      <a href="index.html" class="drawer-link">🏠 Accueil</a>
-      <a href="profil.html" class="drawer-link actif">🙍 Mon profil</a>
-      <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;">🏘️ Gérer mes annonces</a>
+      <a href="index.html" class="drawer-link" data-i18n>🏠 Accueil</a>
+      <a href="profil.html" class="drawer-link actif" data-i18n>🙍 Mon profil</a>
+      <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;" data-i18n>🏘️ Gérer mes annonces</a>
       <div class="drawer-sep"></div>
-      <a href="#" class="drawer-link" id="drawerNotifs">🔔 Activer les notifications</a>
-      <a href="parametres.html" class="drawer-link">⚙️ Paramètres</a>
+      <a href="#" class="drawer-link" id="drawerNotifs" data-i18n>🔔 Activer les notifications</a>
+      <a href="parametres.html" class="drawer-link" data-i18n>⚙️ Paramètres</a>
       <div class="drawer-sep"></div>
-      <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
-      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
-      <a href="mailto:malagagabon@gmail.com" class="drawer-link">✉️ Nous écrire</a>
+      <a href="#" class="drawer-link" id="drawerLang">🌐 English</a>
+      <a href="tel:+24160141924" class="drawer-link" data-i18n>📞 Nous appeler</a>
+      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link" data-i18n>💬 WhatsApp</a>
+      <a href="mailto:malagagabon@gmail.com" class="drawer-link" data-i18n>✉️ Nous écrire</a>
       <div class="drawer-sep"></div>
-      <a href="connexion.html" class="drawer-link" id="drawerConnexion">🚪 Se déconnecter</a>
+      <a href="connexion.html" class="drawer-link" id="drawerConnexion" data-i18n>🚪 Se déconnecter</a>
     </nav>
-    <div class="drawer-footer">MALAGA 🇬🇦 — Libreville, Gabon</div>
+    <div class="drawer-footer" data-i18n>MALAGA 🇬🇦 — Libreville, Gabon</div>
   </aside>
 
   <header class="header">
@@ -122,31 +123,34 @@
       <a href="index.html" class="logo-link">
         <img src="img/logo.png" alt="MALAGA" class="logo-img">
         <span class="logo-text-wrap">
-          <span class="logo-text">MALAGA</span>
-          <span class="slogan">Maison à louer au Gabon 🇬🇦</span>
+          <span class="logo-text" data-i18n>MALAGA</span>
+          <span class="slogan" data-i18n>Maison à louer au Gabon 🇬🇦</span>
         </span>
       </a>
       <a href="index.html" class="icon-btn" aria-label="Accueil">🏠</a>
+      <div class="header-actions">
+        <button class="icon-btn" id="btnLang" aria-label="Passer en anglais">🌐</button>
+      </div>
     </div>
   </header>
 
   <nav class="bottom-nav">
-    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span>Accueil</span></a>
-    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span>Carte</span></a>
+    <a href="index.html" class="bn-item" data-page="index.html"><span class="bn-icon">🏠</span><span data-i18n>Accueil</span></a>
+    <a href="index.html#carteWrap" class="bn-item"><span class="bn-icon">🗺️</span><span data-i18n>Carte</span></a>
     <a href="connexion.html?inscription=1&role=proprietaire" class="bn-item bn-central"><span class="bn-icon">➕</span></a>
-    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span>Favoris</span></a>
-    <a href="profil.html" class="bn-item actif" id="bnProfil" data-page="profil.html"><span class="bn-icon">👤</span><span id="bnProfilLabel">Profil</span></a>
+    <a href="index.html" class="bn-item"><span class="bn-icon">❤️</span><span data-i18n>Favoris</span></a>
+    <a href="profil.html" class="bn-item actif" id="bnProfil" data-page="profil.html"><span class="bn-icon">👤</span><span id="bnProfilLabel" data-i18n>Profil</span></a>
   </nav>
 
   <!-- ===== EN-TÊTE PROFIL ===== -->
   <div class="profil-hero">
     <div class="profil-carte">
-      <button type="button" class="profil-btn-modifier" id="btnModifierProfil">✏️ Modifier</button>
+      <button type="button" class="profil-btn-modifier" id="btnModifierProfil" data-i18n>✏️ Modifier</button>
       <div class="profil-avatar-wrap">
         <div class="profil-avatar" id="profilAvatar">?</div>
       </div>
       <div class="profil-infos">
-        <div class="profil-nom" id="profilNom">Chargement…</div>
+        <div class="profil-nom" id="profilNom" data-i18n>Chargement…</div>
         <span class="profil-role" id="profilRole"></span>
         <div class="profil-contact" id="profilContact"></div>
       </div>
@@ -158,86 +162,86 @@
 
   <!-- ===== STATS ===== -->
   <div class="profil-stats" id="profilStats">
-    <div class="stat-carte"><div class="n" id="statFavoris">0</div><div class="l">❤️ Favoris</div></div>
-    <div class="stat-carte"><div class="n" id="statRdv">0</div><div class="l">📅 Demandes visite</div></div>
-    <div class="stat-carte" id="statAnnoncesWrap" style="display:none;"><div class="n" id="statAnnonces">0</div><div class="l">🏘️ Annonces</div></div>
-    <div class="stat-carte" id="statLikesRecusWrap" style="display:none;"><div class="n" id="statLikesRecus">0</div><div class="l">🔥 Likes reçus</div></div>
+    <div class="stat-carte"><div class="n" id="statFavoris">0</div><div class="l" data-i18n>❤️ Favoris</div></div>
+    <div class="stat-carte"><div class="n" id="statRdv">0</div><div class="l" data-i18n>📅 Demandes visite</div></div>
+    <div class="stat-carte" id="statAnnoncesWrap" style="display:none;"><div class="n" id="statAnnonces">0</div><div class="l" data-i18n>🏘️ Annonces</div></div>
+    <div class="stat-carte" id="statLikesRecusWrap" style="display:none;"><div class="n" id="statLikesRecus">0</div><div class="l" data-i18n>🔥 Likes reçus</div></div>
   </div>
 
   <!-- ===== SECTION PROPRIÉTAIRE : accès rapide à Mes annonces ===== -->
   <div class="profil-section" id="sectionProprio" style="display:none;">
-    <h2>🏘️ Mes annonces</h2>
+    <h2 data-i18n>🏘️ Mes annonces</h2>
     <a href="mes-annonces.html" class="lien-gerer">
-      <div class="txt"><strong>Gérer mes annonces publiées</strong><p>Disponibilité, modifications, suppression…</p></div>
+      <div class="txt"><strong data-i18n>Gérer mes annonces publiées</strong><p data-i18n>Disponibilité, modifications, suppression…</p></div>
       <span class="fleche">→</span>
     </a>
   </div>
 
   <!-- ===== SECTION DEMANDES REÇUES (propriétaire) ===== -->
   <div class="profil-section" id="sectionDemandesRecues" style="display:none;">
-    <h2>📥 Demandes de visite reçues</h2>
+    <h2 data-i18n>📥 Demandes de visite reçues</h2>
     <div id="listeDemandesRecues">
-      <div class="spinner">Chargement…</div>
+      <div class="spinner" data-i18n>Chargement…</div>
     </div>
   </div>
 
   <!-- ===== SECTION LIKES REÇUS (propriétaire) ===== -->
   <div class="profil-section" id="sectionLikesRecus" style="display:none;">
-    <h2>🔥 Likes reçus</h2>
-    <p style="font-size:12px;color:var(--gris-clair);margin:-6px 0 12px;">Ouvrez un like pour le marquer comme vu : l'auteur reçoit alors une notification lui proposant de démarrer une discussion avec vous.</p>
+    <h2 data-i18n>🔥 Likes reçus</h2>
+    <p style="font-size:12px;color:var(--gris-clair);margin:-6px 0 12px;" data-i18n>Ouvrez un like pour le marquer comme vu : l'auteur reçoit alors une notification lui proposant de démarrer une discussion avec vous.</p>
     <div id="listeLikesRecus">
-      <div class="spinner">Chargement…</div>
+      <div class="spinner" data-i18n>Chargement…</div>
     </div>
   </div>
 
   <!-- ===== SECTION FAVORIS ===== -->
   <div class="profil-section">
-    <h2>❤️ Annonces likées</h2>
+    <h2 data-i18n>❤️ Annonces likées</h2>
     <div class="mini-grille" id="listeFavoris">
-      <div class="spinner">Chargement…</div>
+      <div class="spinner" data-i18n>Chargement…</div>
     </div>
   </div>
 
   <!-- ===== SECTION DEMANDES DE VISITE / RDV ===== -->
   <div class="profil-section">
-    <h2>📅 Mes demandes de visite</h2>
+    <h2 data-i18n>📅 Mes demandes de visite</h2>
     <div class="chips-onglets" id="ongletsRdv">
-      <div class="chip-onglet actif" data-statut="en_attente">🟡 En attente</div>
-      <div class="chip-onglet" data-statut="confirmee">🔵 Programmées</div>
-      <div class="chip-onglet" data-statut="refusee">🚫 Refusées</div>
-      <div class="chip-onglet" data-statut="expiree">⌛ Expirées</div>
+      <div class="chip-onglet actif" data-statut="en_attente" data-i18n>🟡 En attente</div>
+      <div class="chip-onglet" data-statut="confirmee" data-i18n>🔵 Programmées</div>
+      <div class="chip-onglet" data-statut="refusee" data-i18n>🚫 Refusées</div>
+      <div class="chip-onglet" data-statut="expiree" data-i18n>⌛ Expirées</div>
     </div>
     <div id="listeRdv">
-      <div class="spinner">Chargement…</div>
+      <div class="spinner" data-i18n>Chargement…</div>
     </div>
   </div>
 
   <div class="profil-section" style="padding-bottom:30px;">
-    <button type="button" class="btn btn-deconnexion" id="btnDeconnexion">🚪 Se déconnecter</button>
+    <button type="button" class="btn btn-deconnexion" id="btnDeconnexion" data-i18n>🚪 Se déconnecter</button>
   </div>
 
   <!-- ===== MODAL MODIFICATION PROFIL ===== -->
   <div class="modal-overlay" id="modalProfil">
     <div class="modal-panneau">
       <div class="form-card">
-        <h2>Modifier mon profil</h2>
-        <p class="sous-titre">Votre photo, votre nom et votre téléphone</p>
+        <h2 data-i18n>Modifier mon profil</h2>
+        <p class="sous-titre" data-i18n>Votre photo, votre nom et votre téléphone</p>
 
         <div class="champ-photo-edit">
           <div class="apercu" id="apercuPhoto">?</div>
           <div>
             <input type="file" id="inputPhoto" accept="image/*" hidden>
-            <button type="button" class="btn btn-outline" id="btnChoisirPhoto" style="padding:8px 14px;font-size:12.5px;">📷 Changer la photo</button>
+            <button type="button" class="btn btn-outline" id="btnChoisirPhoto" style="padding:8px 14px;font-size:12.5px;" data-i18n>📷 Changer la photo</button>
           </div>
         </div>
 
         <form id="formProfil">
-          <div class="champ"><label>Nom complet</label><input type="text" id="editNom" required></div>
-          <div class="champ"><label>Téléphone</label><input type="tel" id="editTel" required></div>
-          <div class="champ"><label>Email</label><input type="email" id="editEmail" disabled style="opacity:.6;"></div>
+          <div class="champ"><label data-i18n>Nom complet</label><input type="text" id="editNom" required></div>
+          <div class="champ"><label data-i18n>Téléphone</label><input type="tel" id="editTel" required></div>
+          <div class="champ"><label data-i18n>Email</label><input type="email" id="editEmail" disabled style="opacity:.6;"></div>
           <div style="display:flex;gap:10px;margin-top:6px;">
-            <button type="button" class="btn btn-blanc" id="btnAnnulerProfil" style="flex:1;">Annuler</button>
-            <button type="submit" class="btn btn-vert" id="btnEnregistrerProfil" style="flex:1;">Enregistrer</button>
+            <button type="button" class="btn btn-blanc" id="btnAnnulerProfil" style="flex:1;" data-i18n>Annuler</button>
+            <button type="submit" class="btn btn-vert" id="btnEnregistrerProfil" style="flex:1;" data-i18n>Enregistrer</button>
           </div>
         </form>
       </div>
@@ -247,7 +251,7 @@
   <script type="module">
     import { auth, db, doc, getDoc, updateDoc, collection, query, where, onSnapshot, serverTimestamp } from "./firebase-config.js";
     import { protegerPage, majProfil, deconnecter } from "./auth.js";
-    import { getFavoris } from "./nav.js";
+    import { getFavoris } from "./nav.js?v=20260822c";
     import { getIconeType, formatPrix, escapeHTML } from "./malaga-reference.js";
 
     // --- Cloudinary (même configuration que connexion.html / publier.html) ---
@@ -782,8 +786,8 @@
   </script>
 
   <footer class="footer">
-    <div class="brand">MALAGA 🇬🇦</div>
+    <div class="brand" data-i18n>MALAGA 🇬🇦</div>
   </footer>
-  <script type="module" src="nav.js"></script>
+  <script type="module" src="nav.js?v=20260822c"></script>
 </body>
 </html>
