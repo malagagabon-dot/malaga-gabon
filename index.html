@@ -15,6 +15,31 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
+  <!-- Titre héro doré animé : mis directement ici (plutôt que dans style.css)
+       pour ne pas dépendre du cache CDN de style.css. -->
+  <style>
+    .hero h1.titre-lux {
+      position: relative;
+      display: inline-block;
+      color: #0B1F4D;
+      -webkit-text-fill-color: #0B1F4D;
+      text-shadow: 0 1px 1px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.15);
+      animation: titreLuxPulse 2.4s ease-in-out infinite;
+      letter-spacing: .2px;
+    }
+    @keyframes titreLuxPulse {
+      0%, 100% {
+        text-shadow: 0 1px 1px rgba(0,0,0,.5), 0 0 6px rgba(252,209,22,.4);
+      }
+      50% {
+        text-shadow: 0 1px 1px rgba(0,0,0,.5), 0 0 14px rgba(252,209,22,.95), 0 0 26px rgba(252,209,22,.55);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero h1.titre-lux { animation: none; text-shadow: 0 1px 1px rgba(0,0,0,.5), 0 0 8px rgba(252,209,22,.5); }
+    }
+  </style>
+
   <!-- SEO & partage (WhatsApp, Facebook...) -->
   <meta name="description" content="MALAGA — plateforme de location de logements à Libreville, Gabon.">
   <meta property="og:title" content="MALAGA — Maison à louer au Gabon">
