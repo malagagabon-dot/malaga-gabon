@@ -440,7 +440,7 @@ function rendreListe(liste) {
     `;
     carte.querySelector(".btn-favori").onclick = (e) => {
       e.stopPropagation();
-      const actif = toggleFavori(a.id);
+      const actif = toggleFavori(a);
       e.currentTarget.classList.toggle("actif", actif);
       e.currentTarget.textContent = actif ? "❤️" : "🤍";
       if (modeFavoris && !actif) rendreTout();

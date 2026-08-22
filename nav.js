@@ -4,7 +4,7 @@
    et de la barre de navigation basse, utilisée par toutes les pages.
 ═══════════════════════════════════════════ */
 
-import { auth, onAuthStateChanged, signOut } from "./firebase-config.js";
+import { auth, db, onAuthStateChanged, signOut, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, increment } from "./firebase-config.js";
 import { getProfil } from "./auth.js";
 import { escapeHTML } from "./malaga-reference.js";
 
@@ -20,13 +20,101 @@ export function estFavori(id) {
   return getFavoris().includes(id);
 }
 
-export function toggleFavori(id) {
+/* ══════════ IDENTIFIANT VISITEUR ANONYME ══════════
+   Persistant dans localStorage : permet à un visiteur non connecté de
+   liker/déliker sans dupliquer les documents Firestore, et sert de clé
+   stable pour le document de like tant qu'il ne se connecte pas. */
+const CLE_VISITEUR = "malaga_visiteur_id";
+function idVisiteur() {
+  let id = localStorage.getItem(CLE_VISITEUR);
+  if (!id) {
+    id = "v_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(CLE_VISITEUR, id);
+  }
+  return id;
+}
+
+/* ══════════ TOGGLE FAVORI ══════════
+   `annonce` : soit un id (rétrocompatibilité), soit l'objet annonce complet
+   { id, proprietaireId, proprietaireNom, proprietaireEmail, titre }.
+   Le like reste immédiat côté UI (localStorage) ; l'écriture Firestore et
+   la notification email sont faites en best-effort, sans jamais bloquer
+   l'interface si elles échouent (utilisateur hors-ligne, règles, etc.). */
+export function toggleFavori(annonce) {
+  const a = (typeof annonce === "string" || typeof annonce === "number") ? { id: annonce } : (annonce || {});
+  const id = a.id;
+
   const favoris = getFavoris();
   const idx = favoris.indexOf(id);
-  if (idx === -1) favoris.push(id); else favoris.splice(idx, 1);
+  const ajout = idx === -1;
+  if (ajout) favoris.push(id); else favoris.splice(idx, 1);
   localStorage.setItem(CLE_FAVORIS, JSON.stringify(favoris));
   majBadgeFavoris();
+
+  // Proposition WhatsApp déclenchée en synchrone, dans le même geste utilisateur
+  // que le clic (nécessaire pour éviter le blocage de popup des navigateurs).
+  if (ajout) proposerPartageWhatsApp(a);
+
+  synchroniserLikeFirestore(a, ajout).catch((err) => console.error("Synchronisation du like impossible :", err));
+
   return favoris.includes(id);
+}
+
+/* ══════════ PROPOSITION D'ENVOI DU LIKE AU PROPRIÉTAIRE PAR WHATSAPP ══════════
+   Après un like, propose au visiteur de prévenir le propriétaire via le
+   numéro WhatsApp déjà renseigné sur l'annonce (mêmes champs que le bouton
+   WhatsApp existant sur la fiche détail : whatsapp, sinon tel). Le visiteur
+   garde la main : il envoie lui-même le message (ou annule), aucun envoi
+   automatique caché. */
+function proposerPartageWhatsApp(a) {
+  const numero = (a.whatsapp || a.proprietaireTel || a.tel || "").replace(/[^\d]/g, "");
+  if (!numero) return;
+
+  const veut = confirm(`❤️ Annonce ajoutée à vos favoris !\n\nVoulez-vous prévenir le propriétaire par WhatsApp que vous aimez « ${a.titre || "cette annonce"} » ?`);
+  if (!veut) return;
+
+  const texte = `Bonjour${a.proprietaireNom ? " " + a.proprietaireNom : ""}, j'aime beaucoup votre annonce "${a.titre || ""}" sur MALAGA ❤️`;
+  window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texte)}`, "_blank");
+}
+
+async function synchroniserLikeFirestore(a, ajout) {
+  if (!a.id || !db) return;
+
+  const user = auth.currentUser;
+  const identifiant = user ? user.uid : idVisiteur();
+  const likeId = `${a.id}_${identifiant}`;
+  const likeRef = doc(db, "likes", likeId);
+  const annonceRef = doc(db, "annonces", a.id);
+
+  if (ajout) {
+    let nomAffiche = "Un visiteur";
+    if (user) {
+      const profil = await getProfil(user.uid).catch(() => null);
+      nomAffiche = profil?.nom || user.email || "Un visiteur";
+    }
+
+    await setDoc(likeRef, {
+      annonceId: a.id,
+      proprietaireId: a.proprietaireId || null,
+      utilisateurId: user ? user.uid : null,
+      nomAffiche,
+      dateLike: serverTimestamp()
+    });
+    await updateDoc(annonceRef, { nbLikes: increment(1) }).catch(() => {});
+
+    // Notification email au propriétaire (best-effort, ne bloque jamais l'UI)
+    if (a.proprietaireEmail && window.MALAGA_EMAIL?.envoyerNotificationLike) {
+      window.MALAGA_EMAIL.envoyerNotificationLike({
+        proprietaireEmail: a.proprietaireEmail,
+        proprietaireNom: a.proprietaireNom || "",
+        annonceTitre: a.titre || "votre annonce",
+        nomVisiteur: nomAffiche
+      });
+    }
+  } else {
+    await deleteDoc(likeRef).catch(() => {});
+    await updateDoc(annonceRef, { nbLikes: increment(-1) }).catch(() => {});
+  }
 }
 
 function majBadgeFavoris() {

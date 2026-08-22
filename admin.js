@@ -47,12 +47,15 @@ let annoncesData = [];       // alimenté en temps réel depuis Firestore "annon
 let usersData = [];          // alimenté en temps réel depuis Firestore "users"
 let signalementsData = [];   // alimenté en temps réel depuis Firestore "signalements"
 let messagesData = [];       // alimenté en temps réel depuis Firestore "messages"
+let likesData = [];          // alimenté en temps réel depuis Firestore "likes"
 let theme = localStorage.getItem('malaga_admin_theme') || 'light';
 let ecouteAnnoncesDemarree = false;
 let ecouteUsersDemarree = false;
 let ecouteSignalementsDemarree = false;
 let ecouteMessagesDemarree = false;
+let ecouteLikesDemarree = false;
 let pageActuelle = 'dashboard';
+let periodeClassement = 'tout';
 
 /* ══════════════════════════════════════════════════════════
    INITIALISATION
@@ -342,6 +345,93 @@ function demarrerEcouteMessages() {
 }
 
 /* ══════════════════════════════════════════════════════════
+   ÉCOUTE TEMPS RÉEL — LIKES (Firestore, collection "likes")
+   Écrite par le site public via nav.js (clic sur ❤️). Le compteur
+   all-time (nbLikes) est directement sur le document "annonces" ;
+   cette écoute sert seulement au classement par période (semaine/mois).
+══════════════════════════════════════════════════════════ */
+function demarrerEcouteLikes() {
+  if (ecouteLikesDemarree) return;
+  ecouteLikesDemarree = true;
+  if (!window.dbAdmin) return;
+
+  window.dbAdmin.collection('likes').onSnapshot((snap) => {
+    likesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (pageActuelle === 'classement') rendreClassement();
+  }, (err) => {
+    console.error('Erreur de synchronisation des likes :', err);
+    const tbody = document.getElementById('classementTableBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Impossible de charger les likes. Vérifiez les règles Firestore.</td></tr>';
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   CLASSEMENT DES LIKES
+══════════════════════════════════════════════════════════ */
+function changerPeriodeClassement() {
+  periodeClassement = document.getElementById('filterPeriodeClassement')?.value || 'tout';
+  rendreClassement();
+}
+
+function trierClassement() {
+  // Un seul critère de tri pour l'instant (nombre de likes, décroissant) ;
+  // le clic sur l'en-tête ré-affiche simplement le classement à jour.
+  rendreClassement();
+}
+
+function rendreClassement() {
+  const tbody = document.getElementById('classementTableBody');
+  if (!tbody) return;
+
+  const recherche = (document.getElementById('filterClassement')?.value || '').toLowerCase().trim();
+
+  let compteurs; // Map annonceId -> nombre de likes sur la période choisie
+  if (periodeClassement === 'tout') {
+    compteurs = new Map(annoncesData.map(a => [a.id, nombre(a, 'nbLikes')]));
+  } else {
+    const maintenant = Date.now();
+    const seuilMs = periodeClassement === 'semaine' ? 7 * 24 * 3600 * 1000 : 30 * 24 * 3600 * 1000;
+    compteurs = new Map();
+    likesData.forEach(l => {
+      const t = l.dateLike?.toMillis?.() || 0;
+      if (!t || maintenant - t > seuilMs) return;
+      compteurs.set(l.annonceId, (compteurs.get(l.annonceId) || 0) + 1);
+    });
+  }
+
+  let lignes = annoncesData
+    .map(a => ({ annonce: a, likes: compteurs.get(a.id) || 0 }))
+    .filter(({ likes }) => periodeClassement === 'tout' || likes > 0)
+    .filter(({ annonce }) => {
+      if (!recherche) return true;
+      const titre = String(texte(annonce, 'titre', 'title')).toLowerCase();
+      const proprio = String(texte(annonce, 'proprietaireNom', 'proprio')).toLowerCase();
+      return titre.includes(recherche) || proprio.includes(recherche);
+    })
+    .sort((a, b) => b.likes - a.likes);
+
+  if (lignes.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Aucun like pour le moment.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = lignes.map(({ annonce: a, likes }, i) => {
+    const rang = i + 1;
+    const tendance = rang <= 3 && likes > 0 ? ' <span class="badge" style="background:#FEF3C7;color:#92400E;">🔥 Tendance</span>' : '';
+    return `
+      <tr>
+        <td style="font-weight:700;">${rang === 1 ? '🥇' : rang === 2 ? '🥈' : rang === 3 ? '🥉' : rang}</td>
+        <td style="font-weight:600;">${escapeHTML(String(texte(a, 'titre', 'title')).substring(0, 30))}${tendance}</td>
+        <td>${escapeHTML(texte(a, 'proprietaireNom', 'proprio'))}</td>
+        <td>${escapeHTML(texte(a, 'commune', 'ville'))}</td>
+        <td style="font-weight:700;">❤️ ${likes}</td>
+        <td><button onclick="voirAnnonce('${a.id}')" style="padding:4px 8px;background:#3A75C4;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">Voir</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════
    NAVIGATION
 ══════════════════════════════════════════════════════════ */
 function showPage(pageId) {
@@ -362,7 +452,8 @@ function showPage(pageId) {
     'reservations': 'Demandes de visite',
     'messages': 'Messages',
     'stats': 'Statistiques',
-    'publier': 'Publier une annonce'
+    'publier': 'Publier une annonce',
+    'classement': '🔥 Classement des likes'
   };
   document.getElementById('topbarTitle').textContent = titles[pageId] || 'MALAGA Admin';
 
@@ -375,6 +466,7 @@ function showPage(pageId) {
   else if (pageId === 'messages') loadMessages();
   else if (pageId === 'stats') loadStats();
   else if (pageId === 'publier') { initPubMiniMap(); adapterPubFormulaireAuType(); }
+  else if (pageId === 'classement') { demarrerEcouteLikes(); rendreClassement(); }
 }
 
 /* ══════════════════════════════════════════════════════════

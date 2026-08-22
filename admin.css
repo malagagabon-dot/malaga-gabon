@@ -378,6 +378,12 @@ body {
   white-space: nowrap;
 }
 
+.admin-table th.th-tri {
+  cursor: pointer;
+  user-select: none;
+}
+.admin-table th.th-tri:hover { color: var(--text); }
+
 .admin-table td {
   padding: .8rem 1rem;
   border-bottom: 1px solid var(--border);

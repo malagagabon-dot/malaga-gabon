@@ -148,6 +148,7 @@
     <div class="stat-carte"><div class="n" id="statFavoris">0</div><div class="l">❤️ Favoris</div></div>
     <div class="stat-carte"><div class="n" id="statRdv">0</div><div class="l">📅 Demandes visite</div></div>
     <div class="stat-carte" id="statAnnoncesWrap" style="display:none;"><div class="n" id="statAnnonces">0</div><div class="l">🏘️ Annonces</div></div>
+    <div class="stat-carte" id="statLikesRecusWrap" style="display:none;"><div class="n" id="statLikesRecus">0</div><div class="l">🔥 Likes reçus</div></div>
   </div>
 
   <!-- ===== SECTION PROPRIÉTAIRE : accès rapide à Mes annonces ===== -->
@@ -368,6 +369,7 @@
 
       document.getElementById("sectionProprio").style.display = p.role === "proprietaire" ? "block" : "none";
       document.getElementById("statAnnoncesWrap").style.display = p.role === "proprietaire" ? "block" : "none";
+      document.getElementById("statLikesRecusWrap").style.display = p.role === "proprietaire" ? "block" : "none";
       if (p.role === "proprietaire") {
         chargerNbAnnonces();
         chargerDemandesRecues(uidCourant);
@@ -382,7 +384,11 @@
 
     async function chargerNbAnnonces() {
       const q = query(collection(db, "annonces"), where("proprietaireId", "==", uidCourant));
-      onSnapshot(q, (snap) => { document.getElementById("statAnnonces").textContent = snap.size; });
+      onSnapshot(q, (snap) => {
+        document.getElementById("statAnnonces").textContent = snap.size;
+        const totalLikes = snap.docs.reduce((somme, d) => somme + (d.data().nbLikes || 0), 0);
+        document.getElementById("statLikesRecus").textContent = totalLikes;
+      });
     }
 
     /* ══════════ FAVORIS ══════════ */
