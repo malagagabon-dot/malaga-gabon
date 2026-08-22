@@ -6,7 +6,7 @@
 import {
   auth, db,
   onAuthStateChanged,
-  collection, query, where, orderBy, onSnapshot, doc, updateDoc, addDoc, increment, serverTimestamp
+  collection, query, where, orderBy, onSnapshot, doc, getDoc, updateDoc, addDoc, increment, serverTimestamp
 } from "./firebase-config.js";
 import { getProfil } from "./auth.js";
 import {
@@ -54,6 +54,15 @@ document.addEventListener("DOMContentLoaded", () => {
   initReservationVisite();
   initCatalogues();
   ecouterAnnoncesTempsReel();
+  ouvrirAnnonceDepuisURL();
+
+  // Les 3 boutons statistiques de l'accueil appelaient jusqu'ici filtrerDisponibles()
+  // etc. via des attributs onclick="..." en HTML — inopérants, car app.js est chargé
+  // en type="module" et ses fonctions ne sont donc pas posées sur window par défaut.
+  // On les relie ici, comme le reste des écouteurs de la page.
+  document.getElementById("btnStatDisponibles")?.addEventListener("click", filtrerDisponibles);
+  document.getElementById("btnStatZones")?.addEventListener("click", afficherZones);
+  document.getElementById("btnStatRecentes")?.addEventListener("click", afficherPublicationsRecentes);
 
   document.getElementById("btnRechercher").onclick = () => {
     filtres.texte = document.getElementById("search-input").value.trim().toLowerCase();
@@ -485,6 +494,27 @@ function survolerMarqueur(id, actif) {
   document.getElementById(`carte-${id}`)?.classList.toggle("survolee", actif);
 }
 
+/* ══════════ OUVERTURE DIRECTE D'UNE ANNONCE VIA L'URL (?annonce=ID) ══════════
+   Utilisé par le catalogue d'une agence (entreprise.html) et par tout lien
+   partagé pointant vers une annonce précise. On va chercher le document
+   directement par son id (getDoc), plutôt que de compter sur la liste déjà
+   affichée sur la page : celle-ci ne contient que les biens "disponible",
+   alors qu'un bien "occupé" reste visible dans le catalogue d'une agence. */
+async function ouvrirAnnonceDepuisURL() {
+  const id = new URLSearchParams(window.location.search).get("annonce");
+  if (!id) return;
+  try {
+    const snap = await getDoc(doc(db, "annonces", id));
+    if (snap.exists()) {
+      afficherDetail({ id: snap.id, ...snap.data() });
+    } else {
+      alert("Cette annonce n'existe plus ou a été retirée.");
+    }
+  } catch (err) {
+    console.error("Impossible d'ouvrir l'annonce depuis le lien :", err);
+  }
+}
+
 /* ══════════ MODAL DÉTAIL ══════════ */
 function afficherDetail(a) {
   const modal = document.getElementById("detailModal");
@@ -667,7 +697,11 @@ function rendreBlocReservation(a) {
 function ouvrirModalReservation(a) {
   if (!utilisateurCourant) {
     if (confirm("Vous devez être connecté pour réserver une visite. Aller à la page de connexion ?")) {
-      window.location.href = "connexion.html";
+      // On repasse par ?annonce=ID (voir ouvrirAnnonceDepuisURL) pour que la personne
+      // retrouve directement cette même fiche ouverte une fois connectée, au lieu
+      // d'atterrir sur l'accueil et devoir rechercher le bien une seconde fois.
+      const retour = encodeURIComponent(`index.html?annonce=${a.id}`);
+      window.location.href = `connexion.html?retour=${retour}`;
     }
     return;
   }
