@@ -23,20 +23,26 @@
       display: inline-block;
       color: #1E3A8A;
       -webkit-text-fill-color: #1E3A8A;
-      text-shadow: 0 1px 1px rgba(0,0,0,.5), 0 -1px 0 rgba(255,255,255,.35);
-      animation: titreLuxPulse 2.4s ease-in-out infinite;
+      text-shadow:
+        0 1px 1px rgba(0,0,0,.5), 0 -1px 0 rgba(255,255,255,.35),
+        0 0 4px rgba(252,209,22,.35), 0 0 10px rgba(252,209,22,.25), 0 0 20px rgba(252,209,22,.15);
+      animation: titreLuxPulse 2.2s ease-in-out infinite;
       letter-spacing: .2px;
     }
     @keyframes titreLuxPulse {
       0%, 100% {
-        text-shadow: 0 1px 1px rgba(0,0,0,.5), 0 -1px 0 rgba(255,255,255,.35), 0 0 6px rgba(59,111,224,.45);
+        text-shadow:
+          0 1px 1px rgba(0,0,0,.5), 0 -1px 0 rgba(255,255,255,.35),
+          0 0 4px rgba(252,209,22,.35), 0 0 10px rgba(252,209,22,.25), 0 0 20px rgba(252,209,22,.15);
       }
       50% {
-        text-shadow: 0 1px 1px rgba(0,0,0,.5), 0 -1px 0 rgba(255,255,255,.5), 0 0 16px rgba(59,111,224,.95), 0 0 28px rgba(11,31,77,.6);
+        text-shadow:
+          0 1px 1px rgba(0,0,0,.5), 0 -1px 0 rgba(255,255,255,.5),
+          0 0 6px rgba(252,209,22,.95), 0 0 16px rgba(252,209,22,.8), 0 0 32px rgba(252,209,22,.55), 0 0 50px rgba(252,209,22,.3);
       }
     }
     @media (prefers-reduced-motion: reduce) {
-      .hero h1.titre-lux { animation: none; text-shadow: 0 1px 1px rgba(0,0,0,.5), 0 0 8px rgba(59,111,224,.5); }
+      .hero h1.titre-lux { animation: none; text-shadow: 0 1px 1px rgba(0,0,0,.5), 0 0 10px rgba(252,209,22,.5); }
     }
   </style>
 

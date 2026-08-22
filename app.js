@@ -99,7 +99,7 @@ function initCarte() {
   }
 
   // Initialiser la carte Leaflet (la taille est gérée entièrement par le CSS)
-  map = L.map("carteMap").setView([LIBREVILLE_CENTER.lat, LIBREVILLE_CENTER.lng], 12);
+  map = L.map("carteMap").setView([LIBREVILLE_CENTER.lat, LIBREVILLE_CENTER.lng], 13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; contributeurs OpenStreetMap",
     maxZoom: 19
@@ -114,7 +114,7 @@ function initCarte() {
    même quand aucune annonce géolocalisée n'y correspond, pour que l'utilisateur voie
    toujours la zone qu'il a sélectionnée plutôt qu'une carte figée sur l'ancienne vue. */
 function recentrerSurZoneFiltre() {
-  let cible = LIBREVILLE_CENTER, zoom = 12;
+  let cible = LIBREVILLE_CENTER, zoom = 13;
   if (filtres.commune && CENTRES[filtres.commune]) {
     cible = CENTRES[filtres.commune];
     zoom = filtres.arrondissement ? Math.min(cible.zoom + 2, 16) : cible.zoom;
