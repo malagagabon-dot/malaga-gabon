@@ -448,6 +448,22 @@ body.theme-sombre .hero h1 {
 .leaflet-popup-content { font-family: 'Plus Jakarta Sans', sans-serif; }
 .popup-annonce { min-width: 180px; }
 .popup-annonce h4 { font-size: 13px; margin-bottom: 4px; }
+
+/* Marqueur "vous êtes ici" (bouton "Près de chez moi") : pastille bleue avec
+   un halo qui pulse, dans l'esprit de la position GPS sur Google Maps. */
+.leaflet-div-icon.marqueur-moi { background: transparent; border: none; }
+.pin-moi {
+  width: 16px; height: 16px; background: #2563EB; border: 3px solid #fff;
+  border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.35); position: relative;
+}
+.pin-moi-pulse {
+  position: absolute; inset: -9px; border-radius: 50%; background: rgba(37,99,235,.35);
+  animation: pulseMoi 1.8s ease-out infinite;
+}
+@keyframes pulseMoi {
+  0% { transform: scale(.5); opacity: .8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
 .popup-annonce .prix { color: var(--vert); font-weight: 800; font-size: 13px; }
 
 /* Marqueur personnalisé */

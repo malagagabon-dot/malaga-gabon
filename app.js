@@ -54,6 +54,8 @@ let positionUtilisateur = null; // { lat, lng } — utilisée pour le tri "près
 let presDeMoiActif = false;
 let rayonKm = 1;
 let positionInfo = null; // { quartier, arrondissement, commune } — reverse-geocoding (best effort)
+let cerclePresDeMoi = null;       // L.circle affichant le rayon choisi sur la carte
+let markerPositionUtilisateur = null; // L.marker "vous êtes ici"
 
 function togglePresDeMoi() {
   const btn = document.getElementById("btnPresDeMoi");
@@ -694,7 +696,9 @@ function rendreMarqueurs(liste) {
     bounds.push([a.lat, a.lng]);
   });
 
-  // Message + recentrage adaptés selon ce que le filtre courant produit
+  // Message adapté selon ce que le filtre courant produit (le recentrage/zoom,
+  // lui, est décidé juste après : priorité au rayon "Près de chez moi" s'il
+  // est actif, sinon comportement habituel).
   if (liste.length === 0) {
     afficherMessageCarteVide("Aucune annonce ne correspond à ces critères.");
   } else if (bounds.length === 0) {
@@ -703,11 +707,47 @@ function rendreMarqueurs(liste) {
     afficherMessageCarteVide(null);
   }
 
-  if (bounds.length > 0) {
+  mettreAJourCerclePresDeMoi();
+
+  if (presDeMoiActif && positionUtilisateur) {
+    // Le zoom est piloté par mettreAJourCerclePresDeMoi() ci-dessus : la carte
+    // se cale sur le rayon choisi (1 à 5 km) plutôt que sur l'ensemble des
+    // annonces affichées, qui peuvent inclure des résultats de repli hors
+    // rayon (quartier/arrondissement/commune).
+  } else if (bounds.length > 0) {
     map.flyToBounds(bounds, { padding: [30, 30], maxZoom: 15, duration: 0.6 });
   } else {
     recentrerSurZoneFiltre();
   }
+}
+
+/* Dessine (ou retire) sur la carte le cercle du rayon choisi et un marqueur
+   "vous êtes ici", et zoome/dézoome la vue pour cadrer exactement ce cercle
+   à chaque changement de rayon (curseur 1-5 km). Permet au chercheur de voir
+   d'un coup d'œil s'il y a un logement géolocalisé dans sa zone — les
+   annonces sans position exacte restent signalées par le texte de statut
+   sous le curseur plutôt que sur la carte. */
+function mettreAJourCerclePresDeMoi() {
+  if (cerclePresDeMoi) { map.removeLayer(cerclePresDeMoi); cerclePresDeMoi = null; }
+  if (markerPositionUtilisateur) { map.removeLayer(markerPositionUtilisateur); markerPositionUtilisateur = null; }
+
+  if (!presDeMoiActif || !positionUtilisateur) return;
+
+  cerclePresDeMoi = L.circle([positionUtilisateur.lat, positionUtilisateur.lng], {
+    radius: rayonKm * 1000,
+    color: "#10B981", weight: 2, fillColor: "#10B981", fillOpacity: 0.08
+  }).addTo(map);
+
+  markerPositionUtilisateur = L.marker([positionUtilisateur.lat, positionUtilisateur.lng], {
+    icon: L.divIcon({
+      className: "marqueur-moi",
+      html: '<div class="pin-moi"><div class="pin-moi-pulse"></div></div>',
+      iconSize: [16, 16], iconAnchor: [8, 8]
+    }),
+    zIndexOffset: 1000
+  }).addTo(map).bindPopup("📍 Vous êtes ici");
+
+  map.flyToBounds(cerclePresDeMoi.getBounds(), { padding: [24, 24], duration: 0.6 });
 }
 
 function survolerMarqueur(id, actif) {
