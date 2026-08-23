@@ -588,10 +588,10 @@ function afficherDetail(a) {
 
       <div style="margin-bottom:16px;">
         <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">Description</h3>
-        <p style="font-size:13px;color:#666;">${escapeHTML(a.description || "Aucune description.")}</p>
+        <p style="font-size:13px;color:var(--texte-secondaire);">${escapeHTML(a.description || "Aucune description.")}</p>
       </div>
 
-      <div style="margin-bottom:16px;font-size:13px;color:#444;line-height:1.9;">
+      <div style="margin-bottom:16px;font-size:13px;color:var(--texte-secondaire);line-height:1.9;">
         ${a.cloture ? "✓ Clôturé &nbsp;" : ""}${a.eau ? `✓ Eau : ${escapeHTML(a.eau)} &nbsp;` : ""}${a.electricite ? `✓ Électricité : ${escapeHTML(a.electricite)}` : ""}
         ${a.compteur ? `<br>✓ Compteur ${escapeHTML(a.compteur)}` : ""}
         ${a.etat ? `<br>✓ État du bâtiment : ${escapeHTML(a.etat)}` : ""}
@@ -709,7 +709,7 @@ function rendreBlocReservation(a) {
   if (a.statutReservation === "reserve") {
     bloc.innerHTML = `
       <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">📅 Visite</h3>
-      <p style="font-size:13px;color:#666;">Ce bien fait déjà l'objet d'une visite programmée. Réessayez plus tard s'il redevient disponible.</p>`;
+      <p style="font-size:13px;color:var(--texte-secondaire);">Ce bien fait déjà l'objet d'une visite programmée. Réessayez plus tard s'il redevient disponible.</p>`;
     return;
   }
 
@@ -718,14 +718,14 @@ function rendreBlocReservation(a) {
     const labels = { en_attente: "🟡 En attente de réponse du propriétaire", confirmee: "🔵 Visite programmée" };
     bloc.innerHTML = `
       <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">📅 Votre demande de visite</h3>
-      <p style="font-size:13px;color:#444;">${labels[demandeExistante.statut]}</p>
-      <p style="font-size:12px;color:#666;margin-top:4px;">Suivez son statut dans votre <a href="profil.html" style="color:var(--vert);font-weight:700;">profil</a>.</p>`;
+      <p style="font-size:13px;color:var(--texte-secondaire);">${labels[demandeExistante.statut]}</p>
+      <p style="font-size:12px;color:var(--texte-secondaire);margin-top:4px;">Suivez son statut dans votre <a href="profil.html" style="color:var(--vert);font-weight:700;">profil</a>.</p>`;
     return;
   }
 
   bloc.innerHTML = `
     <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">📅 Réserver une visite</h3>
-    <p style="font-size:12.5px;color:#666;margin-bottom:10px;">C'est gratuit. Proposez une date et une heure : votre demande part directement au propriétaire par WhatsApp.</p>
+    <p style="font-size:12.5px;color:var(--texte-secondaire);margin-bottom:10px;">C'est gratuit. Proposez une date et une heure : votre demande part directement au propriétaire par WhatsApp.</p>
     <button type="button" class="btn btn-jaune" id="btnOuvrirReservation" style="width:100%;">📅 Réserver une visite</button>
   `;
   document.getElementById("btnOuvrirReservation").onclick = () => ouvrirModalReservation(a);

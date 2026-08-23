@@ -16,6 +16,7 @@
   --gris-fond: #F5F6FA;
   --gris-bordure: #E5E7EB;
   --gris-clair: #9CA3AF;
+  --texte-secondaire: #5B6472;
   --rouge: #EF4444;
   --radius: 12px;
   /* Couleur foncée FIXE (ne change jamais avec le thème) : utilisée pour le
@@ -617,6 +618,7 @@ body.theme-sombre {
   --gris-fond: #10151C;
   --gris-bordure: #2A3444;
   --gris-clair: #8E9AAB;
+  --texte-secondaire: #AEB8C7;
   --texte: #EAEDF2;
 }
 

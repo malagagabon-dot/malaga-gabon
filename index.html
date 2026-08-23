@@ -44,6 +44,23 @@
     @media (prefers-reduced-motion: reduce) {
       .hero h1.titre-lux { animation: none; text-shadow: 0 1px 1px rgba(0,0,0,.5), 0 0 10px rgba(252,209,22,.5); }
     }
+
+    /* Variante mode sombre : la version d'origine (bleu marine + reflet doré)
+       est pensée pour le fond bleu clair du héros en mode clair. En mode
+       sombre, ce bleu marine devenait quasi invisible sur fond noir — surtout
+       que "-webkit-text-fill-color" prend le pas sur "color" dans Chrome et
+       ignorait donc toute tentative de correction faite uniquement via
+       "color" ailleurs. On bascule ici sur un ivoire chaud, assorti au jaune
+       de la marque, et on désactive l'animation d'origine (pensée pour la
+       teinte marine) au profit d'une lueur dorée fixe, plus lisible. */
+    body.theme-sombre .hero h1.titre-lux {
+      color: #F7ECD1;
+      -webkit-text-fill-color: #F7ECD1;
+      animation: none;
+      text-shadow:
+        0 2px 16px rgba(0,0,0,.6),
+        0 0 10px rgba(252,209,22,.55), 0 0 22px rgba(252,209,22,.3), 0 0 40px rgba(252,209,22,.15);
+    }
   </style>
 
   <!-- SEO & partage (WhatsApp, Facebook...) -->
