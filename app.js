@@ -474,7 +474,8 @@ function rendreListe(liste) {
         <span class="badge ${badgeVendeur.classe}" style="position:absolute;bottom:8px;left:8px;">${badgeVendeur.texte}</span>
       </div>
       <div class="carte-info">
-        <h3>${escapeHTML(a.titre)}<span class="type-tag">${escapeHTML(a.type || "")}</span></h3>
+        <h3>${escapeHTML(a.titre)}</h3>
+        ${a.type ? `<span class="type-tag">${escapeHTML(a.type)}</span>` : ""}
         <div class="prix">${formatPrix(a.prix)}</div>
         <div class="localisation">📍 ${escapeHTML(a.quartier || "")}${a.quartier ? " — " : ""}${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
         ${(a.etage && a.etage !== "Non précisé") || (a.vue && a.vue !== "Non précisé") ? `

@@ -367,6 +367,16 @@ body.theme-sombre .hero h1 {
    le reste du site) : sinon le texte devient quasi invisible sur ce fond
    resté blanc en mode sombre. */
 .carte-info h3 { font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: #1A2332; }
+/* Étiquette de type de bien (Maison, Appartement, Villa...) — utilise la
+   couleur déjà calculée par annonce (--couleur-type, posée sur .carte-annonce)
+   pour rester lisible sur le fond blanc fixe de la carte, quel que soit le
+   thème actif. */
+.type-tag {
+  display: inline-block; font-size: 10.5px; font-weight: 700;
+  color: var(--couleur-type, #374151); background: color-mix(in srgb, var(--couleur-type, #374151) 12%, white);
+  border: 1px solid var(--couleur-type, #374151); border-radius: 20px;
+  padding: 2px 9px; margin-bottom: 6px;
+}
 .carte-info .prix { color: var(--vert); font-weight: 800; font-size: 15px; margin-bottom: 4px; }
 .carte-info .localisation { color: #5B6472; font-size: 12px; }
 
