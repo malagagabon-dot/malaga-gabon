@@ -580,10 +580,10 @@ function afficherDetail(a) {
       ${a.video ? `<video src="${escapeHTML(a.video)}" controls style="width:100%;border-radius:10px;margin-bottom:16px;"></video>` : ""}
 
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
-        ${a.chambres ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">🛏️ ${a.chambres}</div><div style="font-size:11px;color:#666;">Chambres</div></div>` : ""}
-        ${a.salons ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">🛋️ ${a.salons}</div><div style="font-size:11px;color:#666;">Salons</div></div>` : ""}
-        ${a.sdb ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">🚿 ${a.sdb}</div><div style="font-size:11px;color:#666;">S. bain</div></div>` : ""}
-        ${a.surface ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;">📐 ${a.surface}</div><div style="font-size:11px;color:#666;">m²</div></div>` : ""}
+        ${a.chambres ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;color:#1A2332;">🛏️ ${a.chambres}</div><div style="font-size:11px;color:#666;">Chambres</div></div>` : ""}
+        ${a.salons ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;color:#1A2332;">🛋️ ${a.salons}</div><div style="font-size:11px;color:#666;">Salons</div></div>` : ""}
+        ${a.sdb ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;color:#1A2332;">🚿 ${a.sdb}</div><div style="font-size:11px;color:#666;">S. bain</div></div>` : ""}
+        ${a.surface ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><div style="font-weight:700;color:#1A2332;">📐 ${a.surface}</div><div style="font-size:11px;color:#666;">m²</div></div>` : ""}
       </div>
 
       <div style="margin-bottom:16px;">
@@ -629,12 +629,12 @@ function afficherDetail(a) {
           ⚠️ Position exacte non renseignée par le propriétaire.
         </div>`}
 
-      <div style="background:#f5f5f5;padding:16px;border-radius:12px;margin-bottom:16px;" id="blocReservationVisite"></div>
+      <div style="background:#f5f5f5;padding:16px;border-radius:12px;margin-bottom:16px;color:#1A2332;" id="blocReservationVisite"></div>
 
       <div style="margin-bottom:16px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button type="button" class="btn-paiement-info" data-cible="blocModalites" style="background:#fff;border:1.5px solid #eee;border-radius:10px;padding:11px 6px;font-size:12.5px;font-weight:700;cursor:pointer;">📋 Modalités de paiement</button>
-          <button type="button" class="btn-paiement-info" data-cible="blocMoyens" style="background:#fff;border:1.5px solid #eee;border-radius:10px;padding:11px 6px;font-size:12.5px;font-weight:700;cursor:pointer;">💳 Moyens de paiement</button>
+          <button type="button" class="btn-paiement-info" data-cible="blocModalites" style="background:#fff;border:1.5px solid #eee;border-radius:10px;padding:11px 6px;font-size:12.5px;font-weight:700;cursor:pointer;color:#1A2332;">📋 Modalités de paiement</button>
+          <button type="button" class="btn-paiement-info" data-cible="blocMoyens" style="background:#fff;border:1.5px solid #eee;border-radius:10px;padding:11px 6px;font-size:12.5px;font-weight:700;cursor:pointer;color:#1A2332;">💳 Moyens de paiement</button>
         </div>
         <div id="blocModalites" style="display:none;margin-top:10px;background:#FFF7E6;border:1px solid #FDE7B0;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#6b551a;line-height:1.6;">
           Le loyer, la caution, l'avance éventuelle et la durée d'engagement sont à convenir <strong>directement avec le propriétaire</strong>, lors d'une visite ou d'une rencontre en personne. MALAGA n'impose ni ne garantit aucune de ces conditions.
@@ -653,8 +653,8 @@ function afficherDetail(a) {
       </div>
 
       <div style="background:#f5f5f5;padding:16px;border-radius:12px;">
-        <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;">Contacter le propriétaire</h3>
-        <div style="font-size:13px;margin-bottom:10px;"><strong>${escapeHTML(a.proprietaireNom || "")}</strong></div>
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:#1A2332;">Contacter le propriétaire</h3>
+        <div style="font-size:13px;margin-bottom:10px;color:#1A2332;"><strong>${escapeHTML(a.proprietaireNom || "")}</strong></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${numeroWhatsApp ? `<a href="https://wa.me/${numeroWhatsApp}?text=${texteWhatsAppContact}" target="_blank" class="btn btn-vert">💬 WhatsApp</a>` : ""}
           ${a.proprietaireTel ? `<a href="tel:${escapeHTML(a.proprietaireTel)}" class="btn btn-bleu">📞 Appeler</a>` : ""}
@@ -708,8 +708,8 @@ function rendreBlocReservation(a) {
 
   if (a.statutReservation === "reserve") {
     bloc.innerHTML = `
-      <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">📅 Visite</h3>
-      <p style="font-size:13px;color:var(--texte-secondaire);">Ce bien fait déjà l'objet d'une visite programmée. Réessayez plus tard s'il redevient disponible.</p>`;
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;color:#1A2332;">📅 Visite</h3>
+      <p style="font-size:13px;color:#5B6472;">Ce bien fait déjà l'objet d'une visite programmée. Réessayez plus tard s'il redevient disponible.</p>`;
     return;
   }
 
@@ -717,15 +717,15 @@ function rendreBlocReservation(a) {
   if (demandeExistante) {
     const labels = { en_attente: "🟡 En attente de réponse du propriétaire", confirmee: "🔵 Visite programmée" };
     bloc.innerHTML = `
-      <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">📅 Votre demande de visite</h3>
-      <p style="font-size:13px;color:var(--texte-secondaire);">${labels[demandeExistante.statut]}</p>
-      <p style="font-size:12px;color:var(--texte-secondaire);margin-top:4px;">Suivez son statut dans votre <a href="profil.html" style="color:var(--vert);font-weight:700;">profil</a>.</p>`;
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;color:#1A2332;">📅 Votre demande de visite</h3>
+      <p style="font-size:13px;color:#5B6472;">${labels[demandeExistante.statut]}</p>
+      <p style="font-size:12px;color:#5B6472;margin-top:4px;">Suivez son statut dans votre <a href="profil.html" style="color:var(--vert);font-weight:700;">profil</a>.</p>`;
     return;
   }
 
   bloc.innerHTML = `
-    <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;">📅 Réserver une visite</h3>
-    <p style="font-size:12.5px;color:var(--texte-secondaire);margin-bottom:10px;">C'est gratuit. Proposez une date et une heure : votre demande part directement au propriétaire par WhatsApp.</p>
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;color:#1A2332;">📅 Réserver une visite</h3>
+    <p style="font-size:12.5px;color:#5B6472;margin-bottom:10px;">C'est gratuit. Proposez une date et une heure : votre demande part directement au propriétaire par WhatsApp.</p>
     <button type="button" class="btn btn-jaune" id="btnOuvrirReservation" style="width:100%;">📅 Réserver une visite</button>
   `;
   document.getElementById("btnOuvrirReservation").onclick = () => ouvrirModalReservation(a);
