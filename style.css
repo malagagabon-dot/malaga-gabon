@@ -658,6 +658,15 @@ body.theme-sombre .role-carte {
   background: #1A2130;
 }
 
+/* Titre des cartes d'annonce (.carte-info h3) : fixé en dur (#1A2332) car il
+   était censé rester sur le fond BLANC fixe de la carte. Mais en mode sombre,
+   .carte-annonce passe en fond #1A2130 (juste au-dessus) — quasi identique à
+   #1A2332, ce qui rendait le titre invisible (texte foncé sur fond foncé).
+   On force donc une couleur claire pour le titre uniquement en mode sombre. */
+body.theme-sombre .carte-info h3 {
+  color: #EAEDF2;
+}
+
 body.theme-sombre .drawer-link:hover,
 body.theme-sombre .drawer-link.actif,
 body.theme-sombre .role-carte.selectionne,
