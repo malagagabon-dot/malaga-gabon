@@ -108,6 +108,14 @@ iframe.goog-te-menu-frame,
 html, html body, body { top: 0 !important; }
 .goog-tooltip, .goog-tooltip:hover { display: none !important; }
 .goog-text-highlight { background: none !important; box-shadow: none !important; }
+/* Bulle "Texte d'origine / Évaluez cette traduction" qui apparaît au tap sur un
+   fragment traduit : c'est un iframe distinct injecté par Google, sans lien
+   avec les contrôles du site (boutons, liens…), donc le masquer ne touche à
+   rien d'autre. */
+.goog-te-balloon-frame,
+.goog-te-ftab {
+  display: none !important;
+}
 #btnLangue.langue-actif { background: rgba(255,255,255,.32); }
 
 /* Petits écrans : 3 icônes (thème, favoris, compte) + logo doivent tenir sur
@@ -228,7 +236,19 @@ body { padding-bottom: 68px; }
   color: white;
   text-align: center;
 }
-.hero h1 { font-size: clamp(19px, 4vw, 26px); font-weight: 800; margin-bottom: 16px; text-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.hero h1 {
+  font-family: 'Playfair Display', serif; font-size: clamp(21px, 4.4vw, 29px); font-weight: 700;
+  letter-spacing: .3px; margin-bottom: 16px; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+
+/* En mode sombre, le fond du héros peut devenir très foncé (l'image de fond
+   s'assombrit fortement) : un blanc pur perdait un peu de lisibilité/élégance,
+   on passe à un ivoire chaud assorti au jaune de la marque, avec une lueur
+   plus marquée pour bien détacher le titre du fond noir. */
+body.theme-sombre .hero h1 {
+  color: #F7ECD1;
+  text-shadow: 0 2px 18px rgba(0,0,0,.55), 0 0 24px rgba(252,209,22,.15);
+}
 
 .search-bar { max-width: 560px; margin: 0 auto; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .search-bar input, .search-bar button {

@@ -10,10 +10,12 @@ import { escapeHTML, formatPrix } from "./malaga-reference.js";
 
 /* ══════════ MODE SOMBRE / CLAIR ══════════
    Préférence mémorisée dans localStorage ("malaga_theme" : "sombre" | "clair").
-   Si l'utilisateur n'a jamais choisi, on suit la préférence système
-   (prefers-color-scheme). Le thème est appliqué au tout premier chargement
-   du module (avant même DOMContentLoaded) pour éviter un flash clair→sombre,
-   puis ré-appliqué/branché sur les boutons une fois le DOM prêt. */
+   Le mode sombre est le thème PAR DÉFAUT de l'application (identité visuelle
+   voulue), et reste actif tant que la personne n'a pas explicitement choisi
+   le mode clair (ce choix est alors mémorisé et respecté ensuite). Le thème
+   est appliqué au tout premier chargement du module (avant même
+   DOMContentLoaded) pour éviter un flash clair→sombre, puis ré-appliqué/
+   branché sur les boutons une fois le DOM prêt. */
 const CLE_THEME = "malaga_theme";
 
 function themeMemorise() {
@@ -23,7 +25,7 @@ function themeMemorise() {
 function themeCourantPreferere() {
   const memorise = themeMemorise();
   if (memorise === "sombre" || memorise === "clair") return memorise;
-  return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "sombre" : "clair";
+  return "sombre";
 }
 
 /* Met à jour la classe sur <body> ainsi que le libellé/icône de tous les
@@ -58,13 +60,6 @@ function initTheme() {
     e.preventDefault();
     basculerTheme();
   });
-  // Si l'utilisateur n'a jamais fait de choix explicite, on suit les
-  // changements de préférence système en direct.
-  if (!themeMemorise() && window.matchMedia) {
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-      if (!themeMemorise()) appliquerTheme(e.matches ? "sombre" : "clair");
-    });
-  }
 }
 
 // Appliqué immédiatement au chargement du module, avant DOMContentLoaded,
