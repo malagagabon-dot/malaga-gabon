@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="img/favicon-180.png">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260822e">
+  <link rel="stylesheet" href="style.css?v=20260822c">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -64,25 +64,26 @@
       <button class="drawer-close" id="fermerDrawer">✕</button>
     </div>
     <nav class="drawer-nav">
-      <a href="index.html" class="drawer-link actif" data-i18n>🏠 Accueil</a>
-      <a href="#liste-annonces" class="drawer-link" data-i18n>📋 Toutes les annonces</a>
-      <a href="#" class="drawer-link" id="drawerFavorisLink" data-i18n>❤️ Mes favoris</a>
-      <a href="connexion.html?inscription=1&role=proprietaire" class="drawer-link" data-i18n>➕ Publier une annonce</a>
-      <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;" data-i18n>🏘️ Gérer mes annonces</a>
-      <a href="admin.html" class="drawer-link" id="drawerAdmin" style="display:none;" data-i18n>🛠️ Panneau admin</a>
+      <a href="index.html" class="drawer-link actif">🏠 Accueil</a>
+      <a href="#liste-annonces" class="drawer-link">📋 Toutes les annonces</a>
+      <a href="#" class="drawer-link" id="drawerFavorisLink">❤️ Mes favoris</a>
+      <a href="connexion.html?inscription=1&role=proprietaire" class="drawer-link">➕ Publier une annonce</a>
+      <a href="mes-annonces.html" class="drawer-link" id="drawerProprio" style="display:none;">🏘️ Gérer mes annonces</a>
+      <a href="admin.html" class="drawer-link" id="drawerAdmin" style="display:none;">🛠️ Panneau admin</a>
       <div class="drawer-sep"></div>
-      <a href="#" class="drawer-link" id="drawerLang">🌐 English</a>
-      <a href="#" class="drawer-link" id="drawerNotifs" data-i18n>🔔 Activer les notifications</a>
-      <a href="parametres.html" class="drawer-link" data-i18n>⚙️ Paramètres</a>
+      <a href="#" class="drawer-link" id="drawerLangue">🌐 English</a>
+      <a href="#" class="drawer-link" id="drawerTheme">🌙 Mode sombre</a>
+      <a href="#" class="drawer-link" id="drawerNotifs">🔔 Activer les notifications</a>
+      <a href="parametres.html" class="drawer-link">⚙️ Paramètres</a>
       <div class="drawer-sep"></div>
-      <a href="tel:+24160141924" class="drawer-link" data-i18n>📞 Nous appeler</a>
-      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link" data-i18n>💬 WhatsApp</a>
-      <a href="#" class="drawer-link" id="drawerContact" data-i18n>✉️ Nous écrire</a>
-      <a href="#" class="drawer-link" id="drawerSignaler" data-i18n>🚩 Signaler un problème</a>
+      <a href="tel:+24160141924" class="drawer-link">📞 Nous appeler</a>
+      <a href="https://wa.me/24160141924" target="_blank" class="drawer-link">💬 WhatsApp</a>
+      <a href="#" class="drawer-link" id="drawerContact">✉️ Nous écrire</a>
+      <a href="#" class="drawer-link" id="drawerSignaler">🚩 Signaler un problème</a>
       <div class="drawer-sep"></div>
-      <a href="connexion.html" class="drawer-link" id="drawerConnexion" data-i18n>👤 Se connecter</a>
+      <a href="connexion.html" class="drawer-link" id="drawerConnexion">👤 Se connecter</a>
     </nav>
-    <div class="drawer-footer" data-i18n>MALAGA 🇬🇦 — Libreville, Gabon</div>
+    <div class="drawer-footer">MALAGA 🇬🇦 — Libreville, Gabon</div>
   </aside>
 
   <!-- Header -->
@@ -93,11 +94,12 @@
         <img src="img/logo.png" alt="MALAGA" class="logo-img">
         <span class="logo-text-wrap">
           <span class="logo-text">MALAGA</span>
-          <span class="slogan" data-i18n>Maison à louer au Gabon 🇬🇦</span>
+          <span class="slogan">Maison à louer au Gabon 🇬🇦</span>
         </span>
       </a>
       <div class="header-actions" id="navActions">
-        <button class="icon-btn" id="btnLang" aria-label="Passer en anglais">🌐</button>
+        <button class="icon-btn" id="btnLangue" aria-label="Switch to English">🌐</button>
+        <button class="icon-btn" id="btnTheme" aria-label="Mode sombre">🌙</button>
         <button class="icon-btn" id="btnFavorisHeader" aria-label="Favoris">
           ❤️<span class="badge-favoris" id="badgeFavorisHeader"></span>
         </button>
@@ -108,23 +110,23 @@
 
   <!-- Hero -->
   <section class="hero">
-    <h1 class="titre-lux" data-i18n>Trouvez votre logement idéal à Libreville</h1>
+    <h1 class="titre-lux">Trouvez votre logement idéal à Libreville</h1>
     <div class="search-bar">
-      <input type="text" id="search-input" placeholder="Quartier, arrondissement, type de bien..." data-i18n-ph>
-      <button class="btn btn-jaune" id="btnRechercher" data-i18n>🔍 Rechercher</button>
+      <input type="text" id="search-input" placeholder="Quartier, arrondissement, type de bien...">
+      <button class="btn btn-jaune" id="btnRechercher">🔍 Rechercher</button>
     </div>
 
     <!-- Portes d'entrée Propriétaire / Chercheur, visibles dès l'accueil -->
     <div class="home-roles" id="homeRoles">
       <a href="connexion.html?inscription=1&role=proprietaire" class="home-role-carte">
         <div class="icone">🏠</div>
-        <div class="titre" data-i18n>Propriétaire</div>
-        <div class="desc" data-i18n>Je publie des logements à louer</div>
+        <div class="titre">Propriétaire</div>
+        <div class="desc">Je publie des logements à louer</div>
       </a>
       <a href="connexion.html?inscription=1&role=chercheur" class="home-role-carte">
         <div class="icone">🔍</div>
-        <div class="titre" data-i18n>Chercheur</div>
-        <div class="desc" data-i18n>Je cherche un logement</div>
+        <div class="titre">Chercheur</div>
+        <div class="desc">Je cherche un logement</div>
       </a>
     </div>
   </section>
@@ -133,15 +135,15 @@
   <div class="stats-section">
     <button class="stat-item stat-dispo" id="btnStatDisponibles">
       <div class="stat-num" id="statDisponibles">—</div>
-      <div class="stat-label" data-i18n>🟢 Disponibles</div>
+      <div class="stat-label">🟢 Disponibles</div>
     </button>
     <button class="stat-item stat-zone" id="btnStatZones">
       <div class="stat-num" id="statZones">—</div>
-      <div class="stat-label" data-i18n>📍 Zones couvertes</div>
+      <div class="stat-label">📍 Zones couvertes</div>
     </button>
     <button class="stat-item stat-public" id="btnStatRecentes">
       <div class="stat-num" id="statAujourdhui">—</div>
-      <div class="stat-label" data-i18n>🆕 Publiées cette semaine</div>
+      <div class="stat-label">🆕 Publiées cette semaine</div>
     </button>
   </div>
 
@@ -159,26 +161,26 @@
 
   <!-- Filtres -->
   <div class="filters-bar">
-    <select id="filterCommune"><option value="" data-i18n>Toutes les communes</option></select>
-    <select id="filterArrondissement"><option value="" data-i18n>Tous les arrondissements</option></select>
-    <select id="filterType"><option value="" data-i18n>Tous les types</option></select>
+    <select id="filterCommune"><option value="">Toutes les communes</option></select>
+    <select id="filterArrondissement"><option value="">Tous les arrondissements</option></select>
+    <select id="filterType"><option value="">Tous les types</option></select>
     <select id="filterPrix">
-      <option value="" data-i18n>Budget max</option>
+      <option value="">Budget max</option>
       <option value="50000">50 000 FCFA</option>
       <option value="100000">100 000 FCFA</option>
       <option value="200000">200 000 FCFA</option>
       <option value="400000">400 000 FCFA</option>
       <option value="1000000">1 000 000 FCFA</option>
     </select>
-    <input type="number" id="filterPrixExact" placeholder="Prix exact FCFA" data-i18n-ph>
+    <input type="number" id="filterPrixExact" placeholder="Prix exact FCFA">
     <select id="filterVendeur" style="text-align:center;">
-      <option value="" data-i18n>Agences et entreprises</option>
-      <option value="agence" data-i18n>🏢 Agences immobilières</option>
-      <option value="entreprise" data-i18n>🏛️ Sociétés privées</option>
-      <option value="particulier" data-i18n>🏠 Particuliers</option>
+      <option value="">Agences et entreprises</option>
+      <option value="agence">🏢 Agences immobilières</option>
+      <option value="entreprise">🏛️ Sociétés privées</option>
+      <option value="particulier">🏠 Particuliers</option>
     </select>
     <button type="button" class="btn-catalogues" id="btnCatalogues">
-      <span data-i18n>🏢 Les catalogues</span><span class="cat-fleche" id="catFleche">▾</span>
+      🏢 Les catalogues<span class="cat-fleche" id="catFleche">▾</span>
     </button>
   </div>
 
@@ -242,7 +244,7 @@
   <section class="filtres-avances-panel replie" id="filtresAvancesPanel">
     <button type="button" class="fa-header" id="btnFiltresAvances" aria-expanded="false">
       <span class="fa-spacer" aria-hidden="true"></span>
-      <h3><span data-i18n>🎛️ Recherches avancées</span><span class="badge-filtres-actifs" id="badgeFiltresActifs" hidden>0</span></h3>
+      <h3>🎛️ Recherches avancées<span class="badge-filtres-actifs" id="badgeFiltresActifs" hidden>0</span></h3>
       <span class="fa-fleche" id="faFleche" aria-label="Déployer">
         <span class="fa-fleche-haut">▲</span>
         <span class="fa-fleche-bas">▼</span>
@@ -251,108 +253,108 @@
 
     <div class="fa-body" id="faBody">
       <section class="fa-section fa-loc">
-        <h4 data-i18n>📍 Localisation</h4>
+        <h4>📍 Localisation</h4>
         <div class="fa-champ">
-          <label data-i18n>Quartier</label>
-          <input type="text" id="faQuartier" placeholder="Ex : Angondjé" data-i18n-ph>
+          <label>Quartier</label>
+          <input type="text" id="faQuartier" placeholder="Ex : Angondjé">
         </div>
         <div class="fa-champ">
-          <label data-i18n>Rue / point de repère</label>
-          <input type="text" id="faRue" placeholder="Ex : Total d'Angondjé" data-i18n-ph>
+          <label>Rue / point de repère</label>
+          <input type="text" id="faRue" placeholder="Ex : Total d'Angondjé">
         </div>
         <div class="fa-champ">
-          <label data-i18n>Caractère de la zone</label>
-          <select id="faZone"><option value="" data-i18n>Indifférent</option></select>
+          <label>Caractère de la zone</label>
+          <select id="faZone"><option value="">Indifférent</option></select>
         </div>
         <div class="fa-champ">
           <label class="fa-check">
             <input type="checkbox" id="faPresLocalisation">
-            <span data-i18n>Trier les annonces les plus proches de moi</span>
+            Trier les annonces les plus proches de moi
           </label>
         </div>
       </section>
 
       <section class="fa-section fa-type">
-        <h4 data-i18n>🏠 Type &amp; capacités</h4>
+        <h4>🏠 Type &amp; capacités</h4>
         <div class="fa-grille-2">
           <div class="fa-champ">
-            <label data-i18n>Chambres (min.)</label>
-            <select id="faChambres"><option value="" data-i18n>Indifférent</option></select>
+            <label>Chambres (min.)</label>
+            <select id="faChambres"><option value="">Indifférent</option></select>
           </div>
           <div class="fa-champ">
-            <label data-i18n>Salons (min.)</label>
-            <select id="faSalons"><option value="" data-i18n>Indifférent</option></select>
+            <label>Salons (min.)</label>
+            <select id="faSalons"><option value="">Indifférent</option></select>
           </div>
         </div>
         <div class="fa-grille-2">
           <div class="fa-champ">
-            <label data-i18n>Douches (min.)</label>
-            <select id="faDouches"><option value="" data-i18n>Indifférent</option></select>
+            <label>Douches (min.)</label>
+            <select id="faDouches"><option value="">Indifférent</option></select>
           </div>
           <div class="fa-champ">
-            <label data-i18n>Type de douche</label>
-            <select id="faDoucheType"><option value="" data-i18n>Indifférent</option></select>
+            <label>Type de douche</label>
+            <select id="faDoucheType"><option value="">Indifférent</option></select>
           </div>
         </div>
         <div class="fa-champ">
-          <label data-i18n>Cuisine</label>
-          <select id="faCuisineType"><option value="" data-i18n>Indifférent</option></select>
+          <label>Cuisine</label>
+          <select id="faCuisineType"><option value="">Indifférent</option></select>
         </div>
       </section>
 
       <section class="fa-section fa-construction">
-        <h4 data-i18n>🧱 Construction &amp; finitions</h4>
+        <h4>🧱 Construction &amp; finitions</h4>
         <div class="fa-champ">
-          <label data-i18n>Matériau de construction</label>
-          <select id="faMateriau"><option value="" data-i18n>Indifférent</option></select>
+          <label>Matériau de construction</label>
+          <select id="faMateriau"><option value="">Indifférent</option></select>
         </div>
         <div class="fa-champ">
-          <label data-i18n>Couleur de peinture murale</label>
-          <select id="faCouleur"><option value="" data-i18n>Indifférente</option></select>
+          <label>Couleur de peinture murale</label>
+          <select id="faCouleur"><option value="">Indifférente</option></select>
         </div>
         <div class="fa-grille-2">
           <div class="fa-champ">
-            <label data-i18n>Terrasse</label>
+            <label>Terrasse</label>
             <select id="faTerrasse">
-              <option value="" data-i18n>Indifférent</option>
-              <option value="oui" data-i18n>Avec terrasse</option>
-              <option value="non" data-i18n>Sans terrasse</option>
+              <option value="">Indifférent</option>
+              <option value="oui">Avec terrasse</option>
+              <option value="non">Sans terrasse</option>
             </select>
           </div>
           <div class="fa-champ">
-            <label data-i18n>Sol carrelé</label>
+            <label>Sol carrelé</label>
             <select id="faCarreaux">
-              <option value="" data-i18n>Indifférent</option>
-              <option value="oui" data-i18n>Carrelé</option>
-              <option value="non" data-i18n>Non carrelé</option>
+              <option value="">Indifférent</option>
+              <option value="oui">Carrelé</option>
+              <option value="non">Non carrelé</option>
             </select>
           </div>
         </div>
       </section>
 
       <section class="fa-section fa-budget">
-        <h4 data-i18n>💰 Budget</h4>
+        <h4>💰 Budget</h4>
         <div class="fa-grille-2">
           <div class="fa-champ">
-            <label data-i18n>Prix min. (FCFA)</label>
+            <label>Prix min. (FCFA)</label>
             <input type="number" id="faPrixMin" min="0" placeholder="0">
           </div>
           <div class="fa-champ">
-            <label data-i18n>Prix max. (FCFA)</label>
-            <input type="number" id="faPrixMax" min="0" placeholder="Sans limite" data-i18n-ph>
+            <label>Prix max. (FCFA)</label>
+            <input type="number" id="faPrixMax" min="0" placeholder="Sans limite">
           </div>
         </div>
       </section>
 
       <section class="fa-section fa-equip">
-        <h4 data-i18n>✅ Équipements</h4>
+        <h4>✅ Équipements</h4>
         <div class="fa-chips" id="faEquipements"></div>
       </section>
     </div>
 
     <div class="fa-footer">
-      <button type="button" class="btn btn-outline" id="btnReinitialiserFiltres" data-i18n>Réinitialiser</button>
-      <button type="button" class="btn btn-vert" id="btnAppliquerFiltres" data-i18n>Appliquer les filtres</button>
+      <button type="button" class="btn btn-outline" id="btnReinitialiserFiltres">Réinitialiser</button>
+      <button type="button" class="btn btn-vert" id="btnAppliquerFiltres">Appliquer les filtres</button>
     </div>
   </section>
 
@@ -579,23 +581,94 @@
     .stats-section .stat-item.stat-public .stat-num{color:#7C3AED !important;}
   </style>
 
+  <!-- ═══ Mode sombre : surcharges des styles propres à cette page (fond,
+       panneau "Recherches avancées" en couleurs pastel, catalogues, filtres
+       colorés) qui étaient jusqu'ici toujours clairs, quel que soit le thème.
+       Placé après tous les autres <style> ci-dessus afin de bien les
+       surcharger dans la cascade. ═══ -->
+  <style>
+    /* Fond général de la page */
+    body.theme-sombre{
+      background:
+        radial-gradient(circle at 15% 0%, rgba(0,158,96,.08) 0%, transparent 45%),
+        radial-gradient(circle at 100% 15%, rgba(242,185,12,.06) 0%, transparent 40%),
+        radial-gradient(circle at 0% 80%, rgba(37,99,235,.10) 0%, transparent 45%),
+        linear-gradient(180deg,#10151C 0%,#0B0F15 100%) !important;
+      background-attachment:fixed !important;
+    }
+
+    /* Bouton "Les catalogues" et cartes catalogue */
+    body.theme-sombre .btn-catalogues{background:#1A2130 !important;}
+    body.theme-sombre .catalogue-carte{background:#1A2130 !important;}
+    body.theme-sombre .catalogue-carte .logo{background:#232C3D !important;}
+
+    /* Panneau "Recherches avancées" */
+    body.theme-sombre .fa-body{background:#151B26 !important;}
+    body.theme-sombre .fa-champ label{color:#AEB8C7 !important;}
+    body.theme-sombre .fa-check{color:var(--texte) !important;}
+    body.theme-sombre .fa-champ input,
+    body.theme-sombre .fa-champ select{
+      background:#1A2130 !important; border-color:#2A3444 !important; color:var(--texte) !important;
+    }
+    body.theme-sombre .fa-equip .chip:not(.actif){background:#1A2130 !important;}
+
+    /* Palette par section, adaptée en teintes sombres translucides */
+    body.theme-sombre .fa-loc{background:rgba(59,130,246,.12) !important;border-color:rgba(59,130,246,.35) !important;}
+    body.theme-sombre .fa-loc h4{color:#93C5FD !important;}
+
+    body.theme-sombre .fa-type{background:rgba(251,146,60,.12) !important;border-color:rgba(251,146,60,.35) !important;}
+    body.theme-sombre .fa-type h4{color:#FDBA74 !important;}
+
+    body.theme-sombre .fa-construction{background:rgba(139,92,246,.14) !important;border-color:rgba(139,92,246,.35) !important;}
+    body.theme-sombre .fa-construction h4{color:#C4B5FD !important;}
+
+    body.theme-sombre .fa-budget{background:rgba(217,164,6,.14) !important;border-color:rgba(217,164,6,.35) !important;}
+    body.theme-sombre .fa-budget h4{color:#FDE68A !important;}
+
+    body.theme-sombre .fa-equip{background:rgba(45,212,191,.12) !important;border-color:rgba(45,212,191,.35) !important;}
+    body.theme-sombre .fa-equip h4{color:#5EEAD4 !important;}
+
+    /* Filtres rapides colorés (commune, type, prix, vendeur) */
+    body.theme-sombre .filters-bar #filterCommune, body.theme-sombre .filters-bar #filterArrondissement{
+      background:rgba(59,130,246,.14) !important; border-color:rgba(59,130,246,.4) !important; color:#93C5FD !important;}
+    body.theme-sombre .filters-bar #filterType{
+      background:rgba(251,146,60,.14) !important; border-color:rgba(251,146,60,.4) !important; color:#FDBA74 !important;}
+    body.theme-sombre .filters-bar #filterPrix, body.theme-sombre .filters-bar #filterPrixExact{
+      background:rgba(250,204,21,.14) !important; border-color:rgba(250,204,21,.4) !important; color:#FDE68A !important;}
+    body.theme-sombre .filters-bar #filterVendeur{
+      background:rgba(45,212,191,.14) !important; border-color:rgba(45,212,191,.4) !important; color:#5EEAD4 !important;}
+
+    /* Sélecteur de mode d'affichage (grille/liste) et libellés discrets */
+    body.theme-sombre .vue-modes button{background:#1A2130 !important;}
+    body.theme-sombre .type-tag{color:var(--gris-clair) !important;}
+    body.theme-sombre .carte-info .desc-liste{color:var(--gris-clair) !important;}
+    body.theme-sombre .legende-prix{color:var(--gris-clair) !important;}
+
+    /* Cartes statistiques d'accueil : teintes éclaircies pour rester lisibles
+       sur fond sombre (les couleurs d'origine, prévues pour un fond clair,
+       perdaient en contraste). */
+    body.theme-sombre .stats-section .stat-item.stat-dispo .stat-num{color:#34D399 !important;}
+    body.theme-sombre .stats-section .stat-item.stat-zone .stat-num{color:#60A5FA !important;}
+    body.theme-sombre .stats-section .stat-item.stat-public .stat-num{color:#C4B5FD !important;}
+  </style>
+
   <!-- Contenu : liste des annonces -->
   <div class="split-layout">
     <div class="liste-col">
       <div class="section-header">
-        <h2 id="liste-annonces" data-i18n>Annonces disponibles</h2>
-        <span id="count-annonces" data-i18n>Chargement…</span>
+        <h2 id="liste-annonces">Annonces disponibles</h2>
+        <span id="count-annonces">Chargement…</span>
       </div>
       <div class="vue-modes-bar">
         <div class="vue-modes" id="vueModes">
-          <button type="button" data-vue="liste" title="Liste détaillée"><span class="vm-icone">☰</span><span class="vm-label" data-i18n>Liste</span></button>
-          <button type="button" data-vue="compacte" title="Miniature"><span class="vm-icone">▪</span><span class="vm-label" data-i18n>Mini</span></button>
-          <button type="button" data-vue="moyenne" title="Moyenne"><span class="vm-icone">▦</span><span class="vm-label" data-i18n>Moyen</span></button>
-          <button type="button" data-vue="grande" title="Grande"><span class="vm-icone">🔲</span><span class="vm-label" data-i18n>Grand</span></button>
+          <button type="button" data-vue="liste" title="Liste détaillée"><span class="vm-icone">☰</span><span class="vm-label">Liste</span></button>
+          <button type="button" data-vue="compacte" title="Miniature"><span class="vm-icone">▪</span><span class="vm-label">Mini</span></button>
+          <button type="button" data-vue="moyenne" title="Moyenne"><span class="vm-icone">▦</span><span class="vm-label">Moyen</span></button>
+          <button type="button" data-vue="grande" title="Grande"><span class="vm-icone">🔲</span><span class="vm-label">Grand</span></button>
         </div>
       </div>
       <div id="liste-annonces-grille" class="grille-annonces">
-        <div class="spinner" data-i18n>Chargement des annonces en temps réel…</div>
+        <div class="spinner">Chargement des annonces en temps réel…</div>
       </div>
     </div>
   </div>
@@ -606,9 +679,9 @@
     <p>📞 +241 60 14 19 24 &nbsp;|&nbsp; ✉️ malagagabon@gmail.com</p>
     <p style="color:rgba(255,255,255,.5);font-size:11px;margin-top:8px;">MALAGA © 2026 — Libreville, Gabon</p>
     <p style="font-size:11px;margin-top:8px;">
-      <a href="mentions-legales.html" style="color:rgba(255,255,255,.6);" data-i18n>Mentions légales</a> ·
-      <a href="confidentialite.html" style="color:rgba(255,255,255,.6);" data-i18n>Confidentialité</a> ·
-      <a href="cgu.html" style="color:rgba(255,255,255,.6);" data-i18n>CGU</a>
+      <a href="mentions-legales.html" style="color:rgba(255,255,255,.6);">Mentions légales</a> ·
+      <a href="confidentialite.html" style="color:rgba(255,255,255,.6);">Confidentialité</a> ·
+      <a href="cgu.html" style="color:rgba(255,255,255,.6);">CGU</a>
     </p>
     <p style="font-size:10.5px;color:rgba(255,255,255,.4);margin-top:4px;">
       Application développée par KOZANGUE ESSONO Patrick Bertin —
@@ -625,29 +698,29 @@
   <div class="modal-overlay" id="contactModal">
     <div class="modal-panneau">
       <div class="mini-modal-header">
-        <h2 data-i18n>✉️ Nous écrire</h2>
+        <h2>✉️ Nous écrire</h2>
         <button class="modal-close" id="fermerContact" aria-label="Fermer">✕</button>
       </div>
       <form id="formContact" class="form-card mini-modal-body">
         <div class="champ">
-          <label data-i18n>Nom *</label>
-          <input type="text" id="contactNom" required placeholder="Votre nom" data-i18n-ph>
+          <label>Nom *</label>
+          <input type="text" id="contactNom" required placeholder="Votre nom">
         </div>
         <div class="champ">
-          <label data-i18n>Téléphone *</label>
+          <label>Téléphone *</label>
           <input type="tel" id="contactTel" required placeholder="+241 6 XX XX XX">
         </div>
         <div class="champ">
-          <label data-i18n>Sujet</label>
-          <input type="text" id="contactSujet" placeholder="Ex: Question sur une annonce" data-i18n-ph>
+          <label>Sujet</label>
+          <input type="text" id="contactSujet" placeholder="Ex: Question sur une annonce">
         </div>
         <div class="champ">
-          <label data-i18n>Message *</label>
-          <textarea id="contactMessage" required rows="4" placeholder="Votre message..." data-i18n-ph></textarea>
+          <label>Message *</label>
+          <textarea id="contactMessage" required rows="4" placeholder="Votre message..."></textarea>
         </div>
         <div class="erreur-msg" id="contactErreur"></div>
-        <div class="succes-msg" id="contactSucces" data-i18n>✅ Message envoyé ! Nous vous répondrons rapidement.</div>
-        <button type="submit" class="btn btn-vert" style="width:100%;" id="contactBtn" data-i18n>Envoyer</button>
+        <div class="succes-msg" id="contactSucces">✅ Message envoyé ! Nous vous répondrons rapidement.</div>
+        <button type="submit" class="btn btn-vert" style="width:100%;" id="contactBtn">Envoyer</button>
       </form>
     </div>
   </div>
@@ -656,36 +729,36 @@
   <div class="modal-overlay" id="signalerModal">
     <div class="modal-panneau">
       <div class="mini-modal-header">
-        <h2 data-i18n>🚩 Signaler un problème</h2>
+        <h2>🚩 Signaler un problème</h2>
         <button class="modal-close" id="fermerSignaler" aria-label="Fermer">✕</button>
       </div>
       <form id="formSignaler" class="form-card mini-modal-body">
         <div class="champ">
-          <label data-i18n>Type de problème *</label>
+          <label>Type de problème *</label>
           <select id="signalerType" required>
-            <option value="" data-i18n>Choisir...</option>
-            <option data-i18n>Fausse annonce</option>
-            <option data-i18n>Numéro frauduleux</option>
-            <option data-i18n>Bien déjà loué</option>
-            <option data-i18n>Contenu inapproprié</option>
-            <option data-i18n>Autre</option>
+            <option value="">Choisir...</option>
+            <option>Fausse annonce</option>
+            <option>Numéro frauduleux</option>
+            <option>Bien déjà loué</option>
+            <option>Contenu inapproprié</option>
+            <option>Autre</option>
           </select>
         </div>
         <div class="champ">
-          <label data-i18n>Annonce concernée</label>
-          <input type="text" id="signalerAnnonce" placeholder="Titre ou quartier de l'annonce (facultatif)" data-i18n-ph>
+          <label>Annonce concernée</label>
+          <input type="text" id="signalerAnnonce" placeholder="Titre ou quartier de l'annonce (facultatif)">
         </div>
         <div class="champ">
-          <label data-i18n>Votre nom</label>
-          <input type="text" id="signalerNom" placeholder="Facultatif" data-i18n-ph>
+          <label>Votre nom</label>
+          <input type="text" id="signalerNom" placeholder="Facultatif">
         </div>
         <div class="champ">
-          <label data-i18n>Description *</label>
-          <textarea id="signalerDesc" required rows="4" placeholder="Décrivez le problème..." data-i18n-ph></textarea>
+          <label>Description *</label>
+          <textarea id="signalerDesc" required rows="4" placeholder="Décrivez le problème..."></textarea>
         </div>
         <div class="erreur-msg" id="signalerErreur"></div>
-        <div class="succes-msg" id="signalerSucces" data-i18n>✅ Signalement envoyé. Merci de nous aider à garder MALAGA fiable.</div>
-        <button type="submit" class="btn btn-jaune" style="width:100%;" id="signalerBtn" data-i18n>Envoyer le signalement</button>
+        <div class="succes-msg" id="signalerSucces">✅ Signalement envoyé. Merci de nous aider à garder MALAGA fiable.</div>
+        <button type="submit" class="btn btn-jaune" style="width:100%;" id="signalerBtn">Envoyer le signalement</button>
       </form>
     </div>
   </div>
@@ -694,31 +767,31 @@
   <div class="modal-overlay" id="reservationModal">
     <div class="modal-panneau">
       <div class="mini-modal-header">
-        <h2 data-i18n>📅 Réserver une visite</h2>
+        <h2>📅 Réserver une visite</h2>
         <button class="modal-close" id="fermerReservation" aria-label="Fermer">✕</button>
       </div>
       <div class="form-card mini-modal-body">
         <p style="font-size:13px;color:#444;margin-bottom:4px;"><strong id="resaAnnonceTitre"></strong></p>
-        <p style="font-size:12.5px;color:#666;margin-bottom:14px;" data-i18n>
+        <p style="font-size:12.5px;color:#666;margin-bottom:14px;">
           C'est gratuit. Indiquez la date et l'heure souhaitées : votre demande est envoyée au propriétaire par WhatsApp, avec un lien pour qu'il accepte ou refuse directement le rendez-vous.
         </p>
 
         <form id="formReservation">
           <div class="champ">
-            <label data-i18n>Date souhaitée *</label>
+            <label>Date souhaitée *</label>
             <input type="date" id="resaDate" required>
           </div>
           <div class="champ">
-            <label data-i18n>Heure souhaitée *</label>
+            <label>Heure souhaitée *</label>
             <input type="time" id="resaHeure" required>
           </div>
           <div class="champ">
-            <label data-i18n>Message (optionnel)</label>
-            <textarea id="resaMessage" rows="3" placeholder="Précisions, questions sur le loyer ou les modalités de paiement..." data-i18n-ph></textarea>
+            <label>Message (optionnel)</label>
+            <textarea id="resaMessage" rows="3" placeholder="Précisions, questions sur le loyer ou les modalités de paiement..."></textarea>
           </div>
           <div class="erreur-msg" id="resaErreur"></div>
           <div class="succes-msg" id="resaSucces"></div>
-          <button type="submit" class="btn btn-vert" style="width:100%;" id="resaBtn" data-i18n>📲 Envoyer via WhatsApp</button>
+          <button type="submit" class="btn btn-vert" style="width:100%;" id="resaBtn">📲 Envoyer via WhatsApp</button>
         </form>
       </div>
     </div>
@@ -727,19 +800,19 @@
   <!-- Barre de navigation basse -->
   <nav class="bottom-nav">
     <a href="index.html" class="bn-item actif" data-page="index.html">
-      <span class="bn-icon">🏠</span><span data-i18n>Accueil</span>
+      <span class="bn-icon">🏠</span><span>Accueil</span>
     </a>
     <a href="#carteWrap" class="bn-item" id="bnCarte">
-      <span class="bn-icon">🗺️</span><span data-i18n>Carte</span>
+      <span class="bn-icon">🗺️</span><span>Carte</span>
     </a>
     <a href="connexion.html?inscription=1&role=proprietaire" class="bn-item bn-central">
       <span class="bn-icon">➕</span>
     </a>
     <a href="#" class="bn-item" id="bnFavoris">
-      <span class="bn-icon">❤️<span class="badge-favoris" id="badgeFavorisBn"></span></span><span data-i18n>Favoris</span>
+      <span class="bn-icon">❤️<span class="badge-favoris" id="badgeFavorisBn"></span></span><span>Favoris</span>
     </a>
     <a href="connexion.html" class="bn-item" id="bnProfil" data-page="connexion.html">
-      <span class="bn-icon">👤</span><span id="bnProfilLabel" data-i18n>Profil</span>
+      <span class="bn-icon">👤</span><span id="bnProfilLabel">Profil</span>
     </a>
   </nav>
 
@@ -748,7 +821,7 @@
   <!-- Notifications email automatiques (voir emailjs-config.js) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="emailjs-config.js"></script>
-  <script type="module" src="nav.js?v=20260822c"></script>
+  <script type="module" src="nav.js?v=20260822a"></script>
   <script type="module" src="app.js?v=20260819b"></script>
   <script src="grille-adaptive.js?v=20260819b"></script>
   <script type="module" src="contact-signalement.js?v=20260819b"></script>
