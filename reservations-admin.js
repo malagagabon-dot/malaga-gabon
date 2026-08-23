@@ -2,8 +2,10 @@
    MALAGA — reservations-admin.js
    Onglet "Réservations" du panneau admin (admin.html).
    Écoute en temps réel la collection Firestore "demandesVisite"
-   et permet à l'admin de valider/refuser après vérification
-   du message WhatsApp de preuve de transfert.
+   (demandes de visite gratuites) et permet à l'admin de
+   valider/refuser une demande, en parallèle du propriétaire qui
+   peut faire de même depuis son profil (profil.html) — les deux
+   actions mettent à jour le même statut de réservation du bien.
    Chargé après admin.js — n'y touche pas, s'y accroche seulement.
 ═══════════════════════════════════════════════════════════ */
 
@@ -142,11 +144,10 @@ const BADGE_STATUT = { en_attente: 'badge-yellow', confirmee: 'badge-blue', refu
 const LABEL_STATUT = { en_attente: '🟡 En attente', confirmee: '🔵 Visite programmée', refusee: '🚫 Refusée', expiree: '⌛ Expirée' };
 
 function carteReservationHTML(d) {
-  const numeroWhatsApp = (d.numeroEnvoi || '').replace(/[^\d]/g, '');
+  const numeroWhatsApp = (d.numeroEnvoi || d.chercheurTel || '').replace(/[^\d]/g, '');
   const messageWhatsApp = encodeURIComponent(
-    `Bonjour ${d.chercheurNom || ''}, concernant votre demande de visite pour "${d.annonceTitre || "l'annonce"}" : merci de confirmer votre transfert (montant, numéro, nom).`
+    `Bonjour ${d.chercheurNom || ''}, concernant votre demande de visite pour "${d.annonceTitre || "l'annonce"}" : merci de confirmer que ce créneau vous convient toujours.`
   );
-  const operateurLabel = d.operateur === 'airtel' ? '📱 Airtel Money' : '📱 Moov Money';
 
   return `
     <div style="border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.75rem;">
@@ -161,14 +162,13 @@ function carteReservationHTML(d) {
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem 1rem;background:var(--bg);border-radius:8px;padding:.75rem 1rem;margin-bottom:.75rem;font-size:.83rem;">
         <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Chercheur</div><strong>${escapeHTML(d.chercheurNom || '—')}</strong></div>
         <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Téléphone</div><strong>${escapeHTML(d.chercheurTel || '—')}</strong></div>
-        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Opérateur</div><strong>${operateurLabel}</strong></div>
-        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Montant envoyé</div><strong>${d.montant ? Number(d.montant).toLocaleString('fr-FR') + ' FCFA' : '—'}</strong></div>
-        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Numéro d'envoi</div><strong>${escapeHTML(d.numeroEnvoi || '—')}</strong></div>
+        <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Date souhaitée</div><strong>${escapeHTML(d.dateSouhaitee || '—')}${d.heureSouhaitee ? ' à ' + escapeHTML(d.heureSouhaitee) : ''}</strong></div>
         <div><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Bien (ID)</div><strong>${escapeHTML(d.annonceId || '—')}</strong></div>
+        ${d.message ? `<div style="grid-column:1/-1;"><div style="color:var(--text-3);font-size:.72rem;text-transform:uppercase;">Message du chercheur</div><strong style="font-weight:600;">${escapeHTML(d.message)}</strong></div>` : ''}
       </div>
 
       <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-        ${numeroWhatsApp ? `<a href="https://wa.me/${numeroWhatsApp}?text=${messageWhatsApp}" target="_blank" class="btn-outline-sm" style="text-decoration:none;">💬 Vérifier sur WhatsApp</a>` : ''}
+        ${numeroWhatsApp ? `<a href="https://wa.me/${numeroWhatsApp}?text=${messageWhatsApp}" target="_blank" class="btn-outline-sm" style="text-decoration:none;">💬 Contacter sur WhatsApp</a>` : ''}
         ${d.statut === 'en_attente' ? `
           <button id="res-valider-${d.id}" class="btn-primary" style="padding:.5rem 1rem;font-size:.8rem;">✅ Valider</button>
           <button id="res-refuser-${d.id}" class="btn-danger" style="padding:.5rem 1rem;font-size:.8rem;">✕ Refuser</button>
@@ -183,7 +183,7 @@ function confirmerActionReservation(d, nouveauStatut) {
   const estValidation = nouveauStatut === 'confirmee';
   document.getElementById('modalTitle').textContent = estValidation ? 'Confirmer la réservation ?' : 'Refuser cette demande ?';
   document.getElementById('modalMsg').textContent = estValidation
-    ? "Vérifiez que le montant et le nom reçus sur WhatsApp correspondent bien à ceux affichés avant de confirmer. Le bien passera en « Visite programmée » et ne sera plus réservable par un autre chercheur."
+    ? "Le bien passera en « Visite programmée » et ne sera plus réservable par un autre chercheur tant que cette visite n'est pas refusée ou expirée. Le propriétaire peut aussi traiter cette demande directement depuis son profil : les deux actions restent synchronisées."
     : "L'annonce redeviendra immédiatement disponible pour les autres chercheurs.";
 
   const btn = document.getElementById('modalConfirmBtn');

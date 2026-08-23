@@ -638,6 +638,17 @@
       if (!d) return;
       try {
         await updateDoc(doc(db, "demandesVisite", id), { statut: nouveauStatut });
+        // Aligné sur le comportement de l'admin (reservations-admin.js) : dès
+        // qu'une visite est programmée, le bien doit devenir indisponible pour
+        // les autres chercheurs — sinon un autre visiteur pourrait envoyer une
+        // nouvelle demande sur le même bien pendant que celle-ci est en cours.
+        // À l'inverse, un refus relibère explicitement le bien (utile si un
+        // admin l'avait entre-temps marqué "reserve" sur une autre demande).
+        if (d.annonceId) {
+          await updateDoc(doc(db, "annonces", d.annonceId), {
+            statutReservation: nouveauStatut === "confirmee" ? "reserve" : "disponible"
+          });
+        }
         const numero = (d.chercheurTel || "").replace(/[^\d]/g, "");
         if (numero) window.open(`https://wa.me/${numero}?text=${encodeURIComponent(messageReponse(d, nouveauStatut))}`, "_blank");
       } catch (err) {
