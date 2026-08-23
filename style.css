@@ -92,14 +92,20 @@ a { color: inherit; }
 /* ══════════ TRADUCTION (Google Translate) — masquage de l'UI Google ══════════
    Le widget Google Translate reste entièrement piloté par le bouton 🌐 (nav.js) ;
    sa propre interface (barre du haut, icône, popup de sélection de langue) ne
-   doit jamais être visible : on ne garde que la traduction du texte elle-même. */
+   doit jamais être visible : on ne garde que la traduction du texte elle-même.
+   Google insère parfois un décalage inline ("top: 40px") sur <html> et <body>
+   quand sa bannière est active, ce qui désynchronise la position visuelle du
+   header sticky de sa zone cliquable réelle (les taps semblent "rater" les
+   boutons) : on neutralise ce décalage en plus de masquer la bannière. */
 #google_translate_element,
 .goog-te-banner-frame,
 .goog-te-gadget-icon,
+.goog-te-menu-frame,
+iframe.goog-te-menu-frame,
 .skiptranslate > iframe {
   display: none !important;
 }
-body { top: 0 !important; }
+html, html body, body { top: 0 !important; }
 .goog-tooltip, .goog-tooltip:hover { display: none !important; }
 .goog-text-highlight { background: none !important; box-shadow: none !important; }
 #btnLangue.langue-actif { background: rgba(255,255,255,.32); }

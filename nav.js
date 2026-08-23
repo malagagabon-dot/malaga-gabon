@@ -74,27 +74,19 @@ appliquerTheme(themeCourantPreferere());
 /* ══════════ TRADUCTION FR / EN (Google Translate) ══════════
    Bouton 🌐 dans le header et le drawer. Plutôt qu'une double version de
    chaque texte du site (irréaliste sur un site multi-pages qui évolue vite),
-   on s'appuie sur le moteur de traduction de Google, piloté par le cookie
-   "googtrans" : "/fr/en" = traduire vers l'anglais, "/fr/fr" = revenir au
-   français d'origine. La page est rechargée après le changement pour que la
-   traduction s'applique proprement du haut en bas (y compris le contenu
-   injecté dynamiquement par les autres scripts). Préférence mémorisée dans
-   localStorage ("malaga_langue") pour rester cohérente d'une page à l'autre. */
+   on s'appuie sur le moteur de traduction de Google, piloté directement via
+   son sélecteur interne ("goog-te-combo") plutôt que par le cookie
+   "googtrans" + rechargement de page : un reload perdait l'état de la carte
+   (zoom/centrage), les filtres ouverts, le scroll, etc. En pilotant le
+   sélecteur en direct, la traduction s'applique au DOM en place, sans
+   navigation. Préférence mémorisée dans localStorage ("malaga_langue") pour
+   rester cohérente d'une page à l'autre (ré-appliquée automatiquement au
+   chargement de chaque nouvelle page, toujours sans reload). */
 const CLE_LANGUE = "malaga_langue";
 
 function langueMemorisee() {
   try { return localStorage.getItem(CLE_LANGUE) === "en" ? "en" : "fr"; }
   catch { return "fr"; }
-}
-
-function definirCookieTraduction(langue) {
-  const valeur = langue === "en" ? "/fr/en" : "/fr/fr";
-  const expire = "expires=Fri, 31 Dec 9999 23:59:59 GMT";
-  // Posé à la fois sans domaine explicite et avec le hostname courant : les
-  // pages servies en sous-chemin (ex. github.io/malaga) lisent parfois le
-  // cookie différemment selon comment il a été écrit.
-  document.cookie = `googtrans=${valeur};path=/;${expire}`;
-  try { document.cookie = `googtrans=${valeur};path=/;domain=${location.hostname};${expire}`; } catch { /* ignoré */ }
 }
 
 function majIconeLangue(langue) {
@@ -107,20 +99,35 @@ function majIconeLangue(langue) {
   });
 }
 
+/* Le sélecteur `.goog-te-combo` n'existe qu'une fois le script Google chargé
+   et le widget initialisé (asynchrone) : on patiente par petites tentatives
+   plutôt que d'échouer silencieusement si l'utilisateur clique trop tôt. */
+function attendreComboTraduction(callback, tentatives = 0) {
+  const combo = document.querySelector(".goog-te-combo");
+  if (combo) { callback(combo); return; }
+  if (tentatives > 40) return; // ~10s, abandon silencieux (best-effort)
+  setTimeout(() => attendreComboTraduction(callback, tentatives + 1), 250);
+}
+
+function appliquerTraductionCombo(langue) {
+  attendreComboTraduction((combo) => {
+    if (combo.value === langue) return; // déjà dans la langue voulue
+    combo.value = langue;
+    combo.dispatchEvent(new Event("change"));
+  });
+}
+
 export function basculerLangue() {
   const nouvelle = langueMemorisee() === "en" ? "fr" : "en";
   try { localStorage.setItem(CLE_LANGUE, nouvelle); } catch { /* ignoré */ }
-  definirCookieTraduction(nouvelle);
-  // Rechargement nécessaire : Google Translate traduit le DOM tel qu'il est
-  // au chargement de la page, un simple changement de cookie sans reload ne
-  // suffit pas à retraduire le contenu déjà affiché.
-  location.reload();
+  majIconeLangue(nouvelle);
+  appliquerTraductionCombo(nouvelle);
   return nouvelle;
 }
 
 /* Injecte le widget Google Translate (invisible) une seule fois par page.
    `autoDisplay:false` empêche l'affichage de la barre Google en haut de page ;
-   c'est le cookie "googtrans" ci-dessus qui pilote la traduction réelle. */
+   c'est le sélecteur "goog-te-combo" (ci-dessus) qui pilote la traduction. */
 function chargerGoogleTranslate() {
   if (document.getElementById("scriptGoogleTranslate")) return;
   if (!document.getElementById("google_translate_element")) {
@@ -137,6 +144,9 @@ function chargerGoogleTranslate() {
         "google_translate_element"
       );
     } catch (err) { console.error("Initialisation Google Translate impossible :", err); }
+    // Si la personne avait choisi l'anglais sur une page précédente, on
+    // réapplique automatiquement dès que le widget est prêt (sans reload).
+    if (langueMemorisee() === "en") appliquerTraductionCombo("en");
   };
   const script = document.createElement("script");
   script.id = "scriptGoogleTranslate";
@@ -157,6 +167,7 @@ function initTraduction() {
     basculerLangue();
   });
 }
+
 
 /* ══════════ FAVORIS (stockage local) ══════════ */
 const CLE_FAVORIS = "malaga_favoris";
