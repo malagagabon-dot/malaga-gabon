@@ -293,6 +293,82 @@
           </span>
         </div>
 
+        <!-- ===== Vérification d'identité ===== -->
+        <div id="verifIdentiteBloc" style="margin-top:8px;">
+          <h3 style="font-size:14px;margin:0 0 4px;color:var(--vert);" data-i18n>🪪 Vérification d'identité</h3>
+          <p class="sous-titre" style="margin-top:0;" data-i18n>
+            Ces informations restent privées : elles ne sont visibles que par l'équipe MALAGA, jamais par les autres utilisateurs ni sur les annonces.
+          </p>
+
+          <div class="grille-2">
+            <div class="champ">
+              <label data-i18n>Nom complet légal (comme sur la pièce)</label>
+              <input type="text" id="verifNomLegal" required placeholder="Ex : Jean-Pierre Mbadinga" data-i18n-ph>
+            </div>
+            <div class="champ">
+              <label data-i18n>Date de naissance</label>
+              <input type="date" id="verifDateNaissance" required>
+            </div>
+          </div>
+
+          <div class="grille-2">
+            <div class="champ">
+              <label data-i18n>Type de pièce</label>
+              <select id="verifTypePiece">
+                <option value="CNI" data-i18n>Carte Nationale d'Identité</option>
+                <option value="Passeport" data-i18n>Passeport</option>
+                <option value="Permis" data-i18n>Permis de conduire</option>
+              </select>
+            </div>
+            <div class="champ">
+              <label data-i18n>Numéro de la pièce</label>
+              <input type="text" id="verifNumeroPiece" required placeholder="Ex : 123456789" data-i18n-ph>
+            </div>
+          </div>
+
+          <div class="champ">
+            <label data-i18n>Adresse de résidence</label>
+            <input type="text" id="verifAdresse" required placeholder="Ex : Quartier Nzeng-Ayong, Libreville" data-i18n-ph>
+          </div>
+
+          <div class="grille-2">
+            <div class="champ">
+              <label data-i18n>Photo d'identité (selfie)</label>
+              <div class="champ-logo-edit">
+                <div class="apercu" id="apercuSelfie">🤳</div>
+                <div>
+                  <input type="file" id="inputSelfie" accept="image/*" capture="user" hidden>
+                  <button type="button" class="btn btn-outline" id="btnChoisirSelfie" style="padding:8px 14px;font-size:12.5px;" data-i18n>📷 Prendre / choisir</button>
+                </div>
+              </div>
+            </div>
+            <div class="champ">
+              <label data-i18n>Photo de la pièce (recto)</label>
+              <div class="champ-logo-edit">
+                <div class="apercu" id="apercuPieceRecto">🪪</div>
+                <div>
+                  <input type="file" id="inputPieceRecto" accept="image/*" capture="environment" hidden>
+                  <button type="button" class="btn btn-outline" id="btnChoisirPieceRecto" style="padding:8px 14px;font-size:12.5px;" data-i18n>📷 Prendre / choisir</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="champ">
+            <label data-i18n>Photo de la pièce (verso, si applicable)</label>
+            <div class="champ-logo-edit">
+              <div class="apercu" id="apercuPieceVerso">🪪</div>
+              <div>
+                <input type="file" id="inputPieceVerso" accept="image/*" capture="environment" hidden>
+                <button type="button" class="btn btn-outline" id="btnChoisirPieceVerso" style="padding:8px 14px;font-size:12.5px;" data-i18n>📷 Prendre / choisir</button>
+              </div>
+            </div>
+          </div>
+
+          <p class="sous-titre" data-i18n>
+            ℹ️ Ces documents servent uniquement à vérifier votre identité et à protéger la communauté contre les faux comptes. Ils ne sont jamais publiés ni partagés.
+          </p>
+        </div>
+
         <label class="champ" style="display:flex;align-items:flex-start;gap:10px;background:#f7f7f7;border-radius:12px;padding:12px 14px;margin-top:6px;cursor:pointer;">
           <input type="checkbox" id="accepteCGU" style="margin-top:3px;flex-shrink:0;">
           <span style="font-size:12.5px;line-height:1.5;color:#444;">
@@ -318,7 +394,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module">
     import { auth, onAuthStateChanged } from "./firebase-config.js";
-    import { inscrire, connecter, messageErreurAuth, getProfil, reinitialiserMotDePasse } from "./auth.js";
+    import { inscrire, connecter, messageErreurAuth, getProfil, reinitialiserMotDePasse, enregistrerVerificationIdentite, calculerAge } from "./auth.js";
     import { LIBREVILLE_CENTER } from "./malaga-reference.js";
 
     // --- Cloudinary (même configuration que publier.html) ---
@@ -331,6 +407,23 @@
       formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
       const reponse = await fetch(url, { method: "POST", body: formData });
       if (!reponse.ok) throw new Error("Échec de l'envoi vers Cloudinary");
+      return (await reponse.json()).secure_url;
+    }
+
+    // --- Cloudinary DÉDIÉ à la vérification d'identité ---
+    // Preset distinct de "malaga_photos" (annonces), déposé dans un dossier
+    // séparé et non-deviné, jamais référencé sur les pages publiques du site.
+    // ⚠️ À créer dans la console Cloudinary avant utilisation : un upload
+    // preset "unsigned", nommé exactement CLOUDINARY_UPLOAD_PRESET_IDENTITE
+    // ci-dessous, avec un dossier dédié (ex : "identite_verif_x7k2q9").
+    const CLOUDINARY_UPLOAD_PRESET_IDENTITE = "malaga_identite_verif";
+    async function uploaderIdentiteVersCloudinary(fichier) {
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+      const formData = new FormData();
+      formData.append("file", fichier);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET_IDENTITE);
+      const reponse = await fetch(url, { method: "POST", body: formData });
+      if (!reponse.ok) throw new Error("Échec de l'envoi de la pièce d'identité");
       return (await reponse.json()).secure_url;
     }
     async function compresserImage(fichier, dimensionMax = 1600, qualite = 0.82) {
@@ -364,6 +457,25 @@
       lecteur.onload = (ev) => { document.getElementById("apercuLogo").innerHTML = `<img src="${ev.target.result}" alt="">`; };
       lecteur.readAsDataURL(fichier);
     });
+
+    // --- Vérification d'identité : sélection des 3 photos (même pipeline d'aperçu que le logo) ---
+    let selfieFichier = null, pieceRectoFichier = null, pieceVersoFichier = null;
+    function brancherChampPhoto(idBouton, idInput, idApercu, cible) {
+      document.getElementById(idBouton).onclick = () => document.getElementById(idInput).click();
+      document.getElementById(idInput).addEventListener("change", (e) => {
+        const fichier = e.target.files[0];
+        if (!fichier) return;
+        if (cible === "selfie") selfieFichier = fichier;
+        else if (cible === "recto") pieceRectoFichier = fichier;
+        else pieceVersoFichier = fichier;
+        const lecteur = new FileReader();
+        lecteur.onload = (ev) => { document.getElementById(idApercu).innerHTML = `<img src="${ev.target.result}" alt="">`; };
+        lecteur.readAsDataURL(fichier);
+      });
+    }
+    brancherChampPhoto("btnChoisirSelfie", "inputSelfie", "apercuSelfie", "selfie");
+    brancherChampPhoto("btnChoisirPieceRecto", "inputPieceRecto", "apercuPieceRecto", "recto");
+    brancherChampPhoto("btnChoisirPieceVerso", "inputPieceVerso", "apercuPieceVerso", "verso");
 
     // --- Localisation du siège / bureaux (GPS + carte Leaflet avec repère déplaçable) ---
     let geolocLat = null, geolocLng = null;
@@ -568,6 +680,22 @@
         return;
       }
 
+      // Vérification d'identité : champs obligatoires pour tous les comptes
+      const verifNomLegal = document.getElementById("verifNomLegal").value.trim();
+      const verifDateNaissance = document.getElementById("verifDateNaissance").value;
+      const verifNumeroPiece = document.getElementById("verifNumeroPiece").value.trim();
+      const verifAdresse = document.getElementById("verifAdresse").value.trim();
+      if (!verifNomLegal || !verifDateNaissance || !verifNumeroPiece || !verifAdresse) {
+        erreurMsg.textContent = "Merci de compléter tous les champs de la section « Vérification d'identité ».";
+        erreurMsg.classList.add("visible");
+        return;
+      }
+      if (!selfieFichier || !pieceRectoFichier) {
+        erreurMsg.textContent = "Merci d'ajouter votre photo d'identité (selfie) et la photo (recto) de votre pièce.";
+        erreurMsg.classList.add("visible");
+        return;
+      }
+
       // Compte Agence/Entreprise : valider les champs obligatoires du profil pro
       const estEntreprise = roleChoisi === "proprietaire" && compteTypeChoisi === "entreprise";
       if (estEntreprise) {
@@ -595,7 +723,7 @@
         }
 
         btn.textContent = "Création du compte…";
-        await inscrire({
+        const nouvelUtilisateur = await inscrire({
           nom: document.getElementById("inscriptionNom").value.trim(),
           tel: document.getElementById("inscriptionTel").value.trim(),
           email: document.getElementById("inscriptionEmail").value.trim(),
@@ -613,6 +741,24 @@
             entrepriseLng: geolocLng,
             logoUrl: logoUrlEnAttente
           } : undefined
+        });
+
+        // Vérification d'identité : envoi des photos puis écriture du dossier
+        // + détection d'anomalies (ne bloque jamais la création du compte).
+        btn.textContent = "Envoi des documents d'identité…";
+        const [selfieUrl, pieceRectoUrl, pieceVersoUrl] = await Promise.all([
+          uploaderIdentiteVersCloudinary(await compresserImage(selfieFichier)),
+          uploaderIdentiteVersCloudinary(await compresserImage(pieceRectoFichier)),
+          pieceVersoFichier ? uploaderIdentiteVersCloudinary(await compresserImage(pieceVersoFichier)) : Promise.resolve("")
+        ]);
+        await enregistrerVerificationIdentite(nouvelUtilisateur.uid, {
+          nomLegal: verifNomLegal,
+          dateNaissance: verifDateNaissance,
+          typePiece: document.getElementById("verifTypePiece").value,
+          numeroPiece: verifNumeroPiece,
+          adresseResidence: verifAdresse,
+          tel: document.getElementById("inscriptionTel").value.trim(),
+          selfieUrl, pieceRectoUrl, pieceVersoUrl
         });
 
         // Un compte Propriétaire fraîchement créé est envoyé directement vers le

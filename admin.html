@@ -74,6 +74,10 @@
       <span class="nav-icon">🏢</span> Entreprises
       <span class="nav-badge danger" id="badgeEntreprisesAttente">0</span>
     </a>
+    <a class="nav-item" onclick="showPage('verification')" data-page="verification">
+      <span class="nav-icon">📁</span> Vérification &amp; Archives
+      <span class="nav-badge danger" id="badgeFraude">0</span>
+    </a>
     <a class="nav-item" onclick="showPage('signalements')" data-page="signalements">
       <span class="nav-icon">🚨</span> Signalements
       <span class="nav-badge danger" id="badgeSignal">0</span>
@@ -450,6 +454,131 @@
       </div>
     </div>
   </div>
+
+  <!-- ═══ PAGE : VÉRIFICATION & ARCHIVES ═══ -->
+  <div class="page" id="page-verification">
+    <div class="page-header">
+      <h1 data-i18n>📁 Vérification &amp; Archives</h1>
+      <p data-i18n>Dossiers d'identité des membres, statut de vérification et alertes anti-fraude</p>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerVerifParStatut('')" onkeydown="if(event.key==='Enter'){filtrerVerifParStatut('')}">
+        <div class="kpi-icon blue">📁</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiVerifTotal">—</div>
+          <div class="kpi-label" data-i18n>Dossiers reçus</div>
+        </div>
+      </div>
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerVerifParStatut('attente')" onkeydown="if(event.key==='Enter'){filtrerVerifParStatut('attente')}">
+        <div class="kpi-icon yellow">⏳</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiVerifAttente">—</div>
+          <div class="kpi-label" data-i18n>En attente</div>
+        </div>
+      </div>
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerVerifParStatut('verifie')" onkeydown="if(event.key==='Enter'){filtrerVerifParStatut('verifie')}">
+        <div class="kpi-icon green">✅</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiVerifOk">—</div>
+          <div class="kpi-label" data-i18n>Vérifiés</div>
+        </div>
+      </div>
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerVerifParStatut('signale')" onkeydown="if(event.key==='Enter'){filtrerVerifParStatut('signale')}">
+        <div class="kpi-icon red">🚩</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiVerifSignal">—</div>
+          <div class="kpi-label" data-i18n>Signalés</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <input type="text" class="filter-input" id="filterVerif" placeholder="🔍 Rechercher un membre..." oninput="filtrerVerif()" data-i18n-ph />
+      <select class="filter-select" id="filterStatutVerif" onchange="filtrerVerif()">
+        <option value="" data-i18n>Tous les statuts</option>
+        <option value="attente" data-i18n>⏳ En attente</option>
+        <option value="verifie" data-i18n>✅ Vérifié</option>
+        <option value="signale" data-i18n>🚩 Signalé</option>
+        <option value="suspendu" data-i18n>⛔ Suspendu</option>
+      </select>
+      <button class="btn-outline-sm" id="btnImprimerSelection" onclick="imprimerSelectionVerif()" data-i18n>🖨️ Imprimer la sélection</button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="checkAllVerif" onchange="toggleToutSelectionVerif(this)"></th>
+              <th data-i18n>Membre</th>
+              <th data-i18n>Pièce</th>
+              <th data-i18n>Statut</th>
+              <th data-i18n>Alertes</th>
+              <th data-i18n>Soumis le</th>
+              <th data-i18n>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="verifTableBody">
+            <tr><td colspan="7" class="table-empty" data-i18n>Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sous-section : alertes anti-fraude brutes -->
+    <div class="page-header" style="margin-top:26px;">
+      <h1 style="font-size:17px;" data-i18n>🚩 Alertes anti-fraude</h1>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th data-i18n>Date</th>
+              <th data-i18n>Type</th>
+              <th data-i18n>Membre concerné</th>
+              <th data-i18n>Détails</th>
+              <th data-i18n>Traité</th>
+              <th data-i18n>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="alertesFraudeBody">
+            <tr><td colspan="6" class="table-empty" data-i18n>Aucune alerte</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FICHE INDIVIDUELLE IMPRIMABLE (modale) ═══ -->
+  <div class="modal-overlay hidden" id="modalFicheVerif">
+    <div class="modal" style="max-width:640px;width:92%;max-height:88vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h3 style="margin:0;" data-i18n>Fiche membre</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-outline-sm" onclick="window.print()" data-i18n>🖨️ Imprimer</button>
+          <button class="btn-outline-sm" onclick="fermerFicheVerif()" data-i18n>Fermer</button>
+        </div>
+      </div>
+      <div id="ficheVerifContenu"></div>
+    </div>
+  </div>
+
+  <!-- ═══ ZONE D'IMPRESSION GROUPÉE (hors écran, utilisée uniquement par window.print()) ═══ -->
+  <div id="zoneImpressionGroupee" style="display:none;"></div>
+
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #modalFicheVerif.impression-active, #modalFicheVerif.impression-active * { visibility: visible; }
+      #modalFicheVerif.impression-active { position: absolute; top: 0; left: 0; width: 100%; }
+      #zoneImpressionGroupee.impression-active { display: block !important; visibility: visible; position: absolute; top: 0; left: 0; width: 100%; }
+      #zoneImpressionGroupee.impression-active * { visibility: visible; }
+      .fiche-print { page-break-after: always; padding: 24px; }
+      .fiche-print img { max-width: 220px; border-radius: 8px; border: 1px solid #ddd; }
+    }
+  </style>
 
   <!-- ═══ PAGE : SIGNALEMENTS ═══ -->
   <div class="page" id="page-signalements">

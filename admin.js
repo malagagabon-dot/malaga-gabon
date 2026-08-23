@@ -58,6 +58,11 @@ let ecouteNotifsPrefsDemarree = false;
 let ecouteNotifsGlobalesDemarree = false;
 let notifsPrefsData = [];        // alimenté en temps réel depuis Firestore "notifsPrefs"
 let notificationsGlobalesData = []; // alimenté en temps réel depuis Firestore "notificationsGlobales"
+let verificationsData = [];      // alimenté en temps réel depuis Firestore "verificationsIdentite"
+let alertesFraudeData = [];      // alimenté en temps réel depuis Firestore "alertesFraude"
+let ecouteVerifDemarree = false;
+let ecouteAlertesFraudeDemarree = false;
+const selectionVerif = new Set(); // uids sélectionnés pour l'impression groupée
 let pageActuelle = 'dashboard';
 let periodeClassement = 'tout';
 
@@ -242,6 +247,8 @@ function onLoginSuccess(user) {
   demarrerEcouteUtilisateurs();
   demarrerEcouteSignalements();
   demarrerEcouteMessages();
+  demarrerEcouteVerification();
+  demarrerEcouteAlertesFraude();
   loadDashboard();
 }
 
@@ -299,6 +306,51 @@ function demarrerEcouteUtilisateurs() {
     console.error('Erreur de synchronisation des utilisateurs :', err);
     const tbody = document.getElementById('usersTableBody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Impossible de charger les utilisateurs. Vérifiez les règles Firestore.</td></tr>';
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ÉCOUTE TEMPS RÉEL — VÉRIFICATIONS D'IDENTITÉ
+   (Firestore, collection "verificationsIdentite")
+   Alimentée par connexion.html/auth.js à l'inscription (voir
+   enregistrerVerificationIdentite). Jointe à usersData (même uid) pour
+   afficher nom/email/tel dans le tableau.
+══════════════════════════════════════════════════════════ */
+function demarrerEcouteVerification() {
+  if (ecouteVerifDemarree) return;
+  ecouteVerifDemarree = true;
+  if (!window.dbAdmin) return;
+
+  window.dbAdmin.collection('verificationsIdentite').onSnapshot((snap) => {
+    verificationsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    calculerKpiVerif();
+    if (pageActuelle === 'verification') filtrerVerif();
+  }, (err) => {
+    console.error('Erreur de synchronisation des vérifications d\'identité :', err);
+    const tbody = document.getElementById('verifTableBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Impossible de charger les dossiers. Vérifiez les règles Firestore.</td></tr>';
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ÉCOUTE TEMPS RÉEL — ALERTES ANTI-FRAUDE (Firestore, collection "alertesFraude")
+   Alimentée automatiquement à l'inscription (voir auth.js).
+══════════════════════════════════════════════════════════ */
+function demarrerEcouteAlertesFraude() {
+  if (ecouteAlertesFraudeDemarree) return;
+  ecouteAlertesFraudeDemarree = true;
+  if (!window.dbAdmin) return;
+
+  window.dbAdmin.collection('alertesFraude').orderBy('dateCreation', 'desc').onSnapshot((snap) => {
+    alertesFraudeData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const nbNonTraitees = alertesFraudeData.filter(a => !a.traite).length;
+    const badge = document.getElementById('badgeFraude');
+    if (badge) badge.textContent = nbNonTraitees;
+    if (pageActuelle === 'verification') { loadAlertesFraude(); filtrerVerif(); }
+  }, (err) => {
+    console.error('Erreur de synchronisation des alertes anti-fraude :', err);
+    const tbody = document.getElementById('alertesFraudeBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Impossible de charger les alertes. Vérifiez les règles Firestore.</td></tr>';
   });
 }
 
@@ -452,6 +504,7 @@ function showPage(pageId) {
     'annonces': 'Gestion des annonces',
     'utilisateurs': 'Utilisateurs',
     'entreprises': '🏢 Comptes professionnels',
+    'verification': '📁 Vérification & Archives',
     'signalements': 'Signalements',
     'reservations': 'Demandes de visite',
     'messages': 'Messages',
@@ -466,6 +519,7 @@ function showPage(pageId) {
   else if (pageId === 'annonces') filtrerAnnonces();
   else if (pageId === 'utilisateurs') filtrerUsers();
   else if (pageId === 'entreprises') filtrerEntreprises();
+  else if (pageId === 'verification') { filtrerVerif(); loadAlertesFraude(); }
   else if (pageId === 'signalements') loadSignalements();
   else if (pageId === 'reservations' && window.chargerReservations) window.chargerReservations();
   else if (pageId === 'messages') loadMessages();
@@ -1574,6 +1628,236 @@ function formaterDate(valeur) {
   if (typeof valeur === 'string') return valeur;
   return '—';
 }
+
+/* ══════════════════════════════════════════════════════════
+   VÉRIFICATION & ARCHIVES (dossiers d'identité + anti-fraude)
+   Chaque dossier (collection "verificationsIdentite", doc id = uid) est
+   joint au profil correspondant dans usersData (même id) pour afficher
+   nom/email/tel — ces derniers restent dans "users" (déjà en place),
+   seules les données sensibles (pièce, photos, adresse) vivent ici.
+══════════════════════════════════════════════════════════ */
+const LABEL_STATUT_VERIF = {
+  attente:  { texte: '⏳ En attente', classe: 'badge-yellow' },
+  verifie:  { texte: '✅ Vérifié',    classe: 'badge-green' },
+  signale:  { texte: '🚩 Signalé',    classe: 'badge-red' },
+  suspendu: { texte: '⛔ Suspendu',   classe: 'badge-red' }
+};
+const LABEL_TYPE_ALERTE = {
+  doublon_piece:  'Pièce déjà utilisée',
+  doublon_tel:    'Téléphone partagé, nom différent',
+  age_incoherent: 'Âge incohérent (< 18 ans)',
+  nom_suspect:    'Nom déjà signalé'
+};
+
+function normaliserNomAdmin(nom) {
+  return String(nom || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+}
+
+function verifJointeAUser(v) {
+  const u = usersData.find(x => x.id === v.id) || {};
+  return { ...v, _nom: texte(u, 'nom'), _email: texte(u, 'email'), _tel: texte(u, 'tel'), _role: texte(u, 'role') };
+}
+
+function calculerKpiVerif() {
+  const total = verificationsData.length;
+  const attente = verificationsData.filter(v => v.statut === 'attente').length;
+  const verifie = verificationsData.filter(v => v.statut === 'verifie').length;
+  const signale = verificationsData.filter(v => v.statut === 'signale' || v.statut === 'suspendu').length;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('kpiVerifTotal', total);
+  set('kpiVerifAttente', attente);
+  set('kpiVerifOk', verifie);
+  set('kpiVerifSignal', signale);
+}
+
+function filtrerVerif() {
+  const texteRecherche = (document.getElementById('filterVerif')?.value || '').toLowerCase().trim();
+  const statut = document.getElementById('filterStatutVerif')?.value || '';
+  const jointes = verificationsData.map(verifJointeAUser);
+  const filtres = jointes.filter(v => {
+    const correspondTexte = !texteRecherche ||
+      v._nom.toLowerCase().includes(texteRecherche) ||
+      v._email.toLowerCase().includes(texteRecherche) ||
+      String(v.nomLegal || '').toLowerCase().includes(texteRecherche);
+    const correspondStatut = !statut || v.statut === statut;
+    return correspondTexte && correspondStatut;
+  });
+  loadVerif(filtres);
+}
+
+function filtrerVerifParStatut(statut) {
+  showPage('verification');
+  const sel = document.getElementById('filterStatutVerif');
+  if (sel) sel.value = statut;
+  filtrerVerif();
+}
+
+function masquerNumeroPiece(numero) {
+  const n = String(numero || '');
+  if (n.length <= 4) return n;
+  return '•••• ' + n.slice(-4);
+}
+
+function loadVerif(liste) {
+  const tbody = document.getElementById('verifTableBody');
+  if (!liste || liste.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Aucun dossier ne correspond</td></tr>';
+    return;
+  }
+  tbody.innerHTML = liste.map(v => {
+    const label = LABEL_STATUT_VERIF[v.statut] || LABEL_STATUT_VERIF.attente;
+    const nbAlertes = alertesFraudeData.filter(a => a.uid === v.id).length;
+    const coche = selectionVerif.has(v.id) ? 'checked' : '';
+    return `
+      <tr>
+        <td><input type="checkbox" data-uid="${v.id}" ${coche} onchange="toggleSelectionVerif('${v.id}', this.checked)"></td>
+        <td>
+          <div style="font-weight:600;">${escapeHTML(v._nom)}</div>
+          <div style="font-size:11px;color:#888;">${escapeHTML(v._email)}</div>
+        </td>
+        <td>${escapeHTML(v.typePiece || '—')}<br><span style="font-size:11px;color:#888;">${escapeHTML(masquerNumeroPiece(v.numeroPiece))}</span></td>
+        <td><span class="${label.classe}" style="padding:2px 8px;border-radius:6px;font-size:11px;">${label.texte}</span></td>
+        <td>${nbAlertes ? `<span class="badge-red" style="padding:2px 8px;border-radius:6px;font-size:11px;">🚩 ${nbAlertes}</span>` : '—'}</td>
+        <td>${escapeHTML(formaterDate(v.dateCreation))}</td>
+        <td style="white-space:nowrap;">
+          <button onclick="ouvrirFicheVerif('${v.id}')" style="padding:4px 8px;background:#3B82F6;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">👁️ Fiche</button>
+          ${v.statut !== 'verifie' ? `<button onclick="marquerStatutVerif('${v.id}','verifie')" style="padding:4px 8px;background:#22C55E;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">✅</button>` : ''}
+          ${v.statut !== 'suspendu' ? `<button onclick="marquerStatutVerif('${v.id}','suspendu')" style="padding:4px 8px;background:#EF4444;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">⛔</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+/* Marque le dossier avec un nouveau statut. Si "signale"/"suspendu", alimente
+   aussi identiteNomSuspect pour que les futures inscriptions au même nom
+   soient automatiquement signalées (voir enregistrerVerificationIdentite
+   dans auth.js). */
+function marquerStatutVerif(uid, nouveauStatut) {
+  const v = verificationsData.find(x => x.id === uid);
+  if (!v) return;
+  window.dbAdmin.collection('verificationsIdentite').doc(uid).update({ statut: nouveauStatut })
+    .then(() => {
+      if (nouveauStatut === 'suspendu' || nouveauStatut === 'signale') {
+        const nomNormalise = normaliserNomAdmin(v.nomLegal);
+        if (nomNormalise) {
+          window.dbAdmin.collection('identiteNomSuspect').doc(nomNormalise).set({
+            motif: nouveauStatut === 'suspendu' ? 'Compte suspendu par l\'admin' : 'Compte signalé par l\'admin',
+            uid, dateCreation: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      }
+      toast('✅ Statut mis à jour');
+    })
+    .catch((err) => { console.error(err); toast('❌ Erreur lors de la mise à jour du statut'); });
+}
+
+function toggleSelectionVerif(uid, coche) {
+  if (coche) selectionVerif.add(uid); else selectionVerif.delete(uid);
+}
+
+function toggleToutSelectionVerif(checkbox) {
+  document.querySelectorAll('#verifTableBody input[type="checkbox"]').forEach(c => {
+    c.checked = checkbox.checked;
+    if (checkbox.checked) selectionVerif.add(c.dataset.uid); else selectionVerif.delete(c.dataset.uid);
+  });
+}
+
+/* Construit le HTML d'une fiche imprimable pour un dossier donné. */
+function ficheVerifHTML(uid) {
+  const v = verifJointeAUser(verificationsData.find(x => x.id === uid) || {});
+  const label = LABEL_STATUT_VERIF[v.statut] || LABEL_STATUT_VERIF.attente;
+  const alertes = alertesFraudeData.filter(a => a.uid === uid);
+  return `
+    <div class="fiche-print">
+      <h2 style="margin:0 0 4px;">${escapeHTML(v._nom)}</h2>
+      <p style="margin:0 0 14px;color:#666;">Statut : ${label.texte}</p>
+      <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+        ${v.selfieUrl ? `<div><div style="font-size:11px;color:#888;margin-bottom:4px;">Selfie</div><img src="${v.selfieUrl}"></div>` : ''}
+        ${v.pieceRectoUrl ? `<div><div style="font-size:11px;color:#888;margin-bottom:4px;">Pièce (recto)</div><img src="${v.pieceRectoUrl}"></div>` : ''}
+        ${v.pieceVersoUrl ? `<div><div style="font-size:11px;color:#888;margin-bottom:4px;">Pièce (verso)</div><img src="${v.pieceVersoUrl}"></div>` : ''}
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <tr><td style="padding:4px 8px 4px 0;color:#888;">Nom légal</td><td style="padding:4px 0;font-weight:600;">${escapeHTML(v.nomLegal)}</td></tr>
+        <tr><td style="padding:4px 8px 4px 0;color:#888;">Date de naissance</td><td style="padding:4px 0;">${escapeHTML(v.dateNaissance)}</td></tr>
+        <tr><td style="padding:4px 8px 4px 0;color:#888;">Type de pièce</td><td style="padding:4px 0;">${escapeHTML(v.typePiece)}</td></tr>
+        <tr><td style="padding:4px 8px 4px 0;color:#888;">Numéro de pièce</td><td style="padding:4px 0;">${escapeHTML(v.numeroPiece)}</td></tr>
+        <tr><td style="padding:4px 8px 4px 0;color:#888;">Adresse</td><td style="padding:4px 0;">${escapeHTML(v.adresseResidence)}</td></tr>
+        <tr><td style="padding:4px 8px 4px 0;color:#888;">Téléphone</td><td style="padding:4px 0;">${escapeHTML(v._tel)}</td></tr>
+        <tr><td style="padding:4px 8px 4px 0;color:#888;">Email</td><td style="padding:4px 0;">${escapeHTML(v._email)}</td></tr>
+        <tr><td style="padding:4px 8px 4px 0;color:#888;">Soumis le</td><td style="padding:4px 0;">${escapeHTML(formaterDate(v.dateCreation))}</td></tr>
+      </table>
+      ${alertes.length ? `
+        <h3 style="font-size:13px;margin:14px 0 6px;color:#EF4444;">🚩 Alertes (${alertes.length})</h3>
+        <ul style="font-size:12.5px;padding-left:18px;margin:0;">
+          ${alertes.map(a => `<li>${escapeHTML(LABEL_TYPE_ALERTE[a.type] || a.type)} — ${escapeHTML(a.details)}</li>`).join('')}
+        </ul>
+      ` : ''}
+    </div>
+  `;
+}
+
+function ouvrirFicheVerif(uid) {
+  document.getElementById('ficheVerifContenu').innerHTML = ficheVerifHTML(uid);
+  const modal = document.getElementById('modalFicheVerif');
+  modal.classList.remove('hidden');
+  modal.classList.add('impression-active');
+}
+function fermerFicheVerif() {
+  const modal = document.getElementById('modalFicheVerif');
+  modal.classList.add('hidden');
+  modal.classList.remove('impression-active');
+}
+
+function imprimerSelectionVerif() {
+  if (selectionVerif.size === 0) { toast('⚠️ Sélectionnez au moins un membre'); return; }
+  const zone = document.getElementById('zoneImpressionGroupee');
+  zone.innerHTML = Array.from(selectionVerif).map(uid => ficheVerifHTML(uid)).join('');
+  zone.classList.add('impression-active');
+  window.print();
+  setTimeout(() => zone.classList.remove('impression-active'), 500);
+}
+
+/* ══════════════════════════════════════════════════════════
+   ALERTES ANTI-FRAUDE (brutes, avant tri par dossier)
+══════════════════════════════════════════════════════════ */
+function loadAlertesFraude() {
+  const tbody = document.getElementById('alertesFraudeBody');
+  if (!tbody) return;
+  if (alertesFraudeData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Aucune alerte</td></tr>';
+    return;
+  }
+  tbody.innerHTML = alertesFraudeData.map(a => `
+    <tr>
+      <td>${escapeHTML(formaterDate(a.dateCreation))}</td>
+      <td>${escapeHTML(LABEL_TYPE_ALERTE[a.type] || a.type)}</td>
+      <td>${escapeHTML(a.nom)}</td>
+      <td>${escapeHTML(a.details)}</td>
+      <td>${a.traite ? '✅' : '⏳'}</td>
+      <td>
+        <button onclick="ouvrirFicheVerif('${a.uid}')" style="padding:4px 8px;background:#3B82F6;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">👁️ Fiche</button>
+        ${!a.traite ? `<button onclick="marquerAlerteTraitee('${a.id}')" style="padding:4px 8px;background:#22C55E;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">✅ Traiter</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function marquerAlerteTraitee(id) {
+  window.dbAdmin.collection('alertesFraude').doc(id).update({ traite: true })
+    .then(() => toast('✅ Alerte marquée comme traitée'))
+    .catch((err) => { console.error(err); toast('❌ Erreur'); });
+}
+
+window.filtrerVerif = filtrerVerif;
+window.filtrerVerifParStatut = filtrerVerifParStatut;
+window.marquerStatutVerif = marquerStatutVerif;
+window.toggleSelectionVerif = toggleSelectionVerif;
+window.toggleToutSelectionVerif = toggleToutSelectionVerif;
+window.ouvrirFicheVerif = ouvrirFicheVerif;
+window.fermerFicheVerif = fermerFicheVerif;
+window.imprimerSelectionVerif = imprimerSelectionVerif;
+window.marquerAlerteTraitee = marquerAlerteTraitee;
 
 /* ══════════════════════════════════════════════════════════
    SIGNALEMENTS (temps réel Firestore)
