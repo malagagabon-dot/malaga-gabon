@@ -83,6 +83,21 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("bnFavoris")?.addEventListener("click", basculerFavoris);
   document.getElementById("drawerFavorisLink")?.addEventListener("click", basculerFavoris);
 
+  // Onglet "Carte" de la barre de navigation basse : un simple lien "#carteWrap"
+  // alignait le HAUT de la carte sur le HAUT de l'écran, ce qui la faisait
+  // passer sous le header sticky (carte coupée, stats invisibles). On scrolle
+  // plutôt jusqu'aux statistiques, avec un décalage égal à la hauteur réelle
+  // du header sticky, pour arriver sur la vue "stats + carte entière".
+  document.getElementById("bnCarte")?.addEventListener("click", (e) => {
+    const cible = document.getElementById("statsSection");
+    const header = document.querySelector(".header");
+    if (!cible) return;
+    e.preventDefault();
+    const decalage = (header?.offsetHeight || 0) + 8;
+    const y = cible.getBoundingClientRect().top + window.scrollY - decalage;
+    window.scrollTo({ top: Math.max(y, 0), behavior: "smooth" });
+  });
+
   // Redimensionner la carte quand la fenêtre est redimensionnée
   window.addEventListener("resize", () => {
     if (map) {
