@@ -114,7 +114,9 @@ html, html body, body { top: 0 !important; }
    avec les contrôles du site (boutons, liens…), donc le masquer ne touche à
    rien d'autre. */
 .goog-te-balloon-frame,
-.goog-te-ftab {
+.goog-te-ftab,
+iframe[src*="translate.google"],
+iframe[src*="translate.googleapis"] {
   display: none !important;
 }
 #btnLangue.langue-actif { background: rgba(255,255,255,.32); }
@@ -359,13 +361,18 @@ body.theme-sombre .hero h1 {
 .badge-vendeur-verifie { background: #D1FAE5; color: var(--vert-fonce); }
 
 .carte-info { padding: 12px 14px; }
-.carte-info h3 { font-size: 13.5px; font-weight: 700; margin-bottom: 6px; }
+/* Ces textes sont posés sur le fond BLANC fixe de la carte (.carte-annonce),
+   qui ne change pas de couleur avec le thème. On fixe donc leur couleur en
+   dur plutôt que de dépendre de --texte (qui s'éclaircit en mode sombre pour
+   le reste du site) : sinon le texte devient quasi invisible sur ce fond
+   resté blanc en mode sombre. */
+.carte-info h3 { font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: #1A2332; }
 .carte-info .prix { color: var(--vert); font-weight: 800; font-size: 15px; margin-bottom: 4px; }
-.carte-info .localisation { color: var(--gris-clair); font-size: 12px; }
+.carte-info .localisation { color: #5B6472; font-size: 12px; }
 
 /* Date + heure de publication, affichée en miniature sur chaque carte d'annonce */
 .carte-info .date-publication {
-  display: block; color: var(--gris-clair); font-size: 10.5px; margin-top: 4px; opacity: .85;
+  display: block; color: #6B7280; font-size: 10.5px; margin-top: 4px; opacity: .85;
 }
 
 /* ===== CARTE LEAFLET ===== */
@@ -424,8 +431,8 @@ body.theme-sombre .hero h1 {
 }
 .role-carte.selectionne { border-color: var(--vert); background: #F0FDF6; }
 .role-carte .icone { font-size: 26px; margin-bottom: 6px; }
-.role-carte .titre { font-weight: 800; font-size: 13.5px; }
-.role-carte .desc { font-size: 11px; color: var(--gris-clair); margin-top: 3px; }
+.role-carte .titre { font-weight: 800; font-size: 13.5px; color: #1A2332; }
+.role-carte .desc { font-size: 11px; color: #6B7280; margin-top: 3px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {

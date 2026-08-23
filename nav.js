@@ -50,6 +50,13 @@ export function basculerTheme() {
 
 function initTheme() {
   appliquerTheme(themeCourantPreferere());
+  // Garde-fou : si initTheme() est appelée plus d'une fois (ex. double
+  // exécution du module sur une page), on ne rebranche pas une seconde
+  // écoute de clic. Sans cela, chaque clic sur 🌙/☀️ basculait le thème deux
+  // fois d'affilée (sombre→clair→sombre), ce qui donnait l'impression que le
+  // bouton ne faisait plus rien et restait bloqué en mode sombre.
+  if (window.__malagaThemeClicBranche) return;
+  window.__malagaThemeClicBranche = true;
   // Délégation sur document plutôt qu'un addEventListener direct sur chaque
   // bouton : le clic est capté même si #btnTheme/#drawerTheme sont recréés
   // ou remplacés par un autre script après le chargement initial de la page
@@ -150,9 +157,52 @@ function chargerGoogleTranslate() {
   document.body.appendChild(script);
 }
 
+/* Bulle mobile "Texte d'origine / Évaluez cette traduction" que Google
+   Translate insère parfois au tap sur un mot traduit. Le CSS ciblant
+   ".goog-te-balloon-frame" ne suffit plus : Google fait évoluer régulièrement
+   le nom des classes/iframes de ce composant, ce qui rend un sélecteur fixe
+   fragile et laisse parfois la bulle visible par-dessus l'appli (elle bloque
+   alors l'écran tant qu'on ne la ferme pas manuellement). On surveille donc
+   en direct tout nouvel élément ajouté au document dont le contenu
+   correspond à cette bulle, et on le masque immédiatement, quel que soit son
+   nom de classe ou sa structure exacte. */
+function initMasquageBulleTraduction() {
+  if (window.__malagaObserverBulleTraduction) return;
+  window.__malagaObserverBulleTraduction = true;
+
+  const ressembleABulleTraduction = (el) => {
+    const texte = (el.innerText || el.textContent || "");
+    return /texte d.origine|évaluez cette traduction|original text|rate this translation/i.test(texte);
+  };
+
+  const masquerSiBulle = (node) => {
+    if (!(node instanceof HTMLElement)) return;
+    if (ressembleABulleTraduction(node)) {
+      node.style.setProperty("display", "none", "important");
+      return;
+    }
+    // La bulle est parfois injectée à l'intérieur d'un conteneur générique
+    // (pas forcément la racine du nœud ajouté) : on vérifie aussi un niveau
+    // de profondeur raisonnable sans scanner tout le sous-arbre à chaque fois.
+    node.querySelectorAll?.("div,span,iframe").forEach((enfant) => {
+      if (ressembleABulleTraduction(enfant)) {
+        enfant.style.setProperty("display", "none", "important");
+      }
+    });
+  };
+
+  const observateur = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      mutation.addedNodes.forEach(masquerSiBulle);
+    }
+  });
+  observateur.observe(document.body, { childList: true, subtree: true });
+}
+
 function initTraduction() {
   chargerGoogleTranslate();
   majIconeLangue(langueMemorisee());
+  initSansBloquer(initMasquageBulleTraduction, "initMasquageBulleTraduction");
   // Même délégation que pour le thème : le clic est capté même si #btnLangue
   // ou #drawerLangue sont recréés/remplacés après le chargement initial.
   document.addEventListener("click", (e) => {
