@@ -280,6 +280,36 @@ body.theme-sombre .hero h1 {
 }
 .filters-bar input:focus, .filters-bar select:focus { outline: none; border-color: var(--vert); }
 
+/* ===== "PRÈS DE CHEZ MOI" (géolocalisation + rayon) ===== */
+.pres-de-moi-bar {
+  max-width: 1200px; margin: -8px auto 16px; padding: 0 20px;
+}
+.btn-pres-de-moi {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: #fff; border: 1.5px solid var(--vert); border-radius: 10px;
+  padding: 10px; font-size: 13.5px; font-weight: 700; color: var(--vert); cursor: pointer;
+  transition: .15s;
+}
+.btn-pres-de-moi:hover { background: #ECFDF5; }
+.btn-pres-de-moi.actif { background: var(--vert); color: #fff; }
+.btn-pres-de-moi.chargement { opacity: .7; cursor: wait; }
+
+.rayon-control {
+  margin-top: 10px; background: #fff; border: 1.5px solid var(--gris-bordure);
+  border-radius: 12px; padding: 12px 14px;
+}
+.rayon-ligne {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; color: var(--texte); margin-bottom: 6px;
+}
+.rayon-ligne strong { color: var(--vert); font-size: 14px; }
+.rayon-control input[type="range"] {
+  width: 100%; accent-color: var(--vert); cursor: pointer;
+}
+.rayon-statut {
+  margin-top: 8px; font-size: 12px; color: var(--texte-secondaire); text-align: center;
+}
+
 /* ===== LAYOUT ACCUEIL : liste + carte côte à côte ===== */
 .split-layout {
   max-width: 1200px; margin: 0 auto; padding: 0 20px 40px;
@@ -333,6 +363,23 @@ body.theme-sombre .hero h1 {
 }
 .carte-annonce:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(0,0,0,.14); }
 .carte-annonce.survolee { border-color: var(--vert); }
+
+/* ═══ "Près de chez moi" — carte dans le rayon choisi : mise en avant douce
+   (halo qui pulse), pas de clignotement agressif. Voir togglePresDeMoi()/
+   changerRayon() dans app.js. ═══ */
+.carte-annonce.carte-proche {
+  border-color: var(--vert);
+  animation: pulseProche 1.8s ease-in-out infinite;
+}
+@keyframes pulseProche {
+  0%, 100% { box-shadow: 0 2px 10px rgba(0,0,0,.08), 0 0 0 0 rgba(16,185,129,.45); }
+  50% { box-shadow: 0 2px 10px rgba(0,0,0,.08), 0 0 0 6px rgba(16,185,129,0); }
+}
+.badge-distance {
+  position: absolute; top: 8px; left: 44px; background: var(--vert); color: #fff;
+  font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+}
 
 .carte-annonce .visuel {
   height: var(--tile-img-h); background: #e0e0e0; display: flex; align-items: center; justify-content: center;
@@ -654,9 +701,13 @@ body.theme-sombre .champ select,
 body.theme-sombre .champ textarea,
 body.theme-sombre .chip,
 body.theme-sombre .toggle-statut button,
-body.theme-sombre .role-carte {
+body.theme-sombre .role-carte,
+body.theme-sombre .btn-pres-de-moi,
+body.theme-sombre .rayon-control {
   background: #1A2130;
 }
+body.theme-sombre .btn-pres-de-moi.actif { background: var(--vert); }
+body.theme-sombre .rayon-ligne { color: var(--texte); }
 
 /* Titre des cartes d'annonce (.carte-info h3) : fixé en dur (#1A2332) car il
    était censé rester sur le fond BLANC fixe de la carte. Mais en mode sombre,

@@ -45,6 +45,125 @@ let modeFavoris = false;
 let map, markersParId = {};
 let positionUtilisateur = null; // { lat, lng } — utilisée pour le tri "près de moi"
 
+/* ══════════ "PRÈS DE CHEZ MOI" (bouton dédié + rayon ajustable) ══════════
+   Distinct du simple tri "presLocalisation" du tiroir de filtres avancés :
+   ici on calcule, pour chaque annonce, un "niveau de proximité" (rayon en km,
+   puis à défaut même quartier / arrondissement / commune que l'utilisateur),
+   on trie la liste par ce niveau, et on met en avant (halo + badge distance)
+   les annonces qui sont dans le rayon choisi. */
+let presDeMoiActif = false;
+let rayonKm = 1;
+let positionInfo = null; // { quartier, arrondissement, commune } — reverse-geocoding (best effort)
+
+function togglePresDeMoi() {
+  const btn = document.getElementById("btnPresDeMoi");
+  const controle = document.getElementById("rayonControl");
+
+  if (presDeMoiActif) {
+    presDeMoiActif = false;
+    btn.classList.remove("actif");
+    controle.hidden = true;
+    rendreTout();
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    toastApp("❌ La géolocalisation n'est pas disponible sur cet appareil.");
+    return;
+  }
+
+  btn.classList.add("chargement");
+  btn.textContent = "⏳ Localisation en cours…";
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      positionUtilisateur = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      presDeMoiActif = true;
+      rayonKm = 1;
+      btn.classList.remove("chargement");
+      btn.classList.add("actif");
+      btn.textContent = "📍 Près de chez moi";
+      controle.hidden = false;
+      document.getElementById("sliderRayon").value = 1;
+      document.getElementById("rayonValeur").textContent = "1 km";
+      await localiserQuartierApprox();
+      rendreTout();
+    },
+    () => {
+      btn.classList.remove("chargement");
+      btn.textContent = "📍 Près de chez moi";
+      toastApp("❌ Impossible d'obtenir votre position. Vérifiez l'autorisation de localisation dans votre navigateur.");
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+function changerRayon(valeur) {
+  rayonKm = parseInt(valeur);
+  document.getElementById("rayonValeur").textContent = `${rayonKm} km`;
+  rendreTout();
+}
+
+/* Reverse-geocoding gratuit (Nominatim/OpenStreetMap, déjà utilisé pour la
+   carte Leaflet) : permet, quand aucune annonce n'est dans le rayon choisi,
+   de replier progressivement la recherche sur le quartier puis
+   l'arrondissement puis la commune de l'utilisateur plutôt que sur un rayon
+   en km. Best-effort : si la requête échoue (hors-ligne, quota...), le rayon
+   continue de fonctionner normalement, seul le repli "quartier/commune" est
+   simplement indisponible. */
+async function localiserQuartierApprox() {
+  if (!positionUtilisateur) return;
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${positionUtilisateur.lat}&lon=${positionUtilisateur.lng}&zoom=16&addressdetails=1`;
+    const rep = await fetch(url, { headers: { "Accept-Language": "fr" } });
+    const data = await rep.json();
+    const adresse = data?.address || {};
+    positionInfo = {
+      quartier: adresse.suburb || adresse.neighbourhood || adresse.quarter || "",
+      arrondissement: adresse.city_district || adresse.borough || "",
+      commune: adresse.city || adresse.town || adresse.county || ""
+    };
+  } catch (e) {
+    positionInfo = null;
+  }
+}
+
+/* Petit toast local (app.js n'a pas la fonction toast() d'admin.js) */
+function toastApp(message) {
+  let el = document.getElementById("toastApp");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "toastApp";
+    el.style.cssText = "position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1A2332;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:90vw;text-align:center;";
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  el.style.opacity = "1";
+  clearTimeout(el._timeout);
+  el._timeout = setTimeout(() => { el.style.opacity = "0"; }, 3500);
+}
+
+/* Calcule, pour une annonce, son "niveau de proximité" par rapport à
+   l'utilisateur :
+     0 = dans le rayon choisi (km)
+     1 = hors rayon mais même quartier
+     2 = hors quartier mais même arrondissement
+     3 = hors arrondissement mais même commune
+     4 = aucun rapprochement connu
+   Retourne aussi la distance en km quand elle est calculable (lat/lng
+   présents sur l'annonce), pour affichage et tri fin au sein d'un même
+   niveau. */
+function calculerProximite(annonce) {
+  const aCoords = typeof annonce.lat === "number" && typeof annonce.lng === "number";
+  const distance = aCoords && positionUtilisateur ? distanceKm(positionUtilisateur, annonce) : null;
+
+  if (distance !== null && distance <= rayonKm) return { niveau: 0, distance };
+  if (positionInfo?.quartier && annonce.quartier === positionInfo.quartier) return { niveau: 1, distance };
+  if (positionInfo?.arrondissement && annonce.arrondissement === positionInfo.arrondissement) return { niveau: 2, distance };
+  if (positionInfo?.commune && annonce.commune === positionInfo.commune) return { niveau: 3, distance };
+  return { niveau: 4, distance };
+}
+
 /* ══════════ INITIALISATION ══════════ */
 document.addEventListener("DOMContentLoaded", () => {
   initCarte();
@@ -295,8 +414,18 @@ function appliquerFiltres(liste) {
       okCarreaux && okPrixMin && okPrixMaxAv && okEquipements;
   });
 
-  // Tri "près de moi" si activé et position disponible
-  if (filtres.presLocalisation && positionUtilisateur) {
+  // Tri "Près de chez moi" (bouton dédié) : niveau de proximité (rayon km,
+  // puis quartier/arrondissement/commune) puis distance au sein d'un niveau.
+  if (presDeMoiActif && positionUtilisateur) {
+    resultat.forEach(a => { a._proximite = calculerProximite(a); });
+    resultat.sort((a, b) => {
+      if (a._proximite.niveau !== b._proximite.niveau) return a._proximite.niveau - b._proximite.niveau;
+      if (a._proximite.distance === null) return 1;
+      if (b._proximite.distance === null) return -1;
+      return a._proximite.distance - b._proximite.distance;
+    });
+  } else if (filtres.presLocalisation && positionUtilisateur) {
+    // Ancien tri simple (tiroir "Recherches avancées"), conservé pour compat.
     resultat.sort((a, b) => {
       if (typeof a.lat !== "number" || typeof a.lng !== "number") return 1;
       if (typeof b.lat !== "number" || typeof b.lng !== "number") return -1;
@@ -444,6 +573,33 @@ function rendreTout() {
   rendreListe(filtrees);
   rendreMarqueurs(filtrees);
   document.getElementById("count-annonces").textContent = `${filtrees.length} annonce(s)`;
+  mettreAJourStatutPresDeMoi(filtrees);
+}
+
+/* Message sous le slider de rayon : combien d'annonces sont dans le rayon
+   choisi, et si aucune, à quel niveau la recherche a été élargie
+   (quartier / arrondissement / commune) pour ne jamais laisser l'utilisateur
+   devant une liste vide sans explication. */
+function mettreAJourStatutPresDeMoi(liste) {
+  const statutEl = document.getElementById("rayonStatut");
+  if (!statutEl || !presDeMoiActif) return;
+
+  const dansLeRayon = liste.filter(a => a._proximite?.niveau === 0).length;
+  if (dansLeRayon > 0) {
+    statutEl.textContent = `📍 ${dansLeRayon} logement(s) à moins de ${rayonKm} km`;
+    return;
+  }
+
+  const meilleurNiveau = liste.reduce((min, a) => Math.min(min, a._proximite?.niveau ?? 4), 4);
+  const libelles = {
+    1: "Aucun logement à moins de " + rayonKm + " km — résultats de votre quartier en tête.",
+    2: "Aucun logement à moins de " + rayonKm + " km ni dans votre quartier — résultats de votre arrondissement en tête.",
+    3: "Aucun logement à moins de " + rayonKm + " km — résultats de votre commune en tête.",
+    4: rayonKm < 5
+      ? `Aucun logement à moins de ${rayonKm} km. Essayez d'élargir le rayon.`
+      : "Aucun logement à proximité connue. Essayez une autre zone via les filtres."
+  };
+  statutEl.textContent = libelles[meilleurNiveau] || "";
 }
 
 function rendreListe(liste) {
@@ -461,17 +617,22 @@ function rendreListe(liste) {
     const carte = document.createElement("div");
     const paletteType = couleurTypeBien(a.type);
     const paletteTier = palierPrix(a.prix);
-    carte.className = `carte-annonce ${paletteTier}`;
+    const dansLeRayon = presDeMoiActif && a._proximite?.niveau === 0;
+    carte.className = `carte-annonce ${paletteTier}${dansLeRayon ? " carte-proche" : ""}`;
     carte.id = `carte-${a.id}`;
     carte.style.setProperty("--couleur-type", paletteType);
     const photo = a.photos && a.photos[0];
     const badgeVendeur = getBadgeVendeur(a);
+    const distanceTexte = dansLeRayon && a._proximite.distance !== null
+      ? (a._proximite.distance < 1 ? `${Math.round(a._proximite.distance * 1000)} m` : `${a._proximite.distance.toFixed(1)} km`)
+      : "";
     carte.innerHTML = `
       <div class="visuel">
         ${photo ? `<img src="${escapeHTML(photo)}" alt="${escapeHTML(a.titre)}" loading="lazy">` : getIconeType(a.type)}
         <button class="btn-favori ${estFavori(a.id) ? "actif" : ""}" data-id="${a.id}" aria-label="Ajouter aux favoris">${estFavori(a.id) ? "❤️" : "🤍"}</button>
         <span class="badge badge-disponible" style="position:absolute;top:8px;right:8px;">🟢 Disponible</span>
         <span class="badge ${badgeVendeur.classe}" style="position:absolute;bottom:8px;left:8px;">${badgeVendeur.texte}</span>
+        ${distanceTexte ? `<span class="badge-distance">📍 ${distanceTexte}</span>` : ""}
       </div>
       <div class="carte-info">
         <h3>${escapeHTML(a.titre)}</h3>
