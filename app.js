@@ -98,8 +98,11 @@ function initCarte() {
     carteWrap.style.position = "relative";
   }
 
-  // Initialiser la carte Leaflet (la taille est gérée entièrement par le CSS)
-  map = L.map("carteMap").setView([LIBREVILLE_CENTER.lat, LIBREVILLE_CENTER.lng], 13);
+  // Initialiser la carte Leaflet (la taille est gérée entièrement par le CSS).
+  // Zoom 14 plutôt que 13 : resserre la vue sur les quartiers habités de
+  // Libreville et évite de montrer une grande zone de mer/forêt vide de
+  // logements sur cet aperçu compact de la page d'accueil.
+  map = L.map("carteMap").setView([LIBREVILLE_CENTER.lat, LIBREVILLE_CENTER.lng], 14);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; contributeurs OpenStreetMap",
     maxZoom: 19
