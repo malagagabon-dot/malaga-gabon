@@ -183,6 +183,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnStatZones")?.addEventListener("click", afficherZones);
   document.getElementById("btnStatRecentes")?.addEventListener("click", afficherPublicationsRecentes);
 
+  // Bouton "Près de chez moi" + slider de rayon — même raison que ci-dessus :
+  // pas d'onclick/oninput inline en HTML, tout est relié ici.
+  document.getElementById("btnPresDeMoi")?.addEventListener("click", togglePresDeMoi);
+  document.getElementById("sliderRayon")?.addEventListener("input", (e) => changerRayon(e.target.value));
+
   document.getElementById("btnRechercher").onclick = () => {
     filtres.texte = document.getElementById("search-input").value.trim().toLowerCase();
     rendreTout();
