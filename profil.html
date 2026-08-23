@@ -52,10 +52,14 @@
     .mini-carte .prix{font-size:13px;font-weight:800;color:var(--vert);}
     .mini-carte .meta{font-size:10.5px;color:var(--gris-clair);margin-top:2px;}
 
-    /* Demandes de visite / RDV */
+    /* Demandes de visite / RDV — carte à fond BLANC fixe (ne suit pas le
+       thème) : le titre doit donc rester en dur, sinon il devient
+       illisible/invisible en mode sombre (texte clair sur fond resté blanc),
+       ce qui empêchait concrètement le propriétaire de voir et traiter les
+       demandes reçues. */
     .rdv-carte{background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
     .rdv-haut{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
-    .rdv-titre{font-size:13.5px;font-weight:700;}
+    .rdv-titre{font-size:13.5px;font-weight:700;color:#1A2332;}
     .rdv-date{font-size:11px;color:var(--gris-clair);margin-top:2px;}
     .badge-rdv{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:20px;white-space:nowrap;}
     .badge-rdv.en_attente{background:#FEF3C7;color:#92400E;}
