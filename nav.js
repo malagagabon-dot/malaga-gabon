@@ -396,7 +396,7 @@ function proposerPartageWhatsApp(a, likeId) {
    Best-effort : si le propriétaire n'a pas de token (jamais accepté les
    notifications), ou si le Worker est injoignable, on ignore simplement —
    ça ne doit jamais bloquer un like ou une demande de visite. */
-const URL_WORKER_PUSH = "https://malaga-push-relais.TON-COMPTE.workers.dev";
+const URL_WORKER_PUSH = "https://malaga-push-relais.malagagabon.workers.dev";
 
 export async function envoyerPush(proprietaireId, titre, message, url) {
   try {
