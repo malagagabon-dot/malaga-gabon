@@ -15,6 +15,7 @@ import {
   EQUIPEMENTS, PALIERS_PIECES, escapeHTML, getBadgeVendeur
 } from "./malaga-reference.js";
 import { estFavori, toggleFavori, purgerFavorisInexistants } from "./nav.js";
+import { enregistrerVisite } from "./tracking.js";
 
 let utilisateurCourant = null;
 let profilCourant = null;
@@ -779,6 +780,7 @@ async function ouvrirAnnonceDepuisURL() {
 
 /* ══════════ MODAL DÉTAIL ══════════ */
 function afficherDetail(a) {
+  enregistrerVisite("annonce", a.id, a.titre);
   const modal = document.getElementById("detailModal");
   const panneau = document.getElementById("detailPanneau");
   const numeroWhatsApp = (a.whatsapp || a.tel || "").replace(/[^\d]/g, "");

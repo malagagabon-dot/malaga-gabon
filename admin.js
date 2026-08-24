@@ -490,6 +490,72 @@ function rendreClassement() {
 /* ══════════════════════════════════════════════════════════
    NAVIGATION
 ══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   ÉCOUTE TEMPS RÉEL — VISITES DU SITE (Firestore, "visites")
+   Écrit par tracking.js sur chaque page publique (type "page") et à
+   chaque ouverture de fiche annonce (type "annonce"). Lecture réservée
+   à l'admin (règle globale) — jamais exposé aux visiteurs.
+══════════════════════════════════════════════════════════ */
+let visitesData = [];
+let ecouteVisitesDemarree = false;
+
+function demarrerEcouteVisites() {
+  if (ecouteVisitesDemarree) return;
+  ecouteVisitesDemarree = true;
+  if (!window.dbAdmin) return;
+
+  window.dbAdmin.collection('visites').orderBy('dateCreation', 'desc').limit(300).onSnapshot((snap) => {
+    visitesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    rendreStatsVisites();
+  }, (err) => {
+    console.error('Erreur de synchronisation des visites :', err);
+  });
+}
+
+function rendreStatsVisites() {
+  const debutJour = new Date(); debutJour.setHours(0, 0, 0, 0);
+  const versMillis = (v) => v?.dateCreation?.toMillis ? v.dateCreation.toMillis() : 0;
+
+  const visitesAujourdhui = visitesData.filter(v => versMillis(v) >= debutJour.getTime());
+  const sessionsUniquesAujourdhui = new Set(visitesAujourdhui.map(v => v.session)).size;
+  const sessionsUniquesTotal = new Set(visitesData.map(v => v.session)).size;
+
+  const elJour = document.getElementById('kpiVisitesJour');
+  if (elJour) elJour.textContent = visitesAujourdhui.length;
+  const elVisiteursJour = document.getElementById('kpiVisiteursJour');
+  if (elVisiteursJour) elVisiteursJour.textContent = sessionsUniquesAujourdhui;
+  const elVisiteursTotal = document.getElementById('kpiVisiteursTotal');
+  if (elVisiteursTotal) elVisiteursTotal.textContent = sessionsUniquesTotal;
+
+  const compteurAnnonces = {};
+  visitesData.filter(v => v.type === 'annonce').forEach(v => {
+    compteurAnnonces[v.cible] = compteurAnnonces[v.cible] || { titre: v.titre || v.cible, total: 0 };
+    compteurAnnonces[v.cible].total++;
+  });
+  const topAnnonces = Object.values(compteurAnnonces).sort((a, b) => b.total - a.total).slice(0, 5);
+  const elTop = document.getElementById('chartTopVisites');
+  if (elTop) {
+    elTop.innerHTML = topAnnonces.length
+      ? topAnnonces.map(a => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;"><span>${escapeHTML(a.titre)}</span><strong>${a.total}</strong></div>`).join('')
+      : '<div class="table-empty">Aucune consultation enregistrée.</div>';
+  }
+
+  const corps = document.getElementById('visitesTableBody');
+  if (!corps) return;
+  if (visitesData.length === 0) {
+    corps.innerHTML = '<tr><td colspan="4" class="table-empty">Aucune visite enregistrée.</td></tr>';
+    return;
+  }
+  corps.innerHTML = visitesData.slice(0, 100).map(v => {
+    const u = v.uid ? usersData.find(x => x.id === v.uid) : null;
+    const qui = u ? (u.nom || u.email || 'Compte inconnu') : (v.uid ? 'Compte inconnu' : 'Visiteur anonyme');
+    const quoi = v.type === 'annonce' ? `Annonce : ${v.titre || v.cible}` : `Page : ${v.cible}`;
+    const ou = [v.ville, v.pays].filter(Boolean).join(', ') || '—';
+    const quand = v.dateCreation?.toDate ? v.dateCreation.toDate().toLocaleString('fr-FR') : '—';
+    return `<tr><td>${quand}</td><td>${escapeHTML(qui)}</td><td>${escapeHTML(quoi)}</td><td>${escapeHTML(ou)}</td></tr>`;
+  }).join('');
+}
+
 function showPage(pageId) {
   pageActuelle = pageId;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -523,7 +589,7 @@ function showPage(pageId) {
   else if (pageId === 'signalements') loadSignalements();
   else if (pageId === 'reservations' && window.chargerReservations) window.chargerReservations();
   else if (pageId === 'messages') loadMessages();
-  else if (pageId === 'stats') loadStats();
+  else if (pageId === 'stats') demarrerEcouteVisites();
   else if (pageId === 'publier') { initPubMiniMap(); adapterPubFormulaireAuType(); }
   else if (pageId === 'classement') { demarrerEcouteLikes(); rendreClassement(); }
   else if (pageId === 'notifications') { demarrerEcouteNotifsPrefs(); demarrerEcouteNotificationsGlobales(); }

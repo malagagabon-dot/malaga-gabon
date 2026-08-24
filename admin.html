@@ -701,6 +701,54 @@
         <div id="chartTop" class="chart-bars"></div>
       </div>
     </div>
+
+    <div class="page-header" style="margin-top:24px;">
+      <h1 data-i18n>👁️ Visites du site</h1>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon green">👁️</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiVisitesJour">0</div>
+          <div class="kpi-label" data-i18n>Visites aujourd'hui</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon blue">👤</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiVisiteursJour">0</div>
+          <div class="kpi-label" data-i18n>Visiteurs uniques aujourd'hui</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiVisiteursTotal">0</div>
+          <div class="kpi-label" data-i18n>Visiteurs uniques (total)</div>
+        </div>
+      </div>
+    </div>
+    <div class="card stat-card">
+      <h3 data-i18n>Top 5 annonces consultées</h3>
+      <div id="chartTopVisites" class="chart-bars"></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th data-i18n>Date / heure</th>
+              <th data-i18n>Qui</th>
+              <th data-i18n>Quoi</th>
+              <th data-i18n>Où</th>
+            </tr>
+          </thead>
+          <tbody id="visitesTableBody">
+            <tr><td colspan="4" class="table-empty" data-i18n>Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- ═══ PAGE : CLASSEMENT (likes) ═══ -->
@@ -1130,7 +1178,7 @@
   // dès son chargement, puis à chaque bascule — les autres init (drawer, favoris...)
   // qu'il tente au passage sont sans effet ici (aucun élément correspondant dans
   // admin.html) et n'empêchent jamais ce chargement de fonctionner.
-  import "./nav.js?v=20260822c";
+  import "./nav.js?v=20260824a";
   import {
     ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
     TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES

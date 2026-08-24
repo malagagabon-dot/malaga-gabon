@@ -6,6 +6,7 @@
 
 import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc, deleteDoc, updateDoc, serverTimestamp, increment, collection, query, where, onSnapshot, orderBy, limit } from "./firebase-config.js";
 import { getProfil } from "./auth.js";
+import { enregistrerVisite } from "./tracking.js";
 import { escapeHTML, formatPrix } from "./malaga-reference.js";
 
 /* ══════════ MODE SOMBRE / CLAIR ══════════
@@ -848,6 +849,8 @@ function initSansBloquer(fn, nom) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const page = location.pathname.split("/").pop() || "index.html";
+
   initSansBloquer(initTheme, "initTheme");
   initSansBloquer(initTraduction, "initTraduction");
   initSansBloquer(initDrawer, "initDrawer");
@@ -858,9 +861,9 @@ document.addEventListener("DOMContentLoaded", () => {
   initSansBloquer(initDrawerNotifs, "initDrawerNotifs");
   initSansBloquer(initEcouteNotificationsGlobales, "initEcouteNotificationsGlobales");
   initSansBloquer(initOuvertureAnnoncePartagee, "initOuvertureAnnoncePartagee");
+  initSansBloquer(() => enregistrerVisite("page", page), "enregistrerVisite");
 
   // Marque l'onglet actif de la barre basse selon la page courante
-  const page = location.pathname.split("/").pop() || "index.html";
   document.querySelectorAll(".bn-item[data-page]").forEach(el => {
     el.classList.toggle("actif", el.dataset.page === page);
   });
