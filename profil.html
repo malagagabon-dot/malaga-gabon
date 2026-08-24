@@ -159,7 +159,34 @@
         <div class="profil-contact" id="profilContact"></div>
       </div>
     </div>
+
+    <!-- ===== ENCART AGENCE / ENTREPRISE (visible uniquement si compteType === "entreprise") ===== -->
+    <div class="profil-entreprise" id="profilEntreprise" style="display:none;">
+      <div class="entreprise-logo" id="entrepriseLogo"></div>
+      <div class="entreprise-infos">
+        <div class="entreprise-raison" id="entrepriseRaison"></div>
+        <div class="entreprise-slogan" id="entrepriseSlogan"></div>
+        <div class="entreprise-meta" id="entrepriseMeta"></div>
+        <span class="entreprise-statut" id="entrepriseStatut"></span>
+      </div>
+    </div>
   </div>
+
+  <style>
+    .profil-entreprise{max-width:1000px;margin:10px auto 0;padding:14px 16px;display:flex;gap:14px;align-items:center;
+      background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;}
+    .entreprise-logo{width:52px;height:52px;border-radius:12px;background:var(--gris-fond);flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;}
+    .entreprise-logo img{width:100%;height:100%;object-fit:cover;}
+    .entreprise-infos{min-width:0;flex:1;}
+    .entreprise-raison{font-size:14.5px;font-weight:800;color:var(--texte);}
+    .entreprise-slogan{font-size:12px;color:var(--gris-clair);margin-top:1px;font-style:italic;}
+    .entreprise-meta{font-size:11.5px;color:var(--gris-clair);margin-top:4px;}
+    .entreprise-statut{display:inline-block;margin-top:6px;font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:20px;}
+    .entreprise-statut.attente{background:#FFF4D6;color:#8A6D00;}
+    .entreprise-statut.verifie{background:#DDF5E7;color:#0A7A45;}
+    .entreprise-statut.rejete{background:#FDE2E2;color:#B42318;}
+  </style>
 
   <!-- ===== BANNIÈRE DE MISE EN AVANT (arrivée via lien ?like= ou ?demande=) ===== -->
   <div id="banniereCiblage"></div>
@@ -420,8 +447,38 @@
     function afficherProfil() {
       const p = profilCourant;
       document.getElementById("profilNom").textContent = p.nom || "Utilisateur MALAGA";
-      document.getElementById("profilRole").textContent = p.role === "proprietaire" ? "🏠 Propriétaire" : "🔍 Chercheur de logement";
+      document.getElementById("profilRole").textContent =
+        p.role === "proprietaire"
+          ? (p.compteType === "entreprise" ? "🏢 Agence / Entreprise" : "🏠 Propriétaire")
+          : "🔍 Chercheur de logement";
       document.getElementById("profilContact").innerHTML = `📞 ${escapeHTML(p.tel || "—")} &nbsp;·&nbsp; ✉️ ${escapeHTML(p.email || "")}`;
+
+      // Encart Agence / Entreprise : n'apparaît que pour les comptes
+      // compteType === "entreprise" (voir auth.js → inscrire()). Le badge
+      // "vérifié" en dépend du champ statutEntreprise ("attente" tant que
+      // l'admin n'a pas validé le dossier, voir admin.js).
+      const blocEntreprise = document.getElementById("profilEntreprise");
+      if (p.compteType === "entreprise") {
+        blocEntreprise.style.display = "flex";
+        document.getElementById("entrepriseLogo").innerHTML = p.logoUrl
+          ? `<img src="${escapeHTML(p.logoUrl)}" alt="">`
+          : "🏢";
+        document.getElementById("entrepriseRaison").textContent = p.raisonSociale || "Agence sans nom";
+        document.getElementById("entrepriseSlogan").textContent = p.slogan || "";
+        document.getElementById("entrepriseSlogan").style.display = p.slogan ? "block" : "none";
+        const metaParts = [];
+        if (p.typeEntreprise) metaParts.push(p.typeEntreprise);
+        if (p.entrepriseTel) metaParts.push(`📞 ${p.entrepriseTel}`);
+        if (p.entrepriseAdresse) metaParts.push(`📍 ${p.entrepriseAdresse}`);
+        document.getElementById("entrepriseMeta").textContent = metaParts.join(" · ");
+        const statutEl = document.getElementById("entrepriseStatut");
+        const statut = p.statutEntreprise || "attente";
+        const libellesStatut = { attente: "⏳ Vérification en attente", verifie: "✅ Agence vérifiée", rejete: "❌ Vérification refusée" };
+        statutEl.textContent = libellesStatut[statut] || libellesStatut.attente;
+        statutEl.className = "entreprise-statut " + (statut === "verifie" ? "verifie" : statut === "rejete" ? "rejete" : "attente");
+      } else {
+        blocEntreprise.style.display = "none";
+      }
 
       const avatar = document.getElementById("profilAvatar");
       avatar.innerHTML = p.photoURL ? `<img src="${escapeHTML(p.photoURL)}" alt="">` : initiales(p.nom);
