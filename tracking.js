@@ -3,7 +3,7 @@
    Enregistre les visites de page et les consultations d'annonces
    dans Firestore ("visites"), pour le tableau de bord admin.
 ═══════════════════════════════════════════ */
-import { db, auth, addDoc, collection, serverTimestamp } from "./firebase-config.js";
+import { db, auth, addDoc, collection, serverTimestamp, onAuthStateChanged } from "./firebase-config.js";
 
 function getSessionId() {
   let id = sessionStorage.getItem("malaga_session");
@@ -12,6 +12,25 @@ function getSessionId() {
     sessionStorage.setItem("malaga_session", id);
   }
   return id;
+}
+
+// À l'ouverture d'une page, Firebase Auth n'a pas encore fini de restaurer
+// la session de l'utilisateur connecté (ça prend quelques centaines de ms).
+// Lire auth.currentUser trop tôt renvoie donc systématiquement null, même
+// pour un membre connecté — c'est ce qui faisait apparaître tout le monde
+// comme "Visiteur anonyme". On attend ici la toute première résolution de
+// l'état d'authentification avant d'enregistrer la visite.
+let authPret = null;
+function attendreAuth() {
+  if (!authPret) {
+    authPret = new Promise((resolve) => {
+      const arreter = onAuthStateChanged(auth, (user) => {
+        arreter();
+        resolve(user);
+      });
+    });
+  }
+  return authPret;
 }
 
 // Géolocalisation approximative par IP (gratuite, sans clé, sans demande de
@@ -33,10 +52,10 @@ async function obtenirGeoloc() {
 
 export async function enregistrerVisite(type, cible, titre = null) {
   try {
-    const { ville, pays } = await obtenirGeoloc();
+    const [{ ville, pays }, user] = await Promise.all([obtenirGeoloc(), attendreAuth()]);
     await addDoc(collection(db, "visites"), {
       type, cible, titre,
-      uid: auth.currentUser?.uid || null,
+      uid: user?.uid || null,
       session: getSessionId(),
       ville, pays,
       dateCreation: serverTimestamp()

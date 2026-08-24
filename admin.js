@@ -498,6 +498,14 @@ function rendreClassement() {
 ══════════════════════════════════════════════════════════ */
 let visitesData = [];
 let ecouteVisitesDemarree = false;
+let filtreVisites = { mode: 'tout', cible: null, titre: null };
+
+function filtrerVisites(mode, cible = null, titre = null) {
+  filtreVisites = { mode, cible, titre };
+  rendreStatsVisites();
+  document.getElementById('visitesTableBody')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+window.filtrerVisites = filtrerVisites;
 
 function demarrerEcouteVisites() {
   if (ecouteVisitesDemarree) return;
@@ -529,24 +537,48 @@ function rendreStatsVisites() {
 
   const compteurAnnonces = {};
   visitesData.filter(v => v.type === 'annonce').forEach(v => {
-    compteurAnnonces[v.cible] = compteurAnnonces[v.cible] || { titre: v.titre || v.cible, total: 0 };
+    compteurAnnonces[v.cible] = compteurAnnonces[v.cible] || { cible: v.cible, titre: v.titre || v.cible, total: 0 };
     compteurAnnonces[v.cible].total++;
   });
   const topAnnonces = Object.values(compteurAnnonces).sort((a, b) => b.total - a.total).slice(0, 5);
   const elTop = document.getElementById('chartTopVisites');
   if (elTop) {
     elTop.innerHTML = topAnnonces.length
-      ? topAnnonces.map(a => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;"><span>${escapeHTML(a.titre)}</span><strong>${a.total}</strong></div>`).join('')
+      ? topAnnonces.map((a, i) => `<div class="bar-row-clic" data-idx="${i}" style="cursor:pointer;display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;"><span>${escapeHTML(a.titre)}</span><strong>${a.total}</strong></div>`).join('')
       : '<div class="table-empty">Aucune consultation enregistrée.</div>';
+    elTop.querySelectorAll('.bar-row-clic').forEach(el => {
+      el.addEventListener('click', () => {
+        const a = topAnnonces[Number(el.dataset.idx)];
+        filtrerVisites('annonce', a.cible, a.titre);
+      });
+    });
+  }
+
+  // Applique le filtre actif (déclenché par le clic sur une tuile ou une annonce du Top 5)
+  let visitesAffichees = visitesData;
+  let texteFiltre = '';
+  if (filtreVisites.mode === 'jour') {
+    visitesAffichees = visitesAujourdhui;
+    texteFiltre = "Filtre : aujourd'hui";
+  } else if (filtreVisites.mode === 'annonce') {
+    visitesAffichees = visitesData.filter(v => v.type === 'annonce' && v.cible === filtreVisites.cible);
+    texteFiltre = `Filtre : annonce « ${filtreVisites.titre || filtreVisites.cible} »`;
+  }
+
+  const elLabel = document.getElementById('filtreVisitesLabel');
+  const elLabelTexte = document.getElementById('filtreVisitesTexte');
+  if (elLabel && elLabelTexte) {
+    elLabel.style.display = filtreVisites.mode === 'tout' ? 'none' : 'flex';
+    elLabelTexte.textContent = texteFiltre;
   }
 
   const corps = document.getElementById('visitesTableBody');
   if (!corps) return;
-  if (visitesData.length === 0) {
-    corps.innerHTML = '<tr><td colspan="4" class="table-empty">Aucune visite enregistrée.</td></tr>';
+  if (visitesAffichees.length === 0) {
+    corps.innerHTML = '<tr><td colspan="4" class="table-empty">Aucune visite pour ce filtre.</td></tr>';
     return;
   }
-  corps.innerHTML = visitesData.slice(0, 100).map(v => {
+  corps.innerHTML = visitesAffichees.slice(0, 100).map(v => {
     const u = v.uid ? usersData.find(x => x.id === v.uid) : null;
     const qui = u ? (u.nom || u.email || 'Compte inconnu') : (v.uid ? 'Compte inconnu' : 'Visiteur anonyme');
     const quoi = v.type === 'annonce' ? `Annonce : ${v.titre || v.cible}` : `Page : ${v.cible}`;
