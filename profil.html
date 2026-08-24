@@ -163,6 +163,14 @@
     <!-- ===== ENCART AGENCE / ENTREPRISE (visible uniquement si compteType === "entreprise") ===== -->
     <div class="profil-entreprise" id="profilEntreprise" style="display:none;">
       <div class="entreprise-logo" id="entrepriseLogo"></div>
+      <div class="entreprise-infos">
+        <div class="entreprise-raison" id="entrepriseRaison"></div>
+        <div class="entreprise-slogan" id="entrepriseSlogan"></div>
+        <div class="entreprise-meta" id="entrepriseMeta"></div>
+        <span class="entreprise-statut" id="entrepriseStatut"></span>
+      </div>
+    </div>
+
     <!-- ===== VÉRIFICATION D'IDENTITÉ ===== -->
     <div class="profil-verif" id="profilVerif">
       <div class="verif-icone">🪪</div>
@@ -175,6 +183,20 @@
   </div>
 
   <style>
+    .profil-entreprise{max-width:1000px;margin:10px auto 0;padding:14px 16px;display:flex;gap:14px;align-items:center;
+      background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;}
+    .entreprise-logo{width:52px;height:52px;border-radius:12px;background:var(--gris-fond);flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;}
+    .entreprise-logo img{width:100%;height:100%;object-fit:cover;}
+    .entreprise-infos{min-width:0;flex:1;}
+    .entreprise-raison{font-size:14.5px;font-weight:800;color:var(--texte);}
+    .entreprise-slogan{font-size:12px;color:var(--gris-clair);margin-top:1px;font-style:italic;}
+    .entreprise-meta{font-size:11.5px;color:var(--gris-clair);margin-top:4px;}
+    .entreprise-statut{display:inline-block;margin-top:6px;font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:20px;}
+    .entreprise-statut.attente{background:#FFF4D6;color:#8A6D00;}
+    .entreprise-statut.verifie{background:#DDF5E7;color:#0A7A45;}
+    .entreprise-statut.rejete{background:#FDE2E2;color:#B42318;}
+
     .profil-verif{max-width:1000px;margin:10px auto 0;padding:14px 16px;display:flex;gap:12px;align-items:center;
       background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;}
     .verif-icone{font-size:26px;flex-shrink:0;}
