@@ -31,6 +31,11 @@ import {
   serverTimestamp,
   increment
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getMessaging,
+  isSupported as messagingEstSupporte,
+  getToken
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCC92Nol8vk_6qLMTi1ZLX9waieiSfvhMs",
@@ -53,6 +58,16 @@ initializeAppCheck(app, {
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Messaging (notifications push) : pas supporté par tous les navigateurs
+// (Safari ancien, contexte non sécurisé, certains navigateurs in-app...).
+// On l'initialise en best-effort : `messaging` reste `null` si indisponible,
+// ce que nav.js gère déjà via `if (!messaging || ...) return;` dans
+// enregistrerTokenFCM(). Rien ne doit jamais bloquer le reste du site.
+export let messaging = null;
+messagingEstSupporte()
+  .then((supporte) => { if (supporte) messaging = getMessaging(app); })
+  .catch(() => { messaging = null; });
 
 // Réexport des fonctions Auth et Firestore : toutes les pages du site
 // importent tout depuis ce seul fichier pour rester simples et cohérentes.
@@ -78,5 +93,6 @@ export {
   limit,
   onSnapshot,
   serverTimestamp,
-  increment
+  increment,
+  getToken
 };
