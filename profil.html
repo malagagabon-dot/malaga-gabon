@@ -178,7 +178,7 @@
         <div class="verif-titre" id="verifTitre">Vérification d'identité</div>
         <div class="verif-sous" id="verifSousTitre"></div>
       </div>
-      <button type="button" class="btn btn-vert" id="btnOuvrirVerif" style="display:none;white-space:nowrap;">🪪 Soumettre</button>
+      <button type="button" class="btn btn-vert" id="btnOuvrirVerif" style="display:none;">🪪 Soumettre mes documents</button>
     </div>
   </div>
 
@@ -207,6 +207,10 @@
     .profil-verif.verifie .verif-sous{color:#0A7A45;}
     .profil-verif.signale .verif-sous{color:#B42318;}
     .profil-verif #btnOuvrirVerif{padding:9px 14px;font-size:12px;flex-shrink:0;}
+    @media(max-width:420px){
+      .profil-verif{flex-wrap:wrap;}
+      .profil-verif #btnOuvrirVerif{flex:1 0 100%;}
+    }
   </style>
 
   <!-- ===== BANNIÈRE DE MISE EN AVANT (arrivée via lien ?like= ou ?demande=) ===== -->
