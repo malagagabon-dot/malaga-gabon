@@ -14,7 +14,7 @@ import {
   ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
   EQUIPEMENTS, PALIERS_PIECES, escapeHTML, getBadgeVendeur
 } from "./malaga-reference.js";
-import { estFavori, toggleFavori, purgerFavorisInexistants } from "./nav.js";
+import { estFavori, toggleFavori, purgerFavorisInexistants, envoyerPush } from "./nav.js";
 import { enregistrerVisite } from "./tracking.js";
 
 let utilisateurCourant = null;
@@ -1038,6 +1038,13 @@ function initReservationVisite() {
         : "✅ Demande envoyée ! Suivez sa réponse dans votre profil.";
       succesEl.classList.add("visible");
       document.getElementById("formReservation").style.display = "none";
+
+      envoyerPush(
+        proprietaireId,
+        "📅 Nouvelle demande de visite",
+        `${profilCourant?.nom || "Un chercheur"} souhaite visiter « ${annonceTitre} »`,
+        `profil.html?demande=${ref.id}`
+      );
 
       if (proprietaireWhatsapp) {
         const lienReponse = `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, "")}profil.html?demande=${ref.id}`;

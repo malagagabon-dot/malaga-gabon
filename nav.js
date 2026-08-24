@@ -4,7 +4,7 @@
    et de la barre de navigation basse, utilisée par toutes les pages.
 ═══════════════════════════════════════════ */
 
-import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc, deleteDoc, updateDoc, serverTimestamp, increment, collection, query, where, onSnapshot, orderBy, limit } from "./firebase-config.js";
+import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc, deleteDoc, updateDoc, serverTimestamp, increment, collection, query, where, onSnapshot, orderBy, limit, messaging, getToken } from "./firebase-config.js";
 import { getProfil } from "./auth.js";
 import { enregistrerVisite } from "./tracking.js";
 import { escapeHTML, formatPrix } from "./malaga-reference.js";
@@ -392,6 +392,29 @@ function proposerPartageWhatsApp(a, likeId) {
   window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texte)}`, "_blank");
 }
 
+/* Appelle le Worker Cloudflare pour envoyer un push au propriétaire visé.
+   Best-effort : si le propriétaire n'a pas de token (jamais accepté les
+   notifications), ou si le Worker est injoignable, on ignore simplement —
+   ça ne doit jamais bloquer un like ou une demande de visite. */
+const URL_WORKER_PUSH = "https://malaga-push-relais.TON-COMPTE.workers.dev";
+
+export async function envoyerPush(proprietaireId, titre, message, url) {
+  try {
+    if (!proprietaireId) return;
+    const profilProprio = await getDoc(doc(db, "users", proprietaireId));
+    const token = profilProprio.exists() ? profilProprio.data()?.fcmToken : null;
+    if (!token) return;
+
+    await fetch(URL_WORKER_PUSH, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, titre, message, url })
+    });
+  } catch (e) {
+    console.warn("Envoi du push impossible :", e);
+  }
+}
+
 async function synchroniserLikeFirestore(a, ajout, likeIdCalcule) {
   if (!a.id || !db) return;
 
@@ -435,6 +458,14 @@ async function synchroniserLikeFirestore(a, ajout, likeIdCalcule) {
         nomVisiteur: nomAffiche
       });
     }
+
+    // Notification push + badge (best-effort, ne bloque jamais l'UI)
+    envoyerPush(
+      a.proprietaireId,
+      "❤️ Nouveau like",
+      `${nomAffiche} a aimé « ${a.titre || "votre annonce"} »`,
+      `profil.html?like=${encodeURIComponent(likeId)}`
+    );
   } else {
     await deleteDoc(likeRef).catch(() => {});
     await updateDoc(annonceRef, { nbLikes: increment(-1) }).catch(() => {});
@@ -697,6 +728,31 @@ function initDrawer() {
 const ADMIN_EMAIL = "malagagabon@gmail.com";
 
 /* ══════════ ÉTAT DE CONNEXION → AVATAR, DRAWER, BARRE BASSE ══════════ */
+/* Demande la permission de notification et enregistre le token FCM de
+   l'utilisateur dans Firestore (users/{uid}.fcmToken), pour permettre au
+   Worker Cloudflare de lui envoyer un push plus tard (likes, demandes de
+   visite...). Best-effort total : navigateur non compatible, permission
+   refusée, hors-ligne... rien de tout ça ne doit jamais bloquer la
+   connexion normale au site. */
+async function enregistrerTokenFCM(uid) {
+  try {
+    if (!messaging || !("Notification" in window)) return;
+    if (Notification.permission === "denied") return;
+
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+
+    const token = await getToken(messaging, {
+      vapidKey: "BMAM8iupaxOmKxreF_ZXKwWo2ExHgOOPC7n7jQIhuEOXDX2pXfoue1i7Cnf-zZJ0aH1edSNlZ_po2q6VsyiUlck"
+    });
+    if (token) {
+      await updateDoc(doc(db, "users", uid), { fcmToken: token });
+    }
+  } catch (e) {
+    console.warn("Enregistrement du token FCM impossible :", e);
+  }
+}
+
 function initAuthUI() {
   onAuthStateChanged(auth, async (user) => {
     const avatar = document.getElementById("btnCompte");
@@ -717,6 +773,7 @@ function initAuthUI() {
     }
 
     migrerLikesAnonymesVersUid(user.uid);
+    enregistrerTokenFCM(user.uid);
 
     const profil = await getProfil(user.uid);
     const nom = profil?.nom || "Mon compte";
