@@ -163,29 +163,28 @@
     <!-- ===== ENCART AGENCE / ENTREPRISE (visible uniquement si compteType === "entreprise") ===== -->
     <div class="profil-entreprise" id="profilEntreprise" style="display:none;">
       <div class="entreprise-logo" id="entrepriseLogo"></div>
-      <div class="entreprise-infos">
-        <div class="entreprise-raison" id="entrepriseRaison"></div>
-        <div class="entreprise-slogan" id="entrepriseSlogan"></div>
-        <div class="entreprise-meta" id="entrepriseMeta"></div>
-        <span class="entreprise-statut" id="entrepriseStatut"></span>
+    <!-- ===== VÉRIFICATION D'IDENTITÉ ===== -->
+    <div class="profil-verif" id="profilVerif">
+      <div class="verif-icone">🪪</div>
+      <div class="verif-texte">
+        <div class="verif-titre" id="verifTitre">Vérification d'identité</div>
+        <div class="verif-sous" id="verifSousTitre"></div>
       </div>
+      <button type="button" class="btn btn-vert" id="btnOuvrirVerif" style="display:none;white-space:nowrap;">🪪 Soumettre</button>
     </div>
   </div>
 
   <style>
-    .profil-entreprise{max-width:1000px;margin:10px auto 0;padding:14px 16px;display:flex;gap:14px;align-items:center;
+    .profil-verif{max-width:1000px;margin:10px auto 0;padding:14px 16px;display:flex;gap:12px;align-items:center;
       background:#fff;border:1px solid var(--gris-bordure);border-radius:14px;}
-    .entreprise-logo{width:52px;height:52px;border-radius:12px;background:var(--gris-fond);flex-shrink:0;
-      display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;}
-    .entreprise-logo img{width:100%;height:100%;object-fit:cover;}
-    .entreprise-infos{min-width:0;flex:1;}
-    .entreprise-raison{font-size:14.5px;font-weight:800;color:var(--texte);}
-    .entreprise-slogan{font-size:12px;color:var(--gris-clair);margin-top:1px;font-style:italic;}
-    .entreprise-meta{font-size:11.5px;color:var(--gris-clair);margin-top:4px;}
-    .entreprise-statut{display:inline-block;margin-top:6px;font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:20px;}
-    .entreprise-statut.attente{background:#FFF4D6;color:#8A6D00;}
-    .entreprise-statut.verifie{background:#DDF5E7;color:#0A7A45;}
-    .entreprise-statut.rejete{background:#FDE2E2;color:#B42318;}
+    .verif-icone{font-size:26px;flex-shrink:0;}
+    .verif-texte{min-width:0;flex:1;}
+    .verif-titre{font-size:13.5px;font-weight:800;color:var(--texte);}
+    .verif-sous{font-size:11.5px;color:var(--gris-clair);margin-top:2px;}
+    .profil-verif.attente .verif-sous{color:#8A6D00;}
+    .profil-verif.verifie .verif-sous{color:#0A7A45;}
+    .profil-verif.signale .verif-sous{color:#B42318;}
+    .profil-verif #btnOuvrirVerif{padding:9px 14px;font-size:12px;flex-shrink:0;}
   </style>
 
   <!-- ===== BANNIÈRE DE MISE EN AVANT (arrivée via lien ?like= ou ?demande=) ===== -->
@@ -279,9 +278,98 @@
     </div>
   </div>
 
+  <!-- ===== MODAL SOUMISSION VÉRIFICATION D'IDENTITÉ ===== -->
+  <div class="modal-overlay" id="modalVerif">
+    <div class="modal-panneau">
+      <div class="form-card">
+        <h2 data-i18n>🪪 Vérification d'identité</h2>
+        <p class="sous-titre" data-i18n>
+          Ces informations restent privées : elles ne sont visibles que par l'équipe MALAGA, jamais par les autres utilisateurs ni sur les annonces.
+        </p>
+
+        <form id="formVerif">
+          <div class="grille-2">
+            <div class="champ">
+              <label data-i18n>Nom complet légal (comme sur la pièce)</label>
+              <input type="text" id="verifNomLegal" required placeholder="Ex : Jean-Pierre Mbadinga" data-i18n-ph>
+            </div>
+            <div class="champ">
+              <label data-i18n>Date de naissance</label>
+              <input type="date" id="verifDateNaissance" required>
+            </div>
+          </div>
+
+          <div class="grille-2">
+            <div class="champ">
+              <label data-i18n>Type de pièce</label>
+              <select id="verifTypePiece">
+                <option value="CNI" data-i18n>Carte Nationale d'Identité</option>
+                <option value="Passeport" data-i18n>Passeport</option>
+                <option value="Permis" data-i18n>Permis de conduire</option>
+              </select>
+            </div>
+            <div class="champ">
+              <label data-i18n>Numéro de la pièce</label>
+              <input type="text" id="verifNumeroPiece" required placeholder="Ex : 123456789" data-i18n-ph>
+            </div>
+          </div>
+
+          <div class="champ">
+            <label data-i18n>Adresse de résidence</label>
+            <input type="text" id="verifAdresse" required placeholder="Ex : Quartier Nzeng-Ayong, Libreville" data-i18n-ph>
+          </div>
+
+          <div class="grille-2">
+            <div class="champ">
+              <label data-i18n>Photo d'identité (selfie)</label>
+              <div class="champ-logo-edit">
+                <div class="apercu" id="apercuSelfie">🤳</div>
+                <div>
+                  <input type="file" id="inputSelfie" accept="image/*" capture="user" hidden>
+                  <button type="button" class="btn btn-outline" id="btnChoisirSelfie" style="padding:8px 14px;font-size:12.5px;" data-i18n>📷 Prendre / choisir</button>
+                </div>
+              </div>
+            </div>
+            <div class="champ">
+              <label data-i18n>Photo de la pièce (recto)</label>
+              <div class="champ-logo-edit">
+                <div class="apercu" id="apercuPieceRecto">🪪</div>
+                <div>
+                  <input type="file" id="inputPieceRecto" accept="image/*" capture="environment" hidden>
+                  <button type="button" class="btn btn-outline" id="btnChoisirPieceRecto" style="padding:8px 14px;font-size:12.5px;" data-i18n>📷 Prendre / choisir</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="champ">
+            <label data-i18n>Photo de la pièce (verso, si applicable)</label>
+            <div class="champ-logo-edit">
+              <div class="apercu" id="apercuPieceVerso">🪪</div>
+              <div>
+                <input type="file" id="inputPieceVerso" accept="image/*" capture="environment" hidden>
+                <button type="button" class="btn btn-outline" id="btnChoisirPieceVerso" style="padding:8px 14px;font-size:12.5px;" data-i18n>📷 Prendre / choisir</button>
+              </div>
+            </div>
+          </div>
+
+          <p class="sous-titre" data-i18n>
+            ℹ️ Ces documents servent uniquement à vérifier votre identité et à protéger la communauté contre les faux comptes. Ils ne sont jamais publiés ni partagés.
+          </p>
+
+          <div id="verifErreurMsg" class="erreur-msg"></div>
+
+          <div style="display:flex;gap:10px;margin-top:6px;">
+            <button type="button" class="btn btn-blanc" id="btnAnnulerVerif" style="flex:1;" data-i18n>Annuler</button>
+            <button type="submit" class="btn btn-vert" id="btnEnvoyerVerif" style="flex:1;" data-i18n>Envoyer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { auth, db, doc, getDoc, updateDoc, collection, query, where, onSnapshot, serverTimestamp } from "./firebase-config.js";
-    import { protegerPage, majProfil, deconnecter } from "./auth.js";
+    import { protegerPage, majProfil, deconnecter, enregistrerVerificationIdentite } from "./auth.js";
     import { getFavoris } from "./nav.js?v=20260822c";
     import { getIconeType, formatPrix, escapeHTML } from "./malaga-reference.js";
 
@@ -436,12 +524,51 @@
       chargerProfil(user);
       chargerFavoris();
       chargerRdv(user.uid);
+      chargerStatutVerif(user.uid);
     });
 
     async function chargerProfil(user) {
       const snap = await getDoc(doc(db, "users", user.uid));
       profilCourant = snap.exists() ? snap.data() : { nom: "", tel: "", email: user.email, role: "chercheur" };
       afficherProfil();
+    }
+
+    /* ══════════ STATUT DE VÉRIFICATION D'IDENTITÉ ══════════
+       Lit son propre dossier verificationsIdentite/{uid} (lecture autorisée
+       par les règles Firestore au propriétaire du dossier). Si le dossier
+       n'existe pas encore (compte créé avant l'envoi des documents, ou
+       envoi resté bloqué), affiche un bouton pour le soumettre. */
+    async function chargerStatutVerif(uid) {
+      const bloc = document.getElementById("profilVerif");
+      const titre = document.getElementById("verifTitre");
+      const sousTitre = document.getElementById("verifSousTitre");
+      const btn = document.getElementById("btnOuvrirVerif");
+      try {
+        const snap = await getDoc(doc(db, "verificationsIdentite", uid));
+        if (!snap.exists()) {
+          bloc.className = "profil-verif";
+          titre.textContent = "🪪 Vérification d'identité";
+          sousTitre.textContent = "Vous n'avez pas encore soumis vos documents.";
+          btn.style.display = "inline-block";
+          btn.onclick = () => document.getElementById("modalVerif").classList.add("ouverte");
+        } else {
+          const statut = snap.data().statut || "attente";
+          const libelles = {
+            attente: ["⏳ Documents envoyés", "En attente de vérification par l'équipe MALAGA."],
+            verifie: ["✅ Identité vérifiée", "Votre compte est vérifié."],
+            signale: ["🚩 Vérification en cours", "Votre dossier fait l'objet d'un contrôle supplémentaire."],
+            suspendu: ["⛔ Compte suspendu", "Contactez-nous pour plus d'informations."]
+          };
+          const [t, s] = libelles[statut] || libelles.attente;
+          bloc.className = "profil-verif " + (statut === "verifie" ? "verifie" : statut === "attente" ? "attente" : "signale");
+          titre.textContent = t;
+          sousTitre.textContent = s;
+          btn.style.display = "none";
+        }
+      } catch {
+        // Best-effort : n'affiche rien de bloquant si la lecture échoue.
+        bloc.style.display = "none";
+      }
     }
 
     function afficherProfil() {
@@ -855,6 +982,90 @@
     });
 
     document.getElementById("btnDeconnexion").onclick = () => deconnecter();
+
+    /* ══════════ SOUMISSION VÉRIFICATION D'IDENTITÉ (compte existant) ══════════
+       Même pipeline que l'inscription (connexion.html) : upload des 2-3 photos
+       vers le preset Cloudinary dédié, puis enregistrerVerificationIdentite()
+       (auth.js) qui écrit verificationsIdentite/{uid} + les index anti-fraude. */
+    const CLOUDINARY_UPLOAD_PRESET_IDENTITE = "malaga_identite_verif";
+    async function uploaderIdentiteVersCloudinary(fichier) {
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+      const formData = new FormData();
+      formData.append("file", fichier);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET_IDENTITE);
+      const reponse = await fetch(url, { method: "POST", body: formData });
+      if (!reponse.ok) throw new Error("Échec de l'envoi de la pièce d'identité");
+      return (await reponse.json()).secure_url;
+    }
+
+    let selfieFichier = null, pieceRectoFichier = null, pieceVersoFichier = null;
+    function brancherChampPhotoVerif(idBouton, idInput, idApercu, cible) {
+      document.getElementById(idBouton).onclick = () => document.getElementById(idInput).click();
+      document.getElementById(idInput).addEventListener("change", (e) => {
+        const fichier = e.target.files[0];
+        if (!fichier) return;
+        if (cible === "selfie") selfieFichier = fichier;
+        else if (cible === "recto") pieceRectoFichier = fichier;
+        else pieceVersoFichier = fichier;
+        const lecteur = new FileReader();
+        lecteur.onload = (ev) => { document.getElementById(idApercu).innerHTML = `<img src="${ev.target.result}" alt="">`; };
+        lecteur.readAsDataURL(fichier);
+      });
+    }
+    brancherChampPhotoVerif("btnChoisirSelfie", "inputSelfie", "apercuSelfie", "selfie");
+    brancherChampPhotoVerif("btnChoisirPieceRecto", "inputPieceRecto", "apercuPieceRecto", "recto");
+    brancherChampPhotoVerif("btnChoisirPieceVerso", "inputPieceVerso", "apercuPieceVerso", "verso");
+
+    const modalVerif = document.getElementById("modalVerif");
+    document.getElementById("btnAnnulerVerif").onclick = () => modalVerif.classList.remove("ouverte");
+
+    document.getElementById("formVerif").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const erreurEl = document.getElementById("verifErreurMsg");
+      erreurEl.classList.remove("visible");
+      const btn = document.getElementById("btnEnvoyerVerif");
+
+      const verifNomLegal = document.getElementById("verifNomLegal").value.trim();
+      const verifDateNaissance = document.getElementById("verifDateNaissance").value;
+      const verifNumeroPiece = document.getElementById("verifNumeroPiece").value.trim();
+      const verifAdresse = document.getElementById("verifAdresse").value.trim();
+      if (!verifNomLegal || !verifDateNaissance || !verifNumeroPiece || !verifAdresse) {
+        erreurEl.textContent = "Merci de compléter tous les champs.";
+        erreurEl.classList.add("visible");
+        return;
+      }
+      if (!selfieFichier || !pieceRectoFichier) {
+        erreurEl.textContent = "Merci d'ajouter votre photo d'identité (selfie) et la photo (recto) de votre pièce.";
+        erreurEl.classList.add("visible");
+        return;
+      }
+
+      btn.disabled = true; btn.textContent = "Envoi des documents…";
+      try {
+        const [selfieUrl, pieceRectoUrl, pieceVersoUrl] = await Promise.all([
+          uploaderIdentiteVersCloudinary(await compresserImage(selfieFichier, 1600, 0.82)),
+          uploaderIdentiteVersCloudinary(await compresserImage(pieceRectoFichier, 1600, 0.82)),
+          pieceVersoFichier ? uploaderIdentiteVersCloudinary(await compresserImage(pieceVersoFichier, 1600, 0.82)) : Promise.resolve("")
+        ]);
+        await enregistrerVerificationIdentite(uidCourant, {
+          nomLegal: verifNomLegal,
+          dateNaissance: verifDateNaissance,
+          typePiece: document.getElementById("verifTypePiece").value,
+          numeroPiece: verifNumeroPiece,
+          adresseResidence: verifAdresse,
+          tel: profilCourant?.tel || "",
+          selfieUrl, pieceRectoUrl, pieceVersoUrl
+        });
+        modalVerif.classList.remove("ouverte");
+        chargerStatutVerif(uidCourant);
+      } catch (err) {
+        console.error(err);
+        erreurEl.textContent = "Une erreur est survenue lors de l'envoi. Réessayez.";
+        erreurEl.classList.add("visible");
+      } finally {
+        btn.disabled = false; btn.textContent = "Envoyer";
+      }
+    });
   </script>
 
   <footer class="footer">
