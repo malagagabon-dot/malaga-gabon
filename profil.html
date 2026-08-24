@@ -84,6 +84,15 @@
       display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--vert);overflow:hidden;flex-shrink:0;}
     .champ-photo-edit .apercu img{width:100%;height:100%;object-fit:cover;}
 
+    /* Modal vérification d'identité : aperçus selfie / pièce recto / verso
+       (mêmes classes que connexion.html, mais cette page ne réutilisait pas
+       encore ce style — sans lui les aperçus s'affichaient à taille brute). */
+    .champ-logo-edit{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+    .champ-logo-edit .apercu{width:64px;height:64px;border-radius:12px;background:var(--gris-fond);
+      display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0;
+      border:1.5px dashed var(--gris-bordure);}
+    .champ-logo-edit .apercu img{width:100%;height:100%;object-fit:cover;}
+
     .btn-deconnexion{width:100%;margin-top:26px;background:transparent;border:1.5px solid var(--rouge);
       color:var(--rouge);font-weight:700;}
 
