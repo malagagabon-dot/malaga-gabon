@@ -5,6 +5,15 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Filet de sécurité global : toute <img> insérée sans style explicite
+   (via innerHTML dans app.js, nav.js, profil.html, connexion.html...) ne
+   peut jamais dépasser la largeur de son conteneur. Évite qu'une image
+   (selfie, pièce d'identité, logo, avatar...) s'affiche à sa taille brute
+   et casse la mise en page. N'affecte pas les images qui ont déjà leur
+   propre taille définie par une classe ou un style inline — ça les borne
+   juste en plus par ce plafond. */
+img { max-width: 100%; height: auto; }
+
 :root {
   --vert: #009E60;
   --vert-fonce: #007A4A;

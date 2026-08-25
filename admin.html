@@ -569,6 +569,11 @@
   <div id="zoneImpressionGroupee" style="display:none;"></div>
 
   <style>
+    /* Cette règle s'applique à l'écran ET à l'impression : sans elle, les photos
+       (selfie, pièce d'identité) s'affichent à leur taille brute et débordent. */
+    .fiche-print img { max-width: 220px; max-height: 280px; width: 100%; height: auto;
+      object-fit: cover; border-radius: 8px; border: 1px solid #ddd; display: block; }
+
     @media print {
       body * { visibility: hidden; }
       #modalFicheVerif.impression-active, #modalFicheVerif.impression-active * { visibility: visible; }
@@ -576,7 +581,6 @@
       #zoneImpressionGroupee.impression-active { display: block !important; visibility: visible; position: absolute; top: 0; left: 0; width: 100%; }
       #zoneImpressionGroupee.impression-active * { visibility: visible; }
       .fiche-print { page-break-after: always; padding: 24px; }
-      .fiche-print img { max-width: 220px; border-radius: 8px; border: 1px solid #ddd; }
     }
   </style>
 

@@ -52,6 +52,31 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Filet de sécurité global : toute <img> insérée sans style explicite
+   (par ex. via innerHTML dans admin.js) ne peut jamais dépasser la largeur
+   de son conteneur. Évite qu'une image (selfie, pièce d'identité, logo...)
+   s'affiche à sa taille brute et casse la mise en page. Les images qui ont
+   déjà leur propre taille définie (via classe ou style inline) ne sont pas
+   affectées, seulement bornées en plus par ce plafond. */
+img { max-width: 100%; height: auto; }
+
+/* Galerie plein écran (lightbox) — classes utilisées par admin.js (ouvrirLightbox)
+   mais jamais définies : sans ces règles, la photo s'affiche à sa taille brute,
+   non centrée, avec les boutons de navigation nulle part. */
+.lightbox-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.9); z-index: 3000;
+  display: none; align-items: center; justify-content: center; }
+.lightbox-overlay.ouverte { display: flex; }
+.lightbox-img { max-width: 92vw; max-height: 86vh; width: auto; height: auto;
+  object-fit: contain; border-radius: 8px; }
+.lightbox-fermer, .lightbox-prec, .lightbox-suiv { position: absolute; background: rgba(255,255,255,.15);
+  color: #fff; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 22px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.lightbox-fermer { top: 16px; right: 16px; }
+.lightbox-prec { left: 16px; top: 50%; transform: translateY(-50%); }
+.lightbox-suiv { right: 16px; top: 50%; transform: translateY(-50%); }
+.lightbox-compteur { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  color: #fff; font-size: 13px; background: rgba(0,0,0,.5); padding: 4px 12px; border-radius: 20px; }
+
 body {
   font-family: var(--font);
   background: var(--bg);
