@@ -368,6 +368,7 @@
         <table class="admin-table">
           <thead>
             <tr>
+              <th data-i18n>N°</th>
               <th data-i18n>Nom</th>
               <th data-i18n>Email</th>
               <th data-i18n>Téléphone</th>
@@ -377,7 +378,7 @@
             </tr>
           </thead>
           <tbody id="usersTableBody">
-            <tr><td colspan="6" class="table-empty" data-i18n>Chargement...</td></tr>
+            <tr><td colspan="7" class="table-empty" data-i18n>Chargement...</td></tr>
           </tbody>
         </table>
       </div>
@@ -729,6 +730,13 @@
         <div class="kpi-info">
           <div class="kpi-num" id="kpiVisiteursTotal">0</div>
           <div class="kpi-label" data-i18n>Visiteurs uniques (total)</div>
+        </div>
+      </div>
+      <div class="kpi-card" id="kpiCardQR" onclick="filtrerVisites('qr')" style="cursor:pointer;">
+        <div class="kpi-icon" style="background:#F3E8FF;color:#7C3AED;">🔲</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiQRTotal">0</div>
+          <div class="kpi-label" data-i18n>Scans du code QR (total)</div>
         </div>
       </div>
     </div>
@@ -1191,10 +1199,12 @@
     ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
     TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES
   } from "./malaga-reference.js";
+  import { numeroMembre, numeroAnnonce, dessinerQRCode, qrCodeVersDataURL } from "./malaga-id.js";
   window.MALAGA_REF = {
     ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
     TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES
   };
+  window.MALAGA_ID = { numeroMembre, numeroAnnonce, dessinerQRCode, qrCodeVersDataURL };
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>

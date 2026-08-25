@@ -305,7 +305,7 @@ function demarrerEcouteUtilisateurs() {
   }, (err) => {
     console.error('Erreur de synchronisation des utilisateurs :', err);
     const tbody = document.getElementById('usersTableBody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Impossible de charger les utilisateurs. Vérifiez les règles Firestore.</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Impossible de charger les utilisateurs. Vérifiez les règles Firestore.</td></tr>';
   });
 }
 
@@ -527,6 +527,7 @@ function rendreStatsVisites() {
   const visitesAujourdhui = visitesData.filter(v => versMillis(v) >= debutJour.getTime());
   const sessionsUniquesAujourdhui = new Set(visitesAujourdhui.map(v => v.session)).size;
   const sessionsUniquesTotal = new Set(visitesData.map(v => v.session)).size;
+  const scansQRTotal = visitesData.filter(v => v.type === 'qr').length;
 
   const elJour = document.getElementById('kpiVisitesJour');
   if (elJour) elJour.textContent = visitesAujourdhui.length;
@@ -534,6 +535,8 @@ function rendreStatsVisites() {
   if (elVisiteursJour) elVisiteursJour.textContent = sessionsUniquesAujourdhui;
   const elVisiteursTotal = document.getElementById('kpiVisiteursTotal');
   if (elVisiteursTotal) elVisiteursTotal.textContent = sessionsUniquesTotal;
+  const elQRTotal = document.getElementById('kpiQRTotal');
+  if (elQRTotal) elQRTotal.textContent = scansQRTotal;
 
   const compteurAnnonces = {};
   visitesData.filter(v => v.type === 'annonce').forEach(v => {
@@ -563,6 +566,9 @@ function rendreStatsVisites() {
   } else if (filtreVisites.mode === 'annonce') {
     visitesAffichees = visitesData.filter(v => v.type === 'annonce' && v.cible === filtreVisites.cible);
     texteFiltre = `Filtre : annonce « ${filtreVisites.titre || filtreVisites.cible} »`;
+  } else if (filtreVisites.mode === 'qr') {
+    visitesAffichees = visitesData.filter(v => v.type === 'qr');
+    texteFiltre = '🔲 Filtre : scans du code QR';
   }
 
   const elLabel = document.getElementById('filtreVisitesLabel');
@@ -581,7 +587,9 @@ function rendreStatsVisites() {
   corps.innerHTML = visitesAffichees.slice(0, 100).map(v => {
     const u = v.uid ? usersData.find(x => x.id === v.uid) : null;
     const qui = u ? (u.nom || u.email || 'Compte inconnu') : (v.uid ? 'Compte inconnu' : 'Visiteur anonyme');
-    const quoi = v.type === 'annonce' ? `Annonce : ${v.titre || v.cible}` : `Page : ${v.cible}`;
+    const quoi = v.type === 'annonce' ? `Annonce : ${v.titre || v.cible}`
+      : v.type === 'qr' ? `🔲 Code QR : ${v.titre || v.cible}`
+      : `Page : ${v.cible}`;
     const ou = [v.ville, v.pays].filter(Boolean).join(', ') || '—';
     const quand = v.dateCreation?.toDate ? v.dateCreation.toDate().toLocaleString('fr-FR') : '—';
     return `<tr><td>${quand}</td><td>${escapeHTML(qui)}</td><td>${escapeHTML(quoi)}</td><td>${escapeHTML(ou)}</td></tr>`;
@@ -854,7 +862,7 @@ function loadAnnonces(liste) {
     const titre = texte(a, 'titre', 'title');
     return `
       <tr>
-        <td style="font-size:11px;color:#888;">${a.id}</td>
+        <td style="font-size:11px;color:#0A7A45;font-family:'Courier New',monospace;font-weight:700;" title="${a.id}">${(window.MALAGA_ID?.numeroAnnonce(a.id)) || a.id}</td>
         <td style="font-weight:600;">${escapeHTML(String(titre).substring(0, 20))}</td>
         <td>${escapeHTML(texte(a, 'proprietaireNom', 'proprio', 'nomProprietaire'))}${champ(a, 'proprietaireCompteType') === 'entreprise' ? ' 🏢' : ' 🏠'}</td>
         <td>${escapeHTML(texte(a, 'commune', 'ville'))}</td>
@@ -1378,7 +1386,7 @@ function loadUsers(liste) {
   const data = liste || usersData;
 
   if (data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Aucun utilisateur ne correspond</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Aucun utilisateur ne correspond</td></tr>';
     return;
   }
 
@@ -1387,6 +1395,7 @@ function loadUsers(liste) {
     const date = formaterDate(champ(u, 'dateCreation', 'date'));
     return `
       <tr>
+        <td style="font-size:11px;color:#0A7A45;font-family:'Courier New',monospace;font-weight:700;" title="${u.id}">${(window.MALAGA_ID?.numeroMembre(u.id, u)) || u.id}</td>
         <td style="font-weight:600;">${escapeHTML(texte(u, 'nom'))}</td>
         <td>${escapeHTML(texte(u, 'email'))}</td>
         <td>${escapeHTML(texte(u, 'tel'))}</td>
@@ -1753,7 +1762,7 @@ function normaliserNomAdmin(nom) {
 
 function verifJointeAUser(v) {
   const u = usersData.find(x => x.id === v.id) || {};
-  return { ...v, _nom: texte(u, 'nom'), _email: texte(u, 'email'), _tel: texte(u, 'tel'), _role: texte(u, 'role') };
+  return { ...v, _nom: texte(u, 'nom'), _email: texte(u, 'email'), _tel: texte(u, 'tel'), _role: texte(u, 'role'), _user: u };
 }
 
 function calculerKpiVerif() {
@@ -1866,10 +1875,18 @@ function ficheVerifHTML(uid) {
   const v = verifJointeAUser(verificationsData.find(x => x.id === uid) || {});
   const label = LABEL_STATUT_VERIF[v.statut] || LABEL_STATUT_VERIF.attente;
   const alertes = alertesFraudeData.filter(a => a.uid === uid);
+  const numMembre = window.MALAGA_ID?.numeroMembre(uid, v._user) || '';
+  const biens = annoncesData.filter(a => a.proprietaireId === uid);
   return `
     <div class="fiche-print">
-      <h2 style="margin:0 0 4px;">${escapeHTML(v._nom)}</h2>
-      <p style="margin:0 0 14px;color:#666;">Statut : ${label.texte}</p>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+        <div>
+          <h2 style="margin:0 0 4px;">${escapeHTML(v._nom)}</h2>
+          <p style="margin:0 0 2px;font-family:'Courier New',monospace;font-weight:700;color:#0A7A45;font-size:13px;">${numMembre}</p>
+          <p style="margin:0 0 14px;color:#666;">Statut : ${label.texte}</p>
+        </div>
+        <canvas class="fiche-qr-canvas" data-fiche-qr="${escapeHTML(numMembre)}" width="90" height="90" style="flex-shrink:0;"></canvas>
+      </div>
       <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
         ${v.selfieUrl ? `<div><div style="font-size:11px;color:#888;margin-bottom:4px;">Selfie</div><img src="${v.selfieUrl}"></div>` : ''}
         ${v.pieceRectoUrl ? `<div><div style="font-size:11px;color:#888;margin-bottom:4px;">Pièce (recto)</div><img src="${v.pieceRectoUrl}"></div>` : ''}
@@ -1885,6 +1902,17 @@ function ficheVerifHTML(uid) {
         <tr><td style="padding:4px 8px 4px 0;color:#888;">Email</td><td style="padding:4px 0;">${escapeHTML(v._email)}</td></tr>
         <tr><td style="padding:4px 8px 4px 0;color:#888;">Soumis le</td><td style="padding:4px 0;">${escapeHTML(formaterDate(v.dateCreation))}</td></tr>
       </table>
+      ${biens.length ? `
+        <h3 style="font-size:13px;margin:14px 0 6px;">🏠 Biens publiés sur MALAGA (${biens.length})</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          ${biens.map(b => `
+            <tr>
+              <td style="padding:3px 8px 3px 0;font-family:'Courier New',monospace;color:#0A7A45;font-weight:700;">${window.MALAGA_ID?.numeroAnnonce(b.id) || ''}</td>
+              <td style="padding:3px 0;">${escapeHTML(String(texte(b, 'titre', 'title')).substring(0, 40))}</td>
+            </tr>
+          `).join('')}
+        </table>
+      ` : ''}
       ${alertes.length ? `
         <h3 style="font-size:13px;margin:14px 0 6px;color:#EF4444;">🚩 Alertes (${alertes.length})</h3>
         <ul style="font-size:12.5px;padding-left:18px;margin:0;">
@@ -1895,8 +1923,26 @@ function ficheVerifHTML(uid) {
   `;
 }
 
+/* Dessine les QR codes des fiches actuellement affichées (fiche unique ou
+   impression groupée), et ATTEND que ce soit fait (retourne une Promise) —
+   important pour l'impression groupée : sans ce await, le tout premier clic
+   déclencherait window.print() avant que la librairie QR (chargée à la
+   demande) ait eu le temps de dessiner quoi que ce soit, laissant les QR
+   vides sur cette première impression. Best-effort malgré tout : si la lib
+   échoue, la fiche reste simplement sans QR plutôt que de bloquer l'impression. */
+async function dessinerQRCodesFiches(conteneur) {
+  const canvases = [...conteneur.querySelectorAll('[data-fiche-qr]')];
+  await Promise.all(canvases.map((canvas) => {
+    const texte = canvas.dataset.ficheQr;
+    if (!texte || !window.MALAGA_ID?.dessinerQRCode) return Promise.resolve();
+    return window.MALAGA_ID.dessinerQRCode(canvas, texte, 90).catch(() => {});
+  }));
+}
+
 function ouvrirFicheVerif(uid) {
-  document.getElementById('ficheVerifContenu').innerHTML = ficheVerifHTML(uid);
+  const contenu = document.getElementById('ficheVerifContenu');
+  contenu.innerHTML = ficheVerifHTML(uid);
+  dessinerQRCodesFiches(contenu);
   const modal = document.getElementById('modalFicheVerif');
   modal.classList.remove('hidden');
   modal.classList.add('impression-active');
@@ -1907,10 +1953,11 @@ function fermerFicheVerif() {
   modal.classList.remove('impression-active');
 }
 
-function imprimerSelectionVerif() {
+async function imprimerSelectionVerif() {
   if (selectionVerif.size === 0) { toast('⚠️ Sélectionnez au moins un membre'); return; }
   const zone = document.getElementById('zoneImpressionGroupee');
   zone.innerHTML = Array.from(selectionVerif).map(uid => ficheVerifHTML(uid)).join('');
+  await dessinerQRCodesFiches(zone);
   zone.classList.add('impression-active');
   window.print();
   setTimeout(() => zone.classList.remove('impression-active'), 500);

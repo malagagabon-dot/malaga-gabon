@@ -24,6 +24,8 @@
     .profil-nom{font-size:18px;font-weight:800;font-family:'Playfair Display',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .profil-role{display:inline-block;margin-top:4px;font-size:11px;font-weight:800;background:rgba(255,255,255,.2);
       padding:3px 10px;border-radius:20px;letter-spacing:.3px;}
+    .profil-numero{margin-top:6px;font-size:11.5px;font-weight:700;letter-spacing:.6px;opacity:.85;
+      font-family:'Courier New',monospace;}
     .profil-contact{margin-top:8px;font-size:12.5px;opacity:.92;line-height:1.7;}
     .profil-btn-modifier{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.18);border:none;
       color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;cursor:pointer;}
@@ -77,6 +79,13 @@
       border:1px solid var(--gris-bordure);border-radius:14px;padding:16px 18px;text-decoration:none;color:var(--texte);}
     .lien-gerer .txt strong{font-size:14px;} .lien-gerer .txt p{font-size:12px;color:var(--gris-clair);margin-top:2px;}
     .lien-gerer .fleche{font-size:18px;color:var(--vert);}
+
+    .ligne-numero-annonce{display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:9px 4px;border-bottom:1px solid var(--gris-bordure);font-size:12.5px;}
+    .ligne-numero-annonce:last-child{border-bottom:none;}
+    .ligne-numero-annonce .txt-tronque{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;}
+    .ligne-numero-annonce .code-numero{flex-shrink:0;font-family:'Courier New',monospace;font-weight:700;
+      font-size:11px;color:var(--vert-fonce);background:var(--vert-clair,#E6F7F0);padding:2px 8px;border-radius:8px;}
 
     /* Modal édition profil */
     .champ-photo-edit{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
@@ -165,6 +174,7 @@
       <div class="profil-infos">
         <div class="profil-nom" id="profilNom" data-i18n>Chargement…</div>
         <span class="profil-role" id="profilRole"></span>
+        <div class="profil-numero" id="profilNumero"></div>
         <div class="profil-contact" id="profilContact"></div>
       </div>
     </div>
@@ -240,6 +250,7 @@
       <div class="txt"><strong data-i18n>Gérer mes annonces publiées</strong><p data-i18n>Disponibilité, modifications, suppression…</p></div>
       <span class="fleche">→</span>
     </a>
+    <div id="listeNumerosAnnonces" style="margin-top:10px;"></div>
   </div>
 
   <!-- ===== SECTION DEMANDES REÇUES (propriétaire) ===== -->
@@ -281,9 +292,53 @@
     </div>
   </div>
 
+  <!-- ===== CODE QR MALAGA ===== -->
+  <div class="profil-section">
+    <h2 data-i18n>🔲 Code QR MALAGA</h2>
+    <div class="carte-qr" id="carteQR">
+      <canvas id="canvasQRPetit" width="120" height="120"></canvas>
+      <div class="carte-qr-texte">
+        <strong data-i18n>Partagez l'application</strong>
+        <p data-i18n>Scannez ou touchez pour l'agrandir et l'imprimer.</p>
+      </div>
+    </div>
+  </div>
+
   <div class="profil-section" style="padding-bottom:30px;">
     <button type="button" class="btn btn-deconnexion" id="btnDeconnexion" data-i18n>🚪 Se déconnecter</button>
   </div>
+
+  <!-- ===== MODAL QR PLEIN ÉCRAN ===== -->
+  <div class="modal-overlay" id="modalQR">
+    <div class="modal-panneau" style="max-width:380px;">
+      <div class="form-card" style="text-align:center;">
+        <h2 data-i18n>🔲 Code QR MALAGA</h2>
+        <p class="sous-titre" data-i18n>Scannez avec l'appareil photo pour ouvrir l'application, ou imprimez cette page.</p>
+        <div style="display:flex;justify-content:center;margin:18px 0;">
+          <canvas id="canvasQRGrand" width="260" height="260"></canvas>
+        </div>
+        <p style="font-size:11.5px;color:var(--gris-clair);word-break:break-all;" id="texteURLQR"></p>
+        <div style="display:flex;gap:10px;margin-top:14px;">
+          <button type="button" class="btn btn-blanc" id="btnFermerQR" style="flex:1;" data-i18n>Fermer</button>
+          <button type="button" class="btn btn-vert" id="btnImprimerQR" style="flex:1;" data-i18n>🖨️ Imprimer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .carte-qr{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--gris-bordure);
+      border-radius:14px;padding:14px 16px;cursor:pointer;}
+    .carte-qr canvas{border-radius:8px;flex-shrink:0;}
+    .carte-qr-texte strong{font-size:13.5px;color:var(--texte);}
+    .carte-qr-texte p{font-size:11.5px;color:var(--gris-clair);margin-top:2px;}
+    @media print {
+      body > *:not(#modalQR){ display:none !important; }
+      #modalQR{ position:static !important; display:block !important; background:#fff !important; }
+      #modalQR .modal-panneau{ max-width:100% !important; box-shadow:none !important; }
+      #btnFermerQR, #btnImprimerQR{ display:none !important; }
+    }
+  </style>
 
   <!-- ===== MODAL MODIFICATION PROFIL ===== -->
   <div class="modal-overlay" id="modalProfil">
@@ -407,6 +462,8 @@
     import { protegerPage, majProfil, deconnecter, enregistrerVerificationIdentite } from "./auth.js";
     import { getFavoris } from "./nav.js?v=20260822c";
     import { getIconeType, formatPrix, escapeHTML } from "./malaga-reference.js";
+    import { numeroMembre, numeroAnnonce, dessinerQRCode } from "./malaga-id.js";
+    import { enregistrerVisite } from "./tracking.js";
 
     // --- Cloudinary (même configuration que connexion.html / publier.html) ---
     const CLOUDINARY_CLOUD_NAME = "enpphgwu";
@@ -614,6 +671,7 @@
           ? (p.compteType === "entreprise" ? "🏢 Agence / Entreprise" : "🏠 Propriétaire")
           : "🔍 Chercheur de logement";
       document.getElementById("profilContact").innerHTML = `📞 ${escapeHTML(p.tel || "—")} &nbsp;·&nbsp; ✉️ ${escapeHTML(p.email || "")}`;
+      document.getElementById("profilNumero").textContent = "🆔 " + numeroMembre(uidCourant, p);
 
       // Encart Agence / Entreprise : n'apparaît que pour les comptes
       // compteType === "entreprise" (voir auth.js → inscrire()). Le badge
@@ -667,6 +725,15 @@
       const q = query(collection(db, "annonces"), where("proprietaireId", "==", uidCourant));
       onSnapshot(q, (snap) => {
         document.getElementById("statAnnonces").textContent = snap.size;
+        const zone = document.getElementById("listeNumerosAnnonces");
+        if (snap.empty) { zone.innerHTML = ""; return; }
+        zone.innerHTML = snap.docs.map(d => {
+          const a = d.data();
+          return `<div class="ligne-numero-annonce">
+            <span class="txt-tronque">🏠 ${escapeHTML(a.titre || "Sans titre")}</span>
+            <span class="code-numero">${numeroAnnonce(d.id)}</span>
+          </div>`;
+        }).join("");
       });
     }
 
@@ -1015,6 +1082,23 @@
         btn.disabled = false; btn.textContent = "Enregistrer";
       }
     });
+
+    /* ══════════ CODE QR MALAGA ══════════
+       Encode l'URL d'accueil du site. Le clic sur la carte est suivi dans
+       Firestore ("visites", type "qr") exactement comme les pages/annonces,
+       pour apparaître dans le tableau de suivi côté admin. */
+    const urlAppQR = location.origin + location.pathname.replace(/profil\.html$/, "index.html");
+    document.getElementById("texteURLQR").textContent = urlAppQR;
+    dessinerQRCode(document.getElementById("canvasQRPetit"), urlAppQR, 120).catch(() => {});
+
+    const modalQR = document.getElementById("modalQR");
+    document.getElementById("carteQR").onclick = () => {
+      modalQR.classList.add("ouverte");
+      dessinerQRCode(document.getElementById("canvasQRGrand"), urlAppQR, 260).catch(() => {});
+      enregistrerVisite("qr", "app_qr", "Code QR MALAGA — profil");
+    };
+    document.getElementById("btnFermerQR").onclick = () => modalQR.classList.remove("ouverte");
+    document.getElementById("btnImprimerQR").onclick = () => window.print();
 
     document.getElementById("btnDeconnexion").onclick = () => deconnecter();
 

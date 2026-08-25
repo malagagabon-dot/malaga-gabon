@@ -441,6 +441,13 @@ body.theme-sombre .hero h1 {
   display: block; color: #6B7280; font-size: 10.5px; margin-top: 4px; opacity: .85;
 }
 
+/* Numéro d'identification MALAGA (système de numérotation membres/annonces) */
+.carte-info .numero-annonce {
+  display: inline-block; font-family: 'Courier New', monospace; font-weight: 700;
+  font-size: 10px; letter-spacing: .3px; color: var(--vert-fonce); background: #E6F7F0;
+  padding: 2px 8px; border-radius: 8px; margin-top: 6px;
+}
+
 /* ===== CARTE LEAFLET ===== */
 .map-wrap { position: sticky; top: 90px; }
 #carteMap {
