@@ -959,3 +959,13 @@ body {
   .kpi-grid { grid-template-columns: 1fr 1fr; }
   .kpi-num { font-size: 1.4rem; }
 }
+
+/* Mise en avant temporaire d'une ligne de tableau ciblée par un lien profond
+   (ex : ?qrDemande=uid depuis le message WhatsApp envoyé à l'admin). */
+.ligne-mise-en-avant {
+  animation: ligneMiseEnAvant 2.2s ease-out 1;
+}
+@keyframes ligneMiseEnAvant {
+  0%   { background: #FFF3B0; }
+  100% { background: transparent; }
+}

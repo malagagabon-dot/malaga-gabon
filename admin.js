@@ -62,6 +62,8 @@ let verificationsData = [];      // alimenté en temps réel depuis Firestore "v
 let alertesFraudeData = [];      // alimenté en temps réel depuis Firestore "alertesFraude"
 let ecouteVerifDemarree = false;
 let ecouteAlertesFraudeDemarree = false;
+let demandesQRData = [];         // alimenté en temps réel depuis Firestore "demandesQR"
+let ecouteQRDemarree = false;
 const selectionVerif = new Set(); // uids sélectionnés pour l'impression groupée
 let pageActuelle = 'dashboard';
 let periodeClassement = 'tout';
@@ -249,7 +251,27 @@ function onLoginSuccess(user) {
   demarrerEcouteMessages();
   demarrerEcouteVerification();
   demarrerEcouteAlertesFraude();
+  demarrerEcouteQR();
   loadDashboard();
+
+  // Lien profond depuis le message WhatsApp envoyé par un propriétaire qui
+  // demande l'activation de son code QR premium (?qrDemande=uid) : on ouvre
+  // directement la page dédiée pour que l'admin puisse valider en un clic
+  // après discussion et réception du paiement.
+  const paramsAdmin = new URLSearchParams(location.search);
+  const qrDemandeUid = paramsAdmin.get('qrDemande');
+  if (qrDemandeUid) {
+    showPage('codesqr');
+    setTimeout(() => {
+      document.getElementById('filterQR').value = '';
+      filtrerQR();
+      const ligne = document.getElementById('ligneQR-' + qrDemandeUid);
+      if (ligne) {
+        ligne.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ligne.classList.add('ligne-mise-en-avant');
+      }
+    }, 400);
+  }
 }
 
 function adminLogout() {
@@ -353,6 +375,169 @@ function demarrerEcouteAlertesFraude() {
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Impossible de charger les alertes. Vérifiez les règles Firestore.</td></tr>';
   });
 }
+
+/* ══════════════════════════════════════════════════════════
+   ÉCOUTE TEMPS RÉEL — DEMANDES D'ACTIVATION QR PREMIUM
+   (Firestore, collection "demandesQR", doc id = uid du propriétaire)
+   Écrite par profil.html quand un propriétaire clique "Demander l'activation".
+   Monétisation : la vue plein écran / impression / téléchargement du code QR
+   d'un propriétaire ne s'active QUE via validerDemandeQR() ci-dessous, après
+   discussion et réception du paiement à distance par l'admin.
+══════════════════════════════════════════════════════════ */
+function demarrerEcouteQR() {
+  if (ecouteQRDemarree) return;
+  ecouteQRDemarree = true;
+  if (!window.dbAdmin) return;
+
+  window.dbAdmin.collection('demandesQR').onSnapshot((snap) => {
+    demandesQRData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const nbAttente = demandesQRData.filter(q => q.statut === 'en_attente').length;
+    const badge = document.getElementById('badgeQR');
+    if (badge) badge.textContent = nbAttente;
+    if (pageActuelle === 'codesqr') filtrerQR();
+  }, (err) => {
+    console.error('Erreur de synchronisation des demandes QR :', err);
+    const tbody = document.getElementById('qrTableBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Impossible de charger les demandes. Vérifiez les règles Firestore.</td></tr>';
+  });
+}
+
+let filtreStatutQRActuel = '';
+function filtrerQRParStatut(statut) {
+  filtreStatutQRActuel = statut;
+  const select = document.getElementById('filterStatutQR');
+  if (select) select.value = statut;
+  filtrerQR();
+}
+
+function calculerKpiQR() {
+  const total = demandesQRData.length;
+  const attente = demandesQRData.filter(q => q.statut === 'en_attente').length;
+  const actifs = demandesQRData.filter(q => q.statut === 'validee').length;
+  const refusees = demandesQRData.filter(q => q.statut === 'refusee').length;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('kpiQRTotal', total);
+  set('kpiQRAttente', attente);
+  set('kpiQRActifs', actifs);
+  set('kpiQRRefusees', refusees);
+}
+
+function filtrerQR() {
+  calculerKpiQR();
+  const recherche = (document.getElementById('filterQR')?.value || '').toLowerCase();
+  const statutFiltre = document.getElementById('filterStatutQR')?.value || filtreStatutQRActuel;
+  const tbody = document.getElementById('qrTableBody');
+  if (!tbody) return;
+
+  let liste = demandesQRData.slice().sort((a, b) => (b.dateDemande?.seconds || 0) - (a.dateDemande?.seconds || 0));
+  if (statutFiltre) liste = liste.filter(q => q.statut === statutFiltre);
+  if (recherche) {
+    liste = liste.filter(q =>
+      (q.proprietaireNom || '').toLowerCase().includes(recherche) ||
+      (q.numeroMalaga || '').toLowerCase().includes(recherche) ||
+      (q.proprietaireTel || '').toLowerCase().includes(recherche));
+  }
+
+  if (!liste.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Aucune demande.</td></tr>';
+    return;
+  }
+
+  const badgesStatut = {
+    en_attente: '<span class="badge badge-yellow">⏳ En attente</span>',
+    validee: '<span class="badge badge-green">✅ Activé</span>',
+    refusee: '<span class="badge badge-red">🚫 Refusée</span>'
+  };
+
+  tbody.innerHTML = liste.map(q => {
+    const dateStr = q.dateDemande?.toDate ? q.dateDemande.toDate().toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    const telPropre = (q.proprietaireTel || '').replace(/[^\d]/g, '');
+    let actions = '';
+    if (q.statut === 'en_attente') {
+      actions = `<button class="btn-outline-sm" style="color:#059669;border-color:#059669;" onclick="validerDemandeQR('${q.id}')">✅ Activer</button>
+        <button class="btn-outline-sm" style="color:#B91C1C;border-color:#B91C1C;" onclick="refuserDemandeQR('${q.id}')">🚫 Refuser</button>`;
+    } else if (q.statut === 'validee') {
+      actions = `<button class="btn-outline-sm" style="color:#B91C1C;border-color:#B91C1C;" onclick="revoquerAccesQR('${q.id}')">⛔ Révoquer</button>`;
+    } else {
+      actions = `<button class="btn-outline-sm" style="color:#059669;border-color:#059669;" onclick="validerDemandeQR('${q.id}')">✅ Activer quand même</button>`;
+    }
+    if (telPropre) {
+      actions += ` <a class="btn-outline-sm" href="https://wa.me/${telPropre}" target="_blank" rel="noopener">💬</a>`;
+    }
+    return `<tr id="ligneQR-${q.id}">
+      <td>${escapeHTML(q.proprietaireNom || '—')}</td>
+      <td style="font-family:'Courier New',monospace;font-weight:700;">${escapeHTML(q.numeroMalaga || '—')}</td>
+      <td>${escapeHTML(q.typeCompte || '—')}</td>
+      <td>${escapeHTML(q.proprietaireTel || '—')}</td>
+      <td>${badgesStatut[q.statut] || q.statut || '—'}</td>
+      <td>${dateStr}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap;">${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* Active la vue plein écran / impression / téléchargement du QR pour ce
+   propriétaire (users/{uid}.qrPremiumActif = true), après discussion et
+   réception du paiement à distance — c'est le geste final de monétisation.
+   Envoie ensuite une confirmation WhatsApp au propriétaire concerné. */
+function validerDemandeQR(uid) {
+  const demande = demandesQRData.find(q => q.id === uid);
+  if (!confirm(`Confirmer l'activation de la vue plein écran / impression du code QR pour ${demande?.proprietaireNom || 'ce membre'} ?\n\nÀ n'utiliser qu'après réception effective du paiement.`)) return;
+
+  Promise.all([
+    window.dbAdmin.collection('users').doc(uid).update({
+      qrPremiumActif: true,
+      qrPremiumActiveLe: firebase.firestore.FieldValue.serverTimestamp()
+    }),
+    window.dbAdmin.collection('demandesQR').doc(uid).update({
+      statut: 'validee',
+      dateTraitement: firebase.firestore.FieldValue.serverTimestamp()
+    })
+  ]).then(() => {
+    const telPropre = (demande?.proprietaireTel || '').replace(/[^\d]/g, '');
+    if (telPropre) {
+      const texte = `Bonjour ${demande?.proprietaireNom || ''}, votre code QR MALAGA est activé ✅. Vous pouvez maintenant l'afficher en plein écran, l'imprimer et le télécharger depuis votre profil.`;
+      window.open(`https://wa.me/${telPropre}?text=${encodeURIComponent(texte)}`, '_blank');
+    }
+  }).catch((err) => {
+    console.error('Erreur activation QR premium :', err);
+    alert('Impossible d\'activer l\'accès. Réessayez.');
+  });
+}
+
+function refuserDemandeQR(uid) {
+  const demande = demandesQRData.find(q => q.id === uid);
+  if (!confirm(`Refuser la demande d'activation QR de ${demande?.proprietaireNom || 'ce membre'} ?`)) return;
+
+  window.dbAdmin.collection('demandesQR').doc(uid).update({
+    statut: 'refusee',
+    dateTraitement: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch((err) => {
+    console.error('Erreur refus demande QR :', err);
+    alert('Impossible de refuser la demande. Réessayez.');
+  });
+}
+
+function revoquerAccesQR(uid) {
+  const demande = demandesQRData.find(q => q.id === uid);
+  if (!confirm(`Révoquer l'accès premium QR de ${demande?.proprietaireNom || 'ce membre'} ?`)) return;
+
+  Promise.all([
+    window.dbAdmin.collection('users').doc(uid).update({ qrPremiumActif: false }),
+    window.dbAdmin.collection('demandesQR').doc(uid).update({
+      statut: 'refusee',
+      dateTraitement: firebase.firestore.FieldValue.serverTimestamp()
+    })
+  ]).catch((err) => {
+    console.error('Erreur révocation accès QR :', err);
+    alert('Impossible de révoquer l\'accès. Réessayez.');
+  });
+}
+window.filtrerQRParStatut = filtrerQRParStatut;
+window.filtrerQR = filtrerQR;
+window.validerDemandeQR = validerDemandeQR;
+window.refuserDemandeQR = refuserDemandeQR;
+window.revoquerAccesQR = revoquerAccesQR;
 
 /* ══════════════════════════════════════════════════════════
    ÉCOUTE TEMPS RÉEL — SIGNALEMENTS (Firestore, collection "signalements")
@@ -611,6 +796,7 @@ function showPage(pageId) {
     'utilisateurs': 'Utilisateurs',
     'entreprises': '🏢 Comptes professionnels',
     'verification': '📁 Vérification & Archives',
+    'codesqr': '🔲 Codes QR — accès premium',
     'signalements': 'Signalements',
     'reservations': 'Demandes de visite',
     'messages': 'Messages',
@@ -626,6 +812,7 @@ function showPage(pageId) {
   else if (pageId === 'utilisateurs') filtrerUsers();
   else if (pageId === 'entreprises') filtrerEntreprises();
   else if (pageId === 'verification') { filtrerVerif(); loadAlertesFraude(); }
+  else if (pageId === 'codesqr') { demarrerEcouteQR(); filtrerQR(); }
   else if (pageId === 'signalements') loadSignalements();
   else if (pageId === 'reservations' && window.chargerReservations) window.chargerReservations();
   else if (pageId === 'messages') loadMessages();

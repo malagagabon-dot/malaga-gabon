@@ -292,15 +292,16 @@
     </div>
   </div>
 
-  <!-- ===== CODE QR MALAGA ===== -->
+  <!-- ===== CODE QR MALAGA (unique par profil, généré depuis l'inscription) ===== -->
   <div class="profil-section">
-    <h2 data-i18n>🔲 Code QR MALAGA</h2>
+    <h2 data-i18n>🔲 Mon code QR MALAGA</h2>
     <div class="carte-qr" id="carteQR">
       <canvas id="canvasQRPetit" width="120" height="120"></canvas>
       <div class="carte-qr-texte">
-        <strong data-i18n>Partagez l'application</strong>
-        <p data-i18n>Scannez ou touchez pour l'agrandir et l'imprimer.</p>
+        <strong id="carteQRTitre">Partagez votre profil</strong>
+        <p id="carteQRSousTitre">Touchez pour l'agrandir, l'imprimer ou le télécharger.</p>
       </div>
+      <span class="carte-qr-cadenas" id="carteQRCadenas" style="display:none;">🔒</span>
     </div>
   </div>
 
@@ -308,19 +309,44 @@
     <button type="button" class="btn btn-deconnexion" id="btnDeconnexion" data-i18n>🚪 Se déconnecter</button>
   </div>
 
-  <!-- ===== MODAL QR PLEIN ÉCRAN ===== -->
+  <!-- ===== MODAL QR PLEIN ÉCRAN (accès premium activé) ===== -->
   <div class="modal-overlay" id="modalQR">
     <div class="modal-panneau" style="max-width:380px;">
       <div class="form-card" style="text-align:center;">
         <h2 data-i18n>🔲 Code QR MALAGA</h2>
-        <p class="sous-titre" data-i18n>Scannez avec l'appareil photo pour ouvrir l'application, ou imprimez cette page.</p>
+        <p class="sous-titre" id="sousTitreQRGrand" data-i18n>Scannez avec l'appareil photo pour ouvrir votre profil, ou imprimez cette page.</p>
         <div style="display:flex;justify-content:center;margin:18px 0;">
           <canvas id="canvasQRGrand" width="260" height="260"></canvas>
         </div>
+        <p style="font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--vert-fonce);font-family:'Courier New',monospace;" id="numeroQRGrand"></p>
         <p style="font-size:11.5px;color:var(--gris-clair);word-break:break-all;" id="texteURLQR"></p>
-        <div style="display:flex;gap:10px;margin-top:14px;">
+        <div style="display:flex;gap:8px;margin-top:14px;">
           <button type="button" class="btn btn-blanc" id="btnFermerQR" style="flex:1;" data-i18n>Fermer</button>
+          <button type="button" class="btn btn-blanc" id="btnTelechargerQR" style="flex:1;" data-i18n>⬇️ Télécharger</button>
           <button type="button" class="btn btn-vert" id="btnImprimerQR" style="flex:1;" data-i18n>🖨️ Imprimer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL QR VERROUILLÉ (fonctionnalité payante, permission admin requise) ===== -->
+  <div class="modal-overlay" id="modalQRVerrou">
+    <div class="modal-panneau" style="max-width:380px;">
+      <div class="form-card" style="text-align:center;">
+        <div style="font-size:38px;margin-bottom:6px;">🔒</div>
+        <h2 data-i18n>Vue plein écran verrouillée</h2>
+        <p class="sous-titre" data-i18n>L'affichage plein écran, l'impression et le téléchargement de votre code QR sont une fonctionnalité payante, activée uniquement après autorisation de l'administrateur MALAGA.</p>
+        <div id="qrVerrouEtatEnvoyee" style="display:none;background:#FFF8E1;border:1px solid var(--jaune);
+          border-radius:12px;padding:10px 12px;margin:14px 0;font-size:12.5px;color:#7A5B00;font-weight:600;">
+          ⏳ Votre demande a été envoyée. L'administrateur vous contactera sur WhatsApp après discussion et réception du paiement.
+        </div>
+        <div id="qrVerrouEtatRefusee" style="display:none;background:#FEE2E2;border:1px solid #FCA5A5;
+          border-radius:12px;padding:10px 12px;margin:14px 0;font-size:12.5px;color:#B91C1C;font-weight:600;">
+          🚫 Votre demande précédente a été refusée. Contactez l'administrateur pour plus d'informations, ou renvoyez une demande.
+        </div>
+        <div style="display:flex;gap:10px;margin-top:6px;">
+          <button type="button" class="btn btn-blanc" id="btnFermerQRVerrou" style="flex:1;" data-i18n>Fermer</button>
+          <button type="button" class="btn btn-vert" id="btnDemanderQR" style="flex:1;" data-i18n>💬 Demander l'activation</button>
         </div>
       </div>
     </div>
@@ -328,15 +354,16 @@
 
   <style>
     .carte-qr{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--gris-bordure);
-      border-radius:14px;padding:14px 16px;cursor:pointer;}
+      border-radius:14px;padding:14px 16px;cursor:pointer;position:relative;}
     .carte-qr canvas{border-radius:8px;flex-shrink:0;}
     .carte-qr-texte strong{font-size:13.5px;color:var(--texte);}
     .carte-qr-texte p{font-size:11.5px;color:var(--gris-clair);margin-top:2px;}
+    .carte-qr-cadenas{position:absolute;top:10px;right:12px;font-size:15px;opacity:.7;}
     @media print {
       body > *:not(#modalQR){ display:none !important; }
       #modalQR{ position:static !important; display:block !important; background:#fff !important; }
       #modalQR .modal-panneau{ max-width:100% !important; box-shadow:none !important; }
-      #btnFermerQR, #btnImprimerQR{ display:none !important; }
+      #btnFermerQR, #btnImprimerQR, #btnTelechargerQR{ display:none !important; }
     }
   </style>
 
@@ -458,11 +485,11 @@
   </div>
 
   <script type="module">
-    import { auth, db, doc, getDoc, updateDoc, collection, query, where, onSnapshot, serverTimestamp } from "./firebase-config.js";
+    import { auth, db, doc, getDoc, updateDoc, collection, query, where, onSnapshot, serverTimestamp, addDoc } from "./firebase-config.js";
     import { protegerPage, majProfil, deconnecter, enregistrerVerificationIdentite } from "./auth.js";
     import { getFavoris } from "./nav.js?v=20260822c";
     import { getIconeType, formatPrix, escapeHTML } from "./malaga-reference.js";
-    import { numeroMembre, numeroAnnonce, dessinerQRCode } from "./malaga-id.js";
+    import { numeroMembre, numeroAnnonce, dessinerQRCode, qrCodeVersDataURL } from "./malaga-id.js";
     import { enregistrerVisite } from "./tracking.js";
 
     // --- Cloudinary (même configuration que connexion.html / publier.html) ---
@@ -623,6 +650,7 @@
       const snap = await getDoc(doc(db, "users", user.uid));
       profilCourant = snap.exists() ? snap.data() : { nom: "", tel: "", email: user.email, role: "chercheur" };
       afficherProfil();
+      initQRCode();
     }
 
     /* ══════════ STATUT DE VÉRIFICATION D'IDENTITÉ ══════════
@@ -1083,22 +1111,166 @@
       }
     });
 
-    /* ══════════ CODE QR MALAGA ══════════
-       Encode l'URL d'accueil du site. Le clic sur la carte est suivi dans
-       Firestore ("visites", type "qr") exactement comme les pages/annonces,
-       pour apparaître dans le tableau de suivi côté admin. */
-    const urlAppQR = location.origin + location.pathname.replace(/profil\.html$/, "index.html");
-    document.getElementById("texteURLQR").textContent = urlAppQR;
-    dessinerQRCode(document.getElementById("canvasQRPetit"), urlAppQR, 120).catch(() => {});
+    /* ══════════ CODE QR MALAGA — unique par profil, permission admin ══════════
+       Chaque profil obtient, dès l'inscription, un code QR unique qui encode
+       un lien vers son numéro MALAGA (numeroMembre — voir malaga-id.js : calculé
+       de façon déterministe depuis l'uid, donc disponible immédiatement, sans
+       écriture Firestore supplémentaire, même pour les comptes déjà existants).
+
+       Le propriétaire (agence, entreprise, particulier annonceur) voit toujours
+       une MINIATURE de son QR. La vue plein écran / impression / téléchargement
+       est une fonctionnalité PAYANTE, verrouillée tant que l'admin n'a pas activé
+       `qrPremiumActif` sur son profil (users/{uid}). Le bouton "Demander
+       l'activation" envoie un message WhatsApp à l'administrateur
+       (+241 60 14 19 24), exactement comme le système de demande de visite : un
+       document est écrit dans Firestore ("demandesQR") et un lien profond vers
+       le panneau admin est glissé dans le message pour qu'il valide en un clic
+       après discussion et réception du paiement à distance. */
+    const ADMIN_WHATSAPP_QR = "24160141924";
+    let numeroQRCourant = "";
+    let statutDemandeQR = null; // null | "en_attente" | "validee" | "refusee"
+    let ecouteQRDemarree = false;
+
+    function estCompteProprietaireQR() {
+      return profilCourant?.role === "proprietaire";
+    }
+
+    function urlProfilQR() {
+      // Lien unique par profil : ouvre l'accueil avec le numéro MALAGA du membre
+      // en paramètre — c'est ce paramètre qui rend chaque code QR distinct.
+      const base = location.origin + location.pathname.replace(/profil\.html$/, "index.html");
+      return `${base}?mlg=${encodeURIComponent(numeroQRCourant)}`;
+    }
+
+    function initQRCode() {
+      numeroQRCourant = numeroMembre(uidCourant, profilCourant || {});
+      const urlQR = urlProfilQR();
+      document.getElementById("texteURLQR").textContent = urlQR;
+      document.getElementById("numeroQRGrand").textContent = numeroQRCourant;
+      dessinerQRCode(document.getElementById("canvasQRPetit"), urlQR, 120).catch(() => {});
+
+      majAffichageCadenasQR();
+
+      // Écoute en temps réel de son propre profil (users/{uid}) : si l'admin
+      // active qrPremiumActif pendant que la page est ouverte, le cadenas
+      // disparaît immédiatement, sans rechargement.
+      if (!ecouteQRDemarree) {
+        ecouteQRDemarree = true;
+        onSnapshot(doc(db, "users", uidCourant), (snap) => {
+          if (!snap.exists()) return;
+          profilCourant = { ...profilCourant, ...snap.data() };
+          majAffichageCadenasQR();
+        });
+      }
+
+      if (estCompteProprietaireQR()) ecouterStatutDemandeQR();
+    }
+
+    function majAffichageCadenasQR() {
+      const cadenas = document.getElementById("carteQRCadenas");
+      const titre = document.getElementById("carteQRTitre");
+      const sousTitre = document.getElementById("carteQRSousTitre");
+      if (estCompteProprietaireQR() && !profilCourant?.qrPremiumActif) {
+        cadenas.style.display = "inline";
+        titre.textContent = "Votre code QR professionnel";
+        sousTitre.textContent = "Aperçu miniature. Vue plein écran et impression : fonctionnalité payante.";
+      } else {
+        cadenas.style.display = "none";
+        titre.textContent = "Partagez votre profil";
+        sousTitre.textContent = "Touchez pour l'agrandir, l'imprimer ou le télécharger.";
+      }
+    }
+
+    // Écoute en temps réel de ses propres demandes d'activation (une par clic
+    // sur "Demander l'activation" — voir demandesVisite pour le même principe).
+    // On retient la plus récente pour savoir quoi afficher dans le modal verrouillé.
+    function ecouterStatutDemandeQR() {
+      onSnapshot(query(collection(db, "demandesQR"), where("proprietaireId", "==", uidCourant)), (snap) => {
+        const demandes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        demandes.sort((a, b) => (b.dateDemande?.seconds || 0) - (a.dateDemande?.seconds || 0));
+        statutDemandeQR = demandes.length ? (demandes[0].statut || null) : null;
+      });
+    }
+
+    function ouvrirModalQRVerrouille() {
+      const modal = document.getElementById("modalQRVerrou");
+      const blocEnvoyee = document.getElementById("qrVerrouEtatEnvoyee");
+      const blocRefusee = document.getElementById("qrVerrouEtatRefusee");
+      const btnDemander = document.getElementById("btnDemanderQR");
+      blocEnvoyee.style.display = "none";
+      blocRefusee.style.display = "none";
+      if (statutDemandeQR === "en_attente") {
+        blocEnvoyee.style.display = "block";
+        btnDemander.style.display = "none";
+      } else if (statutDemandeQR === "refusee") {
+        blocRefusee.style.display = "block";
+        btnDemander.style.display = "inline-block";
+        btnDemander.textContent = "💬 Renvoyer une demande";
+      } else {
+        btnDemander.style.display = "inline-block";
+        btnDemander.textContent = "💬 Demander l'activation";
+      }
+      modal.classList.add("ouverte");
+    }
 
     const modalQR = document.getElementById("modalQR");
     document.getElementById("carteQR").onclick = () => {
+      if (estCompteProprietaireQR() && !profilCourant?.qrPremiumActif) {
+        ouvrirModalQRVerrouille();
+        return;
+      }
       modalQR.classList.add("ouverte");
-      dessinerQRCode(document.getElementById("canvasQRGrand"), urlAppQR, 260).catch(() => {});
+      dessinerQRCode(document.getElementById("canvasQRGrand"), urlProfilQR(), 260).catch(() => {});
       enregistrerVisite("qr", "app_qr", "Code QR MALAGA — profil");
     };
     document.getElementById("btnFermerQR").onclick = () => modalQR.classList.remove("ouverte");
     document.getElementById("btnImprimerQR").onclick = () => window.print();
+    document.getElementById("btnTelechargerQR").onclick = async () => {
+      try {
+        const dataUrl = await qrCodeVersDataURL(urlProfilQR(), 512);
+        const lien = document.createElement("a");
+        lien.href = dataUrl;
+        lien.download = `qr-malaga-${numeroQRCourant}.png`;
+        lien.click();
+      } catch {
+        alert("Impossible de générer le fichier à télécharger. Réessayez.");
+      }
+    };
+
+    document.getElementById("btnFermerQRVerrou").onclick = () => {
+      document.getElementById("modalQRVerrou").classList.remove("ouverte");
+    };
+
+    document.getElementById("btnDemanderQR").onclick = async () => {
+      const btn = document.getElementById("btnDemanderQR");
+      btn.disabled = true; btn.textContent = "⏳ Envoi...";
+      try {
+        const ref = await addDoc(collection(db, "demandesQR"), {
+          proprietaireId: uidCourant,
+          proprietaireNom: profilCourant?.nom || "",
+          proprietaireTel: profilCourant?.tel || "",
+          numeroMalaga: numeroQRCourant,
+          typeCompte: profilCourant?.compteType || "particulier",
+          statut: "en_attente",
+          dateDemande: serverTimestamp()
+        });
+
+        const lienAdmin = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}admin.html?qrDemande=${ref.id}`;
+        const texte = `Bonjour, je suis ${profilCourant?.nom || "un membre MALAGA"} (${numeroQRCourant}).\n`
+          + `Je souhaite activer la vue plein écran / impression de mon code QR MALAGA (fonctionnalité payante).\n`
+          + `👉 Valider ma demande ici après discussion et paiement : ${lienAdmin}`;
+        window.open(`https://wa.me/${ADMIN_WHATSAPP_QR}?text=${encodeURIComponent(texte)}`, "_blank");
+
+        statutDemandeQR = "en_attente";
+        ouvrirModalQRVerrouille();
+      } catch (err) {
+        console.error(err);
+        alert("Impossible d'envoyer la demande. Réessayez.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "💬 Demander l'activation";
+      }
+    };
 
     document.getElementById("btnDeconnexion").onclick = () => deconnecter();
 

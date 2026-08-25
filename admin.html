@@ -78,6 +78,10 @@
       <span class="nav-icon">📁</span> Vérification &amp; Archives
       <span class="nav-badge danger" id="badgeFraude">0</span>
     </a>
+    <a class="nav-item" onclick="showPage('codesqr')" data-page="codesqr">
+      <span class="nav-icon">🔲</span> Codes QR
+      <span class="nav-badge danger" id="badgeQR">0</span>
+    </a>
     <a class="nav-item" onclick="showPage('signalements')" data-page="signalements">
       <span class="nav-icon">🚨</span> Signalements
       <span class="nav-badge danger" id="badgeSignal">0</span>
@@ -584,6 +588,76 @@
       .fiche-print { page-break-after: always; padding: 24px; }
     }
   </style>
+
+  <!-- ═══ PAGE : CODES QR PREMIUM (monétisation) ═══ -->
+  <div class="page" id="page-codesqr">
+    <div class="page-header">
+      <h1 data-i18n>🔲 Codes QR — accès premium</h1>
+      <p data-i18n>Demandes d'activation de la vue plein écran / impression / téléchargement du code QR des propriétaires (agences, entreprises, particuliers). Fonctionnalité payante, activée manuellement après paiement.</p>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerQRParStatut('')" onkeydown="if(event.key==='Enter'){filtrerQRParStatut('')}">
+        <div class="kpi-icon blue">🔲</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiQRTotal">—</div>
+          <div class="kpi-label" data-i18n>Demandes reçues</div>
+        </div>
+      </div>
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerQRParStatut('en_attente')" onkeydown="if(event.key==='Enter'){filtrerQRParStatut('en_attente')}">
+        <div class="kpi-icon yellow">⏳</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiQRAttente">—</div>
+          <div class="kpi-label" data-i18n>En attente</div>
+        </div>
+      </div>
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerQRParStatut('validee')" onkeydown="if(event.key==='Enter'){filtrerQRParStatut('validee')}">
+        <div class="kpi-icon green">✅</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiQRActifs">—</div>
+          <div class="kpi-label" data-i18n>Accès actifs</div>
+        </div>
+      </div>
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerQRParStatut('refusee')" onkeydown="if(event.key==='Enter'){filtrerQRParStatut('refusee')}">
+        <div class="kpi-icon red">🚫</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiQRRefusees">—</div>
+          <div class="kpi-label" data-i18n>Refusées</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <input type="text" class="filter-input" id="filterQR" placeholder="🔍 Rechercher un membre..." oninput="filtrerQR()" data-i18n-ph />
+      <select class="filter-select" id="filterStatutQR" onchange="filtrerQR()">
+        <option value="" data-i18n>Tous les statuts</option>
+        <option value="en_attente" data-i18n>⏳ En attente</option>
+        <option value="validee" data-i18n>✅ Activé</option>
+        <option value="refusee" data-i18n>🚫 Refusée</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th data-i18n>Membre</th>
+              <th data-i18n>N° MALAGA</th>
+              <th data-i18n>Type</th>
+              <th data-i18n>WhatsApp</th>
+              <th data-i18n>Statut</th>
+              <th data-i18n>Demandé le</th>
+              <th data-i18n>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="qrTableBody">
+            <tr><td colspan="7" class="table-empty" data-i18n>Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
   <!-- ═══ PAGE : SIGNALEMENTS ═══ -->
   <div class="page" id="page-signalements">
