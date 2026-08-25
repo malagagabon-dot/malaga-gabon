@@ -1042,7 +1042,8 @@
           await updateDoc(doc(db, "likes", id), { vu: true, dateVu: serverTimestamp() });
         }
       } catch (err) {
-        alert("Impossible de marquer ce like comme vu. Réessayez.");
+        console.error("Erreur marquage like vu :", err);
+        alert("Impossible de marquer ce like comme vu (" + (err.code || err.message || "erreur inconnue") + "). Réessayez.");
         return;
       }
 
@@ -1264,8 +1265,8 @@
         statutDemandeQR = "en_attente";
         ouvrirModalQRVerrouille();
       } catch (err) {
-        console.error(err);
-        alert("Impossible d'envoyer la demande. Réessayez.");
+        console.error("Erreur envoi demande QR :", err);
+        alert("Impossible d'envoyer la demande (" + (err.code || err.message || "erreur inconnue") + "). Réessayez.");
       } finally {
         btn.disabled = false;
         btn.textContent = "💬 Demander l'activation";

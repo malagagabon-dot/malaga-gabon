@@ -255,7 +255,8 @@ function onLoginSuccess(user) {
   loadDashboard();
 
   // Lien profond depuis le message WhatsApp envoyé par un propriétaire qui
-  // demande l'activation de son code QR premium (?qrDemande=uid) : on ouvre
+  // demande l'activation de son code QR premium (?qrDemande=idDuDocument) :
+  // on ouvre
   // directement la page dédiée pour que l'admin puisse valider en un clic
   // après discussion et réception du paiement.
   const paramsAdmin = new URLSearchParams(location.search);
@@ -479,58 +480,65 @@ function filtrerQR() {
 /* Active la vue plein écran / impression / téléchargement du QR pour ce
    propriétaire (users/{uid}.qrPremiumActif = true), après discussion et
    réception du paiement à distance — c'est le geste final de monétisation.
-   Envoie ensuite une confirmation WhatsApp au propriétaire concerné. */
-function validerDemandeQR(uid) {
-  const demande = demandesQRData.find(q => q.id === uid);
-  if (!confirm(`Confirmer l'activation de la vue plein écran / impression du code QR pour ${demande?.proprietaireNom || 'ce membre'} ?\n\nÀ n'utiliser qu'après réception effective du paiement.`)) return;
+   Envoie ensuite une confirmation WhatsApp au propriétaire concerné.
+   NOTE : `idDemande` est l'id du document demandesQR (généré par addDoc côté
+   profil.html), PAS l'uid du propriétaire — les deux sont différents depuis
+   qu'une demande peut être renvoyée plusieurs fois. L'uid réel se lit dans
+   demande.proprietaireId. */
+function validerDemandeQR(idDemande) {
+  const demande = demandesQRData.find(q => q.id === idDemande);
+  if (!demande) { alert('Demande introuvable. Rafraîchissez la page et réessayez.'); return; }
+  if (!confirm(`Confirmer l'activation de la vue plein écran / impression du code QR pour ${demande.proprietaireNom || 'ce membre'} ?\n\nÀ n'utiliser qu'après réception effective du paiement.`)) return;
 
   Promise.all([
-    window.dbAdmin.collection('users').doc(uid).update({
+    window.dbAdmin.collection('users').doc(demande.proprietaireId).update({
       qrPremiumActif: true,
       qrPremiumActiveLe: firebase.firestore.FieldValue.serverTimestamp()
     }),
-    window.dbAdmin.collection('demandesQR').doc(uid).update({
+    window.dbAdmin.collection('demandesQR').doc(idDemande).update({
       statut: 'validee',
       dateTraitement: firebase.firestore.FieldValue.serverTimestamp()
     })
   ]).then(() => {
-    const telPropre = (demande?.proprietaireTel || '').replace(/[^\d]/g, '');
+    const telPropre = (demande.proprietaireTel || '').replace(/[^\d]/g, '');
     if (telPropre) {
-      const texte = `Bonjour ${demande?.proprietaireNom || ''}, votre code QR MALAGA est activé ✅. Vous pouvez maintenant l'afficher en plein écran, l'imprimer et le télécharger depuis votre profil.`;
+      const texte = `Bonjour ${demande.proprietaireNom || ''}, votre code QR MALAGA est activé ✅. Vous pouvez maintenant l'afficher en plein écran, l'imprimer et le télécharger depuis votre profil.`;
       window.open(`https://wa.me/${telPropre}?text=${encodeURIComponent(texte)}`, '_blank');
     }
   }).catch((err) => {
     console.error('Erreur activation QR premium :', err);
-    alert('Impossible d\'activer l\'accès. Réessayez.');
+    alert('Impossible d\'activer l\'accès (' + (err.code || err.message || 'erreur inconnue') + '). Réessayez.');
   });
 }
 
-function refuserDemandeQR(uid) {
-  const demande = demandesQRData.find(q => q.id === uid);
-  if (!confirm(`Refuser la demande d'activation QR de ${demande?.proprietaireNom || 'ce membre'} ?`)) return;
+function refuserDemandeQR(idDemande) {
+  const demande = demandesQRData.find(q => q.id === idDemande);
+  if (!demande) { alert('Demande introuvable. Rafraîchissez la page et réessayez.'); return; }
+  if (!confirm(`Refuser la demande d'activation QR de ${demande.proprietaireNom || 'ce membre'} ?`)) return;
 
-  window.dbAdmin.collection('demandesQR').doc(uid).update({
+  window.dbAdmin.collection('demandesQR').doc(idDemande).update({
     statut: 'refusee',
     dateTraitement: firebase.firestore.FieldValue.serverTimestamp()
   }).catch((err) => {
     console.error('Erreur refus demande QR :', err);
-    alert('Impossible de refuser la demande. Réessayez.');
+    alert('Impossible de refuser la demande (' + (err.code || err.message || 'erreur inconnue') + '). Réessayez.');
   });
 }
 
-function revoquerAccesQR(uid) {
-  const demande = demandesQRData.find(q => q.id === uid);
-  if (!confirm(`Révoquer l'accès premium QR de ${demande?.proprietaireNom || 'ce membre'} ?`)) return;
+function revoquerAccesQR(idDemande) {
+  const demande = demandesQRData.find(q => q.id === idDemande);
+  if (!demande) { alert('Demande introuvable. Rafraîchissez la page et réessayez.'); return; }
+  if (!confirm(`Révoquer l'accès premium QR de ${demande.proprietaireNom || 'ce membre'} ?`)) return;
 
   Promise.all([
-    window.dbAdmin.collection('users').doc(uid).update({ qrPremiumActif: false }),
-    window.dbAdmin.collection('demandesQR').doc(uid).update({
+    window.dbAdmin.collection('users').doc(demande.proprietaireId).update({ qrPremiumActif: false }),
+    window.dbAdmin.collection('demandesQR').doc(idDemande).update({
       statut: 'refusee',
       dateTraitement: firebase.firestore.FieldValue.serverTimestamp()
     })
   ]).catch((err) => {
     console.error('Erreur révocation accès QR :', err);
-    alert('Impossible de révoquer l\'accès. Réessayez.');
+    alert('Impossible de révoquer l\'accès (' + (err.code || err.message || 'erreur inconnue') + '). Réessayez.');
   });
 }
 window.filtrerQRParStatut = filtrerQRParStatut;
