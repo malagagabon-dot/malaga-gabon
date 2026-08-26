@@ -769,7 +769,7 @@ function initAuthUI() {
       if (drawerAdmin) drawerAdmin.style.display = "none";
       if (bnProfilLabel) bnProfilLabel.textContent = "Profil";
       if (bnProfilLien) bnProfilLien.href = "connexion.html";
-      masquerCentreAlertes();
+      initCentreAlertesInvite();
       return;
     }
 
@@ -850,20 +850,16 @@ function marquerAlerteVue(uid, id) {
   try { localStorage.setItem(cleVuesAlertes(uid), JSON.stringify([...vues].slice(-300))); } catch { /* ignoré */ }
 }
 
-function masquerCentreAlertes() {
-  document.querySelectorAll("#btnAlertes").forEach(b => b.style.display = "none");
-  document.getElementById("alertesPanel")?.classList.remove("ouvert");
-}
-
-function initCentreAlertes(uid, profil) {
-  const boutons = document.querySelectorAll("#btnAlertes");
-  if (!boutons.length) return; // page sans en-tête d'alertes (ex. connexion.html)
-  boutons.forEach(b => b.style.display = "flex");
-
-  if (alertesEcoutesDemarrees) { rendreCentreAlertes(uid); return; }
-  alertesEcoutesDemarrees = true;
-
-  boutons.forEach(btn => btn.addEventListener("click", (e) => {
+/* La cloche 🔔 reste maintenant TOUJOURS visible dans l'en-tête, connecté(e)
+   ou non (avant, elle était masquée pour les visiteurs non connectés — voir
+   masquerCentreAlertes, supprimée). Le clic pour ouvrir/fermer le panneau
+   est branché une seule fois, quel que soit l'état de connexion, via
+   assurerClicAlertes ; seul le CONTENU du panneau change ensuite. */
+let alertesClicBranche = false;
+function assurerClicAlertes() {
+  if (alertesClicBranche) return;
+  alertesClicBranche = true;
+  document.querySelectorAll("#btnAlertes").forEach(btn => btn.addEventListener("click", (e) => {
     e.preventDefault();
     document.getElementById("alertesPanel")?.classList.toggle("ouvert");
   }));
@@ -873,6 +869,29 @@ function initCentreAlertes(uid, profil) {
     if (panel.contains(e.target) || e.target.closest("#btnAlertes")) return;
     panel.classList.remove("ouvert");
   });
+}
+
+/* État "invité" : affiché pour les visiteurs non connectés. Le panneau
+   invite à se connecter au lieu de lister des alertes personnelles. */
+function initCentreAlertesInvite() {
+  const boutons = document.querySelectorAll("#btnAlertes");
+  if (!boutons.length) return; // page sans en-tête d'alertes (ex. connexion.html)
+  assurerClicAlertes();
+  document.querySelectorAll("#badgeAlertesHeader").forEach(b => { b.textContent = ""; b.style.display = "none"; });
+  const panel = construirePanneauAlertes();
+  panel.innerHTML = `
+    <div class="alertes-titre">🔔 Alertes</div>
+    <div class="alertes-vide">Connectez-vous pour voir vos alertes (likes, demandes de visite...).</div>
+  `;
+}
+
+function initCentreAlertes(uid, profil) {
+  const boutons = document.querySelectorAll("#btnAlertes");
+  if (!boutons.length) return; // page sans en-tête d'alertes (ex. connexion.html)
+  assurerClicAlertes();
+
+  if (alertesEcoutesDemarrees) { rendreCentreAlertes(uid); return; }
+  alertesEcoutesDemarrees = true;
 
   if (profil?.role === "proprietaire") {
     onSnapshot(query(collection(db, "likes"), where("proprietaireId", "==", uid)), (snap) => {
