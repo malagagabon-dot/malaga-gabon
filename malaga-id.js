@@ -139,12 +139,42 @@ function chargerLibQR() {
   return libQRChargee;
 }
 
+/* Sur au moins un réseau/appareil testé, LES DEUX CDN de script (jsDelivr
+   ET unpkg) se sont révélés injoignables — signe probable d'un blocage
+   plus large des CDN de scripts tiers (filtrage opérateur, DNS bloquant,
+   etc.), plutôt que d'une panne ponctuelle d'un seul hébergeur. Une simple
+   <img> vers une API de génération de QR est beaucoup moins souvent
+   bloquée qu'un <script> tiers exécutable, donc on l'essaie EN PREMIER ;
+   la librairie chargée par CDN ne sert plus que de repli si cette image
+   échoue aussi (ex. l'API elle-même est hors service). */
+function couleurSansDiese(hex) { return hex.replace("#", ""); }
+
+function chargerImageQR(texte, taille, delaiMs = 6000) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    const minuteur = setTimeout(() => reject(new Error("Délai dépassé pour l'API image QR")), delaiMs);
+    img.onload = () => { clearTimeout(minuteur); resolve(img); };
+    img.onerror = () => { clearTimeout(minuteur); reject(new Error("Échec de chargement de l'API image QR")); };
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${taille}x${taille}&margin=6&color=${couleurSansDiese("0B3B2E")}&bgcolor=${couleurSansDiese("FFFFFF")}&data=${encodeURIComponent(texte)}`;
+  });
+}
+
 /**
  * Dessine un QR code dans un <canvas> existant.
  * @param {HTMLCanvasElement} canvas
  * @param {string} texte - contenu encodé (généralement l'URL du site)
  */
 export async function dessinerQRCode(canvas, texte, taille = 220) {
+  canvas.width = taille;
+  canvas.height = taille;
+  try {
+    const img = await chargerImageQR(texte, taille);
+    canvas.getContext("2d").drawImage(img, 0, 0, taille, taille);
+    return;
+  } catch (err) {
+    console.warn("QR via API image indisponible, tentative via librairie CDN :", err);
+  }
   await chargerLibQR();
   return new Promise((resolve, reject) => {
     window.QRCode.toCanvas(canvas, texte, { width: taille, margin: 1,
@@ -154,7 +184,7 @@ export async function dessinerQRCode(canvas, texte, taille = 220) {
 
 /** Génère un QR code en data URL (utile pour l'impression / <img>). */
 export async function qrCodeVersDataURL(texte, taille = 220) {
-  await chargerLibQR();
-  return window.QRCode.toDataURL(texte, { width: taille, margin: 1,
-    color: { dark: "#0B3B2E", light: "#FFFFFF" } });
+  const canvasTemp = document.createElement("canvas");
+  await dessinerQRCode(canvasTemp, texte, taille);
+  return canvasTemp.toDataURL("image/png");
 }
