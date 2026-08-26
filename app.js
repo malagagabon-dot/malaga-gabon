@@ -12,7 +12,8 @@ import { getProfil } from "./auth.js";
 import {
   COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, CENTRES, getIconeType, formatPrix,
   ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
-  EQUIPEMENTS, PALIERS_PIECES, escapeHTML, getBadgeVendeur, formatPrixAnnonce, getCategorieVendeur
+  EQUIPEMENTS, PALIERS_PIECES, escapeHTML, getBadgeVendeur, formatPrixAnnonce, getCategorieVendeur,
+  estHebergementHotel, formatPrixNuit
 } from "./malaga-reference.js";
 import { estFavori, toggleFavori, purgerFavorisInexistants, envoyerPush } from "./nav.js";
 import { numeroAnnonce } from "./malaga-id.js";
@@ -905,7 +906,7 @@ function afficherDetail(a) {
       </div>
 
       <div style="background:#f5f5f5;padding:16px;border-radius:12px;">
-        <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:#1A2332;">Contacter le propriétaire</h3>
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:#1A2332;">${estHebergementHotel(a.type) ? "Contacter l'établissement" : "Contacter le propriétaire"}</h3>
         <div style="font-size:13px;margin-bottom:10px;color:#1A2332;"><strong>${escapeHTML(a.proprietaireNom || "")}</strong></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${numeroWhatsApp ? `<a href="https://wa.me/${numeroWhatsApp}?text=${texteWhatsAppContact}" target="_blank" class="btn btn-vert">💬 WhatsApp</a>` : ""}
@@ -950,16 +951,22 @@ function initDetailMiniMap(a) {
   setTimeout(() => detailMiniMap?.invalidateSize(), 150);
 }
 
-/* ══════════ RÉSERVATION DE VISITE (gratuite, via WhatsApp) ══════════
-   Le chercheur propose une date/heure ; la demande est écrite dans Firestore
-   (demandesVisite) ET envoyée par WhatsApp au propriétaire avec un lien vers
-   son panneau accepter/refuser sur profil.html. */
+/* ══════════ RÉSERVATION DE VISITE / DE CHAMBRE (gratuite, via WhatsApp) ══════════
+   Le chercheur propose une date/heure (logement classique) ou des dates
+   d'arrivée/départ (chambre d'hôtel/motel, voir estHebergementHotel) ; la
+   demande est écrite dans Firestore (demandesVisite, avec typeDemande pour
+   distinguer les deux cas) ET envoyée par WhatsApp au propriétaire/
+   établissement avec un lien vers son panneau accepter/refuser sur
+   profil.html. */
 function rendreBlocReservation(a) {
   const bloc = document.getElementById("blocReservationVisite");
   if (!bloc) return;
+  const estHotel = estHebergementHotel(a.type);
 
   if (a.statutReservation === "reserve") {
-    bloc.innerHTML = `
+    bloc.innerHTML = estHotel ? `
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;color:#1A2332;">🏨 Chambre</h3>
+      <p style="font-size:13px;color:#5B6472;">Cette chambre est actuellement occupée. Réessayez plus tard si elle redevient disponible.</p>` : `
       <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;color:#1A2332;">📅 Visite</h3>
       <p style="font-size:13px;color:#5B6472;">Ce bien fait déjà l'objet d'une visite programmée. Réessayez plus tard s'il redevient disponible.</p>`;
     return;
@@ -967,15 +974,21 @@ function rendreBlocReservation(a) {
 
   const demandeExistante = mesDemandesVisite.find(d => d.annonceId === a.id && ["en_attente", "confirmee"].includes(d.statut));
   if (demandeExistante) {
-    const labels = { en_attente: "🟡 En attente de réponse du propriétaire", confirmee: "🔵 Visite programmée" };
+    const labels = estHotel
+      ? { en_attente: "🟡 En attente de réponse de l'établissement", confirmee: "🔵 Réservation confirmée" }
+      : { en_attente: "🟡 En attente de réponse du propriétaire", confirmee: "🔵 Visite programmée" };
     bloc.innerHTML = `
-      <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;color:#1A2332;">📅 Votre demande de visite</h3>
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;color:#1A2332;">${estHotel ? "🏨 Votre demande de réservation" : "📅 Votre demande de visite"}</h3>
       <p style="font-size:13px;color:#5B6472;">${labels[demandeExistante.statut]}</p>
       <p style="font-size:12px;color:#5B6472;margin-top:4px;">Suivez son statut dans votre <a href="profil.html" style="color:var(--vert);font-weight:700;">profil</a>.</p>`;
     return;
   }
 
-  bloc.innerHTML = `
+  bloc.innerHTML = estHotel ? `
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;color:#1A2332;">🏨 Réserver cette chambre</h3>
+    <p style="font-size:12.5px;color:#5B6472;margin-bottom:10px;">C'est gratuit et sans engagement. Proposez vos dates d'arrivée et de départ : votre demande part directement à l'établissement par WhatsApp.</p>
+    <button type="button" class="btn btn-jaune" id="btnOuvrirReservation" style="width:100%;">🏨 Réserver cette chambre</button>
+  ` : `
     <h3 style="font-size:14px;font-weight:700;margin-bottom:6px;color:#1A2332;">📅 Réserver une visite</h3>
     <p style="font-size:12.5px;color:#5B6472;margin-bottom:10px;">C'est gratuit. Proposez une date et une heure : votre demande part directement au propriétaire par WhatsApp.</p>
     <button type="button" class="btn btn-jaune" id="btnOuvrirReservation" style="width:100%;">📅 Réserver une visite</button>
@@ -984,8 +997,10 @@ function rendreBlocReservation(a) {
 }
 
 function ouvrirModalReservation(a) {
+  const estHotel = estHebergementHotel(a.type);
+
   if (!utilisateurCourant) {
-    if (confirm("Vous devez être connecté pour réserver une visite. Aller à la page de connexion ?")) {
+    if (confirm(`Vous devez être connecté pour ${estHotel ? "réserver une chambre" : "réserver une visite"}. Aller à la page de connexion ?`)) {
       // On repasse par ?annonce=ID (voir ouvrirAnnonceDepuisURL) pour que la personne
       // retrouve directement cette même fiche ouverte une fois connectée, au lieu
       // d'atterrir sur l'accueil et devoir rechercher le bien une seconde fois.
@@ -1000,8 +1015,44 @@ function ouvrirModalReservation(a) {
   document.getElementById("resaErreur").classList.remove("visible");
   document.getElementById("resaSucces").classList.remove("visible");
   document.getElementById("formReservation").style.display = "block";
+
+  // Bascule les textes et champs du formulaire selon qu'il s'agit d'une
+  // visite classique (date + heure) ou d'une réservation de chambre
+  // d'hôtel/motel (date d'arrivée + date de départ, sans heure).
+  document.getElementById("resaTitre").textContent = estHotel ? "🏨 Réserver cette chambre" : "📅 Réserver une visite";
+  document.getElementById("resaIntro").textContent = estHotel
+    ? "C'est gratuit et sans engagement. Indiquez vos dates d'arrivée et de départ : votre demande est envoyée à l'établissement par WhatsApp, avec un lien pour qu'il confirme ou refuse directement."
+    : "C'est gratuit. Indiquez la date et l'heure souhaitées : votre demande est envoyée au propriétaire par WhatsApp, avec un lien pour qu'il accepte ou refuse directement le rendez-vous.";
+  document.getElementById("resaDateLabel").textContent = estHotel ? "Date d'arrivée *" : "Date souhaitée *";
+  document.getElementById("champHeure").style.display = estHotel ? "none" : "block";
+  document.getElementById("resaHeure").required = !estHotel;
+  document.getElementById("champDateDepart").style.display = estHotel ? "block" : "none";
+  document.getElementById("resaDateDepart").required = estHotel;
+  document.getElementById("resaRecapNuits").style.display = "none";
+
   const champDate = document.getElementById("resaDate");
-  if (champDate) champDate.min = new Date().toISOString().split("T")[0];
+  const champDateDepart = document.getElementById("resaDateDepart");
+  const aujourdHui = new Date().toISOString().split("T")[0];
+  if (champDate) champDate.min = aujourdHui;
+  if (champDateDepart) champDateDepart.min = aujourdHui;
+
+  const recapNuits = document.getElementById("resaRecapNuits");
+  const mettreAJourRecapNuits = () => {
+    const arrivee = champDate.value, depart = champDateDepart.value;
+    if (!arrivee || !depart) { recapNuits.style.display = "none"; return; }
+    champDateDepart.min = arrivee;
+    const nuits = Math.round((new Date(depart) - new Date(arrivee)) / 86400000);
+    if (nuits <= 0) {
+      recapNuits.textContent = "⚠️ La date de départ doit être après la date d'arrivée.";
+      recapNuits.style.display = "block";
+      return;
+    }
+    const total = a.prix ? Number(a.prix) * nuits : null;
+    recapNuits.textContent = `🛏️ ${nuits} nuit${nuits > 1 ? "s" : ""}${total ? ` — soit environ ${total.toLocaleString("fr-FR")} FCFA` : ""}`;
+    recapNuits.style.display = "block";
+  };
+  champDate.onchange = estHotel ? mettreAJourRecapNuits : null;
+  champDateDepart.onchange = estHotel ? mettreAJourRecapNuits : null;
 
   const modal = document.getElementById("reservationModal");
   modal.classList.add("ouverte");
@@ -1011,6 +1062,7 @@ function ouvrirModalReservation(a) {
   modal.dataset.proprietaireId = a.proprietaireId || "";
   modal.dataset.proprietaireNom = a.proprietaireNom || "";
   modal.dataset.proprietaireWhatsapp = (a.whatsapp || a.tel || "").replace(/[^\d]/g, "");
+  modal.dataset.estHotel = estHotel ? "1" : "";
 }
 
 function initReservationVisite() {
@@ -1028,22 +1080,39 @@ function initReservationVisite() {
     erreurEl.classList.remove("visible");
     succesEl.classList.remove("visible");
 
+    const modal = document.getElementById("reservationModal");
+    const estHotel = modal.dataset.estHotel === "1";
+
     const dateSouhaitee = document.getElementById("resaDate").value;
     const heureSouhaitee = document.getElementById("resaHeure").value;
+    const dateDepart = document.getElementById("resaDateDepart").value;
     const message = document.getElementById("resaMessage").value.trim();
 
-    if (!dateSouhaitee || !heureSouhaitee) {
+    let nuits = null;
+    if (estHotel) {
+      if (!dateSouhaitee || !dateDepart) {
+        erreurEl.textContent = "❌ Merci d'indiquer une date d'arrivée et une date de départ.";
+        erreurEl.classList.add("visible");
+        return;
+      }
+      nuits = Math.round((new Date(dateDepart) - new Date(dateSouhaitee)) / 86400000);
+      if (nuits <= 0) {
+        erreurEl.textContent = "❌ La date de départ doit être après la date d'arrivée.";
+        erreurEl.classList.add("visible");
+        return;
+      }
+    } else if (!dateSouhaitee || !heureSouhaitee) {
       erreurEl.textContent = "❌ Merci d'indiquer une date et une heure.";
       erreurEl.classList.add("visible");
       return;
     }
 
-    const modal = document.getElementById("reservationModal");
     const { annonceId, annonceTitre, annoncePrix, proprietaireId, proprietaireNom, proprietaireWhatsapp } = modal.dataset;
     const btn = document.getElementById("resaBtn");
     btn.disabled = true; btn.textContent = "⏳ Envoi...";
 
     try {
+      const montantEstime = estHotel && annoncePrix ? Number(annoncePrix) * nuits : null;
       const ref = await addDoc(collection(db, "demandesVisite"), {
         chercheurId: utilisateurCourant.uid,
         chercheurNom: profilCourant?.nom || "",
@@ -1051,38 +1120,50 @@ function initReservationVisite() {
         proprietaireId: proprietaireId || "",
         annonceId,
         annonceTitre,
+        typeDemande: estHotel ? "reservation_chambre" : "visite",
         dateSouhaitee,
-        heureSouhaitee,
+        heureSouhaitee: estHotel ? "" : heureSouhaitee,
+        ...(estHotel ? { dateDepart, nuits, montantEstime } : {}),
         message,
         statut: "en_attente",
         dateCreation: serverTimestamp()
       });
 
       succesEl.textContent = proprietaireWhatsapp
-        ? "✅ Demande envoyée ! Ouverture de WhatsApp pour prévenir le propriétaire…"
+        ? `✅ Demande envoyée ! Ouverture de WhatsApp pour prévenir ${estHotel ? "l'établissement" : "le propriétaire"}…`
         : "✅ Demande envoyée ! Suivez sa réponse dans votre profil.";
       succesEl.classList.add("visible");
       document.getElementById("formReservation").style.display = "none";
 
       envoyerPush(
         proprietaireId,
-        "📅 Nouvelle demande de visite",
-        `${profilCourant?.nom || "Un chercheur"} souhaite visiter « ${annonceTitre} »`,
+        estHotel ? "🏨 Nouvelle demande de réservation" : "📅 Nouvelle demande de visite",
+        estHotel
+          ? `${profilCourant?.nom || "Un client"} souhaite réserver « ${annonceTitre} »`
+          : `${profilCourant?.nom || "Un chercheur"} souhaite visiter « ${annonceTitre} »`,
         `profil.html?demande=${ref.id}`
       );
 
       if (proprietaireWhatsapp) {
         const lienReponse = `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, "")}profil.html?demande=${ref.id}`;
-        const dateLisible = new Date(`${dateSouhaitee}T${heureSouhaitee}`).toLocaleString("fr-FR", {
-          weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit"
-        });
-        const texte = `Bonjour${proprietaireNom ? " " + proprietaireNom : ""}, je suis intéressé(e) par votre annonce "${annonceTitre}"${annoncePrix ? " (" + formatPrix(Number(annoncePrix)) + ")" : ""} sur MALAGA.\n📅 Je souhaite une visite le ${dateLisible}.${message ? "\n📝 " + message : ""}\n\n👉 Merci de confirmer ou refuser ce rendez-vous ici : ${lienReponse}`;
+        let texte;
+        if (estHotel) {
+          const arriveeLisible = new Date(dateSouhaitee).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+          const departLisible = new Date(dateDepart).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+          const montantTxt = montantEstime ? ` — soit environ ${montantEstime.toLocaleString("fr-FR")} FCFA` : "";
+          texte = `Bonjour${proprietaireNom ? " " + proprietaireNom : ""}, je souhaite réserver la chambre "${annonceTitre}"${annoncePrix ? " (" + formatPrixNuit(Number(annoncePrix)) + ")" : ""} sur MALAGA.\n🏨 Du ${arriveeLisible} au ${departLisible} (${nuits} nuit${nuits > 1 ? "s" : ""})${montantTxt}.${message ? "\n📝 " + message : ""}\n\n👉 Merci de confirmer ou refuser cette réservation ici : ${lienReponse}`;
+        } else {
+          const dateLisible = new Date(`${dateSouhaitee}T${heureSouhaitee}`).toLocaleString("fr-FR", {
+            weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit"
+          });
+          texte = `Bonjour${proprietaireNom ? " " + proprietaireNom : ""}, je suis intéressé(e) par votre annonce "${annonceTitre}"${annoncePrix ? " (" + formatPrix(Number(annoncePrix)) + ")" : ""} sur MALAGA.\n📅 Je souhaite une visite le ${dateLisible}.${message ? "\n📝 " + message : ""}\n\n👉 Merci de confirmer ou refuser ce rendez-vous ici : ${lienReponse}`;
+        }
         window.open(`https://wa.me/${proprietaireWhatsapp}?text=${encodeURIComponent(texte)}`, "_blank");
       }
 
       setTimeout(() => modal.classList.remove("ouverte"), 2200);
     } catch (err) {
-      console.error("Erreur envoi demande de visite :", err);
+      console.error("Erreur envoi demande de réservation :", err);
       erreurEl.textContent = "❌ Une erreur est survenue. Réessayez.";
       erreurEl.classList.add("visible");
     } finally {

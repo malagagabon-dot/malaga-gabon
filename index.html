@@ -819,28 +819,34 @@
     </div>
   </div>
 
-  <!-- Modal réservation de visite -->
+  <!-- Modal réservation de visite / de chambre (hôtel-motel) — les textes et
+       champs sont adaptés dynamiquement par ouvrirModalReservation() dans app.js -->
   <div class="modal-overlay" id="reservationModal">
     <div class="modal-panneau">
       <div class="mini-modal-header">
-        <h2>📅 Réserver une visite</h2>
+        <h2 id="resaTitre">📅 Réserver une visite</h2>
         <button class="modal-close" id="fermerReservation" aria-label="Fermer">✕</button>
       </div>
       <div class="form-card mini-modal-body">
         <p style="font-size:13px;color:var(--texte);margin-bottom:4px;"><strong id="resaAnnonceTitre"></strong></p>
-        <p style="font-size:12.5px;color:var(--texte-secondaire);margin-bottom:14px;">
+        <p style="font-size:12.5px;color:var(--texte-secondaire);margin-bottom:14px;" id="resaIntro">
           C'est gratuit. Indiquez la date et l'heure souhaitées : votre demande est envoyée au propriétaire par WhatsApp, avec un lien pour qu'il accepte ou refuse directement le rendez-vous.
         </p>
 
         <form id="formReservation">
           <div class="champ">
-            <label>Date souhaitée *</label>
+            <label id="resaDateLabel">Date souhaitée *</label>
             <input type="date" id="resaDate" required>
           </div>
-          <div class="champ">
+          <div class="champ" id="champHeure">
             <label>Heure souhaitée *</label>
-            <input type="time" id="resaHeure" required>
+            <input type="time" id="resaHeure">
           </div>
+          <div class="champ" id="champDateDepart" style="display:none;">
+            <label>Date de départ *</label>
+            <input type="date" id="resaDateDepart">
+          </div>
+          <p id="resaRecapNuits" style="font-size:12.5px;color:var(--texte-secondaire);margin:-8px 0 14px;display:none;"></p>
           <div class="champ">
             <label>Message (optionnel)</label>
             <textarea id="resaMessage" rows="3" placeholder="Précisions, questions sur le loyer ou les modalités de paiement..."></textarea>
