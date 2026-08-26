@@ -59,6 +59,25 @@ let positionInfo = null; // { quartier, arrondissement, commune } — reverse-ge
 let cerclePresDeMoi = null;       // L.circle affichant le rayon choisi sur la carte
 let markerPositionUtilisateur = null; // L.marker "vous êtes ici"
 
+/* ══════════ BOUTON DÉDIÉ "HÔTELS & MOTELS" ══════════
+   Filtre en un clic sur la catégorie vendeur "hotel" (voir getCategorieVendeur
+   dans malaga-reference.js). Reste synchronisé avec le select #filterVendeur
+   (utile si un filtre "Recherches avancées" le modifie ailleurs). */
+function toggleFiltreHotel() {
+  const btn = document.getElementById("btnHotelsMotels");
+  const selectVendeur = document.getElementById("filterVendeur");
+  const actif = filtres.vendeur === "hotel";
+
+  filtres.vendeur = actif ? "" : "hotel";
+  if (selectVendeur) selectVendeur.value = filtres.vendeur;
+  btn.classList.toggle("actif", !actif);
+  rendreTout();
+
+  if (!actif) {
+    document.getElementById("liste-annonces-grille")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
 function togglePresDeMoi() {
   const btn = document.getElementById("btnPresDeMoi");
   const controle = document.getElementById("rayonControl");
@@ -190,6 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Bouton "Près de chez moi" + slider de rayon — même raison que ci-dessus :
   // pas d'onclick/oninput inline en HTML, tout est relié ici.
   document.getElementById("btnPresDeMoi")?.addEventListener("click", togglePresDeMoi);
+  document.getElementById("btnHotelsMotels")?.addEventListener("click", toggleFiltreHotel);
   document.getElementById("sliderRayon")?.addEventListener("input", (e) => changerRayon(e.target.value));
 
   document.getElementById("btnRechercher").onclick = () => {
@@ -357,7 +377,11 @@ function initFiltres() {
   selectType.innerHTML += TYPES_BIEN.map(t => `<option>${t}</option>`).join("");
 
   if (selectVendeur) {
-    selectVendeur.onchange = () => { filtres.vendeur = selectVendeur.value; rendreTout(); };
+    selectVendeur.onchange = () => {
+      filtres.vendeur = selectVendeur.value;
+      document.getElementById("btnHotelsMotels")?.classList.remove("actif");
+      rendreTout();
+    };
   }
 
   selectCommune.onchange = () => {

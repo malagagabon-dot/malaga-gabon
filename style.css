@@ -303,6 +303,20 @@ body.theme-sombre .hero h1 {
 .btn-pres-de-moi.actif { background: var(--vert); color: #fff; }
 .btn-pres-de-moi.chargement { opacity: .7; cursor: wait; }
 
+/* ===== "HÔTELS & MOTELS" : bouton dédié, filtre en un clic (même forme que
+   .btn-pres-de-moi / .btn-catalogues, avec l'accent ambre du domaine hôtelier) ===== */
+.hotels-motels-bar {
+  max-width: 1200px; margin: 16px auto -8px; padding: 0 20px;
+}
+.btn-hotels-motels {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: #fff; border: 1.5px solid #D97706; border-radius: 10px;
+  padding: 10px; font-size: 13.5px; font-weight: 700; color: #D97706; cursor: pointer;
+  transition: .15s;
+}
+.btn-hotels-motels:hover { background: #FEF3E2; }
+.btn-hotels-motels.actif { background: #D97706; color: #fff; }
+
 .rayon-control {
   margin-top: 10px; background: #fff; border: 1.5px solid var(--gris-bordure);
   border-radius: 12px; padding: 12px 14px;
@@ -735,10 +749,12 @@ body.theme-sombre .chip,
 body.theme-sombre .toggle-statut button,
 body.theme-sombre .role-carte,
 body.theme-sombre .btn-pres-de-moi,
+body.theme-sombre .btn-hotels-motels,
 body.theme-sombre .rayon-control {
   background: #1A2130;
 }
 body.theme-sombre .btn-pres-de-moi.actif { background: var(--vert); }
+body.theme-sombre .btn-hotels-motels.actif { background: #D97706; }
 body.theme-sombre .rayon-ligne { color: var(--texte); }
 
 /* Titre des cartes d'annonce (.carte-info h3) : fixé en dur (#1A2332) car il

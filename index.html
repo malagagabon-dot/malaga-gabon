@@ -196,9 +196,20 @@
       <option value="">Agences et entreprises</option>
       <option value="agence">🏢 Agences immobilières</option>
       <option value="entreprise">🏛️ Sociétés privées</option>
-      <option value="hotel">🏨 Hôtels &amp; Motels</option>
       <option value="particulier">🏠 Particuliers</option>
     </select>
+  </div>
+
+  <!-- Bouton dédié "Hôtels & Motels" : filtre en un clic, même style que
+       "Les catalogues" / "Près de chez moi" (voir app.js → toggleFiltreHotel).
+       Placé avant ces deux boutons, comme demandé. -->
+  <div class="hotels-motels-bar">
+    <button type="button" class="btn-hotels-motels" id="btnHotelsMotels">
+      🏨 Hôtels &amp; Motels
+    </button>
+  </div>
+
+  <div class="filters-bar" style="margin-top:-10px;padding-top:0;">
     <button type="button" class="btn-catalogues" id="btnCatalogues">
       🏢 Les catalogues<span class="cat-fleche" id="catFleche">▾</span>
     </button>
