@@ -6,7 +6,7 @@
   <title>Mon profil — MALAGA</title>
   <meta name="theme-color" content="#009E60">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260823f">
+  <link rel="stylesheet" href="style.css?v=20260826a">
   <style>
     /* ===== En-tête profil ===== */
     .profil-hero{max-width:1000px;margin:0 auto;padding:24px 20px 4px;}
@@ -489,7 +489,7 @@
   <script type="module">
     import { auth, db, doc, getDoc, updateDoc, collection, query, where, onSnapshot, serverTimestamp, addDoc } from "./firebase-config.js";
     import { protegerPage, majProfil, deconnecter, enregistrerVerificationIdentite } from "./auth.js";
-    import { getFavoris } from "./nav.js?v=20260822c";
+    import { getFavoris } from "./nav.js?v=20260826a";
     import { getIconeType, formatPrix, escapeHTML } from "./malaga-reference.js";
     import { numeroMembre, numeroAnnonce, dessinerQRCode, qrCodeVersDataURL } from "./malaga-id.js";
     import { enregistrerVisite } from "./tracking.js";
@@ -1374,6 +1374,6 @@
   <footer class="footer">
     <div class="brand" data-i18n>MALAGA 🇬🇦</div>
   </footer>
-  <script type="module" src="nav.js?v=20260822c"></script>
+  <script type="module" src="nav.js?v=20260826a"></script>
 </body>
 </html>
