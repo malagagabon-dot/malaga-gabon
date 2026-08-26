@@ -43,8 +43,17 @@ function hacherCourt(chaine) {
     h ^= chaine.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
-  // >>> 0 force un entier non-signé ; toString(36) => base36 (0-9, A-Z)
-  return (h >>> 0).toString(36).toUpperCase().padStart(6, "0").slice(-6);
+  h = h >>> 0; // force un entier non-signé 32 bits
+  // Un entier 32 bits peut nécessiter jusqu'à 7 caractères en base36
+  // (36^6 = 2 176 782 336 < 2^32 = 4 294 967 296). L'ancienne version
+  // gardait seulement les 6 derniers caractères (slice(-6)), ce qui
+  // supprimait silencieusement le chiffre de poids fort pour près de la
+  // moitié des valeurs possibles : deux identifiants différents pouvaient
+  // alors produire exactement le même code MALAGA. Le modulo ci-dessous
+  // ramène TOUJOURS le hash dans l'espace exact des 6 caractères base36,
+  // de façon uniforme, sans jamais perdre d'information par troncature.
+  const ESPACE_BASE36_6 = 36 ** 6; // 2 176 782 336
+  return (h % ESPACE_BASE36_6).toString(36).toUpperCase().padStart(6, "0");
 }
 
 /** Numéro MALAGA générique : MLG-<préfixe>-<hash>. */

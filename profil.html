@@ -152,7 +152,8 @@
       <a href="index.html" class="icon-btn" aria-label="Accueil">🏠</a>
       <div class="header-actions">
         <button class="icon-btn" id="btnAlertes" aria-label="Alertes">
-          🔔<span class="badge-favoris" id="badgeAlertesHeader"></span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M12 2a6 6 0 0 0-6 6v3.09c0 .78-.28 1.53-.8 2.12L4 14.5A1 1 0 0 0 4.76 16h14.48A1 1 0 0 0 20 14.5l-1.2-1.29a3.2 3.2 0 0 1-.8-2.12V8a6 6 0 0 0-6-6zm0 20a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22z"/></svg>
+          <span class="badge-favoris" id="badgeAlertesHeader"></span>
         </button>
       </div>
     </div>
@@ -649,8 +650,19 @@
     });
 
     async function chargerProfil(user) {
-      const snap = await getDoc(doc(db, "users", user.uid));
-      profilCourant = snap.exists() ? snap.data() : { nom: "", tel: "", email: user.email, role: "chercheur" };
+      // Isolé dans son propre try/catch : si la lecture du profil échoue
+      // (règles Firestore, latence, document introuvable au mauvais
+      // moment...), l'affichage du profil ET le dessin du QR code doivent
+      // quand même s'exécuter pour tout utilisateur connecté, au lieu de
+      // rester bloqués en silence — c'est exactement ce qui rendait le QR
+      // invisible pour certaines personnes.
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        profilCourant = snap.exists() ? snap.data() : { nom: "", tel: "", email: user.email, role: "chercheur" };
+      } catch (err) {
+        console.error("Lecture du profil impossible :", err);
+        profilCourant = profilCourant || { nom: "", tel: "", email: user.email, role: "chercheur" };
+      }
       afficherProfil();
       initQRCode();
     }
@@ -1150,7 +1162,8 @@
       const urlQR = urlProfilQR();
       document.getElementById("texteURLQR").textContent = urlQR;
       document.getElementById("numeroQRGrand").textContent = numeroQRCourant;
-      dessinerQRCode(document.getElementById("canvasQRPetit"), urlQR, 120).catch(() => {});
+      dessinerQRCode(document.getElementById("canvasQRPetit"), urlQR, 120)
+        .catch((err) => console.error("Dessin du QR code impossible :", err));
 
       majAffichageCadenasQR();
 
