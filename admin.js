@@ -1645,6 +1645,160 @@ function semerAnnoncesDemo() {
     .catch((err) => { console.error(err); toast('❌ Erreur lors de l\'ajout des démos'); });
 }
 
+/* ══════════════════════════════════════════════════════════
+   CHAMBRES D'HÔTEL/MOTEL DÉMO — même logique que semerAnnoncesDemo()
+   3 établissements fictifs (2 hôtels + 1 motel), 8 chambres au total.
+   proprietaireCompteType: "hotel" pour matcher le filtre dédié.
+   demo:true → supprimable via supprimerAnnoncesDemo() sans dupliquer
+   le filtre.
+══════════════════════════════════════════════════════════ */
+function annoncesHotelsDemoData() {
+  const photo = (seed, n) => [0, 1].map(k => `https://picsum.photos/seed/${seed}${n + k}/800/600`);
+
+  const HOTEL_LAGON_BLEU = {
+    proprietaireCompteType: "hotel", proprietaireStatutEntreprise: "verifie",
+    proprietaireNom: "Hôtel Le Lagon Bleu", proprietaireTel: "+241 74 90 10 20", whatsapp: "+241 74 90 10 20",
+    nomEtablissement: "Hôtel Le Lagon Bleu", typeEtablissement: "Hôtel", standing: "4 étoiles"
+  };
+  const HOTEL_AKANDA_PALACE = {
+    proprietaireCompteType: "hotel", proprietaireStatutEntreprise: "verifie",
+    proprietaireNom: "Hôtel Akanda Palace", proprietaireTel: "+241 66 40 55 60", whatsapp: "+241 66 40 55 60",
+    nomEtablissement: "Hôtel Akanda Palace", typeEtablissement: "Hôtel", standing: "3 étoiles"
+  };
+  const MOTEL_CONFORT_OWENDO = {
+    proprietaireCompteType: "hotel", proprietaireStatutEntreprise: "attente",
+    proprietaireNom: "Motel Confort Owendo", proprietaireTel: "+241 62 70 80 90", whatsapp: "+241 62 70 80 90",
+    nomEtablissement: "Motel Confort Owendo", typeEtablissement: "Motel", standing: "Non classé"
+  };
+
+  return [
+    // ── Hôtel Le Lagon Bleu — Glass, Libreville (standing) ──
+    {
+      ...HOTEL_LAGON_BLEU,
+      titre: "Chambre Deluxe vue mer — Hôtel Le Lagon Bleu",
+      type: "Chambre d'hôtel", typeLit: "King size", capacite: 2,
+      prix: 65000, surface: 32, etat: "Excellent état",
+      commune: "Libreville", arrondissement: "1er arrondissement", quartier: "Glass",
+      pointRepere: "Bord de mer, à côté du phare de Glass",
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Chambre Deluxe climatisée avec vue dégagée sur l'océan, literie haut de gamme et salle de bain privative. Petit-déjeuner buffet inclus, accès direct à la piscine et à la plage privée de l'hôtel.",
+      equipements: ["Wifi gratuit", "Climatisé", "Petit-déjeuner inclus", "Piscine", "Restaurant sur place", "Room service", "Ascenseur", "Coffre-fort", "Groupe électrogène", "Gardiennage"],
+      statut: "disponible", lat: 0.3841, lng: 9.4392, photos: photo("hotel1", 100)
+    },
+    {
+      ...HOTEL_LAGON_BLEU,
+      titre: "Chambre Standard twin — Hôtel Le Lagon Bleu",
+      type: "Chambre d'hôtel", typeLit: "Twin (2 lits simples)", capacite: 2,
+      prix: 42000, surface: 24, etat: "Excellent état",
+      commune: "Libreville", arrondissement: "1er arrondissement", quartier: "Glass",
+      pointRepere: "Bord de mer, à côté du phare de Glass",
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Chambre confortable avec deux lits simples, idéale pour un séjour professionnel ou entre amis. Climatisation, bureau de travail, wifi haut débit et petit-déjeuner inclus.",
+      equipements: ["Wifi gratuit", "Climatisé", "Petit-déjeuner inclus", "Restaurant sur place", "Ascenseur", "Groupe électrogène", "Gardiennage"],
+      statut: "disponible", lat: 0.3841, lng: 9.4392, photos: photo("hotel2", 100)
+    },
+    {
+      ...HOTEL_LAGON_BLEU,
+      titre: "Suite junior avec salon — Hôtel Le Lagon Bleu",
+      type: "Chambre d'hôtel", typeLit: "King size", capacite: 3,
+      prix: 110000, surface: 55, etat: "Excellent état",
+      commune: "Libreville", arrondissement: "1er arrondissement", quartier: "Glass",
+      pointRepere: "Bord de mer, à côté du phare de Glass",
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Suite spacieuse composée d'une chambre et d'un coin salon séparé, parfaite pour un séjour prolongé ou en famille. Vue mer, baignoire, room service et accès prioritaire à la piscine.",
+      equipements: ["Wifi gratuit", "Climatisé", "Petit-déjeuner inclus", "Piscine", "Restaurant sur place", "Bar", "Room service", "Ascenseur", "Coffre-fort", "Groupe électrogène"],
+      statut: "disponible", lat: 0.3841, lng: 9.4392, photos: photo("hotel3", 100)
+    },
+    // ── Hôtel Akanda Palace — Angondjé (business) ──
+    {
+      ...HOTEL_AKANDA_PALACE,
+      titre: "Chambre Affaires — Hôtel Akanda Palace",
+      type: "Chambre d'hôtel", typeLit: "Double", capacite: 2,
+      prix: 55000, surface: 28, etat: "Bon état",
+      commune: "Akanda", arrondissement: "1er arrondissement", quartier: "Angondjé",
+      pointRepere: "Face à la station-service d'Angondjé",
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Chambre pensée pour les voyageurs d'affaires, avec bureau ergonomique, wifi rapide et accès à la salle de sport de l'hôtel. Quartier calme et sécurisé, proche des administrations d'Akanda.",
+      equipements: ["Wifi gratuit", "Climatisé", "Petit-déjeuner inclus", "Parking", "Salle de sport", "Ascenseur", "Groupe électrogène", "Gardiennage"],
+      statut: "disponible", lat: 0.4728, lng: 9.4671, photos: photo("hotel4", 100)
+    },
+    {
+      ...HOTEL_AKANDA_PALACE,
+      titre: "Chambre Familiale — Hôtel Akanda Palace",
+      type: "Chambre d'hôtel", typeLit: "Plusieurs lits", capacite: 4,
+      prix: 70000, surface: 38, etat: "Bon état",
+      commune: "Akanda", arrondissement: "1er arrondissement", quartier: "Angondjé",
+      pointRepere: "Face à la station-service d'Angondjé",
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Grande chambre pouvant accueillir une famille avec enfants, plusieurs lits et espace de rangement. Petit-déjeuner inclus, parking gratuit et accès PMR disponible.",
+      equipements: ["Wifi gratuit", "Climatisé", "Petit-déjeuner inclus", "Parking", "Accès PMR", "Ascenseur", "Groupe électrogène", "Gardiennage"],
+      statut: "disponible", lat: 0.4728, lng: 9.4671, photos: photo("hotel5", 100)
+    },
+    // ── Motel Confort Owendo — économique ──
+    {
+      ...MOTEL_CONFORT_OWENDO,
+      titre: "Chambre simple économique — Motel Confort Owendo",
+      type: "Chambre de motel", typeLit: "Simple", capacite: 1,
+      prix: 18000, surface: 16, etat: "Bon état",
+      commune: "Owendo", arrondissement: "Owendo centre", quartier: "Owendo centre",
+      pointRepere: "À 200 m du rond-point du port d'Owendo",
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Chambre simple propre et bien entretenue, idéale pour une étape ou un court séjour près du port d'Owendo. Ventilateur, sanitaires privatifs, accès facile depuis l'axe principal.",
+      equipements: ["Wifi gratuit", "Parking", "Gardiennage"],
+      statut: "disponible", lat: 0.2931, lng: 9.5027, photos: photo("hotel6", 100)
+    },
+    {
+      ...MOTEL_CONFORT_OWENDO,
+      titre: "Chambre double climatisée — Motel Confort Owendo",
+      type: "Chambre de motel", typeLit: "Double", capacite: 2,
+      prix: 25000, surface: 20, etat: "Bon état",
+      commune: "Owendo", arrondissement: "Owendo centre", quartier: "Owendo centre",
+      pointRepere: "À 200 m du rond-point du port d'Owendo",
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Chambre double avec climatisation et petit coin bureau, parfaite pour un déplacement professionnel court à Owendo. Parking sécurisé disponible sur place.",
+      equipements: ["Wifi gratuit", "Climatisé", "Parking", "Gardiennage"],
+      statut: "disponible", lat: 0.2931, lng: 9.5027, photos: photo("hotel7", 100)
+    },
+    {
+      ...MOTEL_CONFORT_OWENDO,
+      titre: "Chambre twin avec balcon — Motel Confort Owendo",
+      type: "Chambre de motel", typeLit: "Twin (2 lits simples)", capacite: 2,
+      prix: 30000, surface: 22, etat: "Bon état",
+      commune: "Owendo", arrondissement: "Owendo centre", quartier: "Owendo centre",
+      pointRepere: "À 200 m du rond-point du port d'Owendo",
+      eau: "SEEG (réseau)", electricite: "SEEG (réseau)", compteur: "Individuel",
+      description: "Chambre à deux lits simples avec petit balcon donnant sur la cour intérieure, calme malgré la proximité du port. Bon rapport qualité-prix pour un séjour à Owendo.",
+      equipements: ["Wifi gratuit", "Climatisé", "Parking", "Gardiennage"],
+      statut: "disponible", lat: 0.2931, lng: 9.5027, photos: photo("hotel8", 100)
+    }
+  ];
+}
+
+function semerAnnoncesHotelsDemo() {
+  if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
+  const lot = annoncesHotelsDemoData();
+  if (!confirm(`Ajouter ${lot.length} chambres de démonstration (2 hôtels + 1 motel) dans Firestore ? Elles seront visibles dans le filtre "Hôtels & Motels" et modifiables/supprimables ici.`)) return;
+
+  const batch = window.dbAdmin.batch();
+  const maintenant = firebase.firestore.FieldValue.serverTimestamp();
+
+  lot.forEach((item) => {
+    const ref = window.dbAdmin.collection('annonces').doc();
+    batch.set(ref, {
+      ...item,
+      video: null,
+      vues: Math.floor(Math.random() * 40),
+      demo: true,
+      dateCreation: maintenant,
+      dateModification: maintenant
+    });
+  });
+
+  batch.commit()
+    .then(() => toast(`✅ ${lot.length} chambres démo ajoutées`))
+    .catch((err) => { console.error(err); toast('❌ Erreur lors de l\'ajout des démos'); });
+}
+
 function supprimerAnnoncesDemo() {
   if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
   const demos = annoncesData.filter(a => a.demo === true);
