@@ -99,16 +99,43 @@ export const LIBELLE_PREFIXE_MEMBRE = {
    ═══════════════════════════════════════════════════════════════ */
 
 let libQRChargee = null;
-function chargerLibQR() {
-  if (libQRChargee) return libQRChargee;
-  libQRChargee = new Promise((resolve, reject) => {
-    if (window.QRCode) return resolve();
+const SOURCES_LIB_QR = [
+  "https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js",
+  "https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"
+];
+
+function chargerScript(src, delaiMs = 6000) {
+  return new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js";
-    script.onload = resolve;
-    script.onerror = reject;
+    script.src = src;
+    const minuteur = setTimeout(() => reject(new Error(`Délai dépassé pour ${src}`)), delaiMs);
+    script.onload = () => { clearTimeout(minuteur); resolve(); };
+    script.onerror = () => { clearTimeout(minuteur); reject(new Error(`Échec du chargement de ${src}`)); };
     document.head.appendChild(script);
   });
+}
+
+/* Essaie chaque CDN de la liste l'un après l'autre (avec un délai maximum
+   par tentative) au lieu de dépendre d'un seul hébergeur : si jsDelivr est
+   bloqué ou injoignable sur le réseau de la personne, on bascule sur unpkg
+   avant d'abandonner. Auparavant, un seul échec laissait le canvas vide
+   en silence, sans aucune indication du problème. */
+function chargerLibQR() {
+  if (libQRChargee) return libQRChargee;
+  libQRChargee = (async () => {
+    if (window.QRCode) return;
+    let derniereErreur = null;
+    for (const src of SOURCES_LIB_QR) {
+      try {
+        await chargerScript(src);
+        if (window.QRCode) return;
+      } catch (err) {
+        derniereErreur = err;
+      }
+    }
+    libQRChargee = null; // permet de réessayer plus tard (ex. reconnexion réseau)
+    throw derniereErreur || new Error("Librairie QR indisponible");
+  })();
   return libQRChargee;
 }
 

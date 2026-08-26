@@ -1163,7 +1163,17 @@
       document.getElementById("texteURLQR").textContent = urlQR;
       document.getElementById("numeroQRGrand").textContent = numeroQRCourant;
       dessinerQRCode(document.getElementById("canvasQRPetit"), urlQR, 120)
-        .catch((err) => console.error("Dessin du QR code impossible :", err));
+        .catch((err) => {
+          console.error("Dessin du QR code impossible :", err);
+          const carte = document.getElementById("carteQR");
+          if (carte && !document.getElementById("qrIndisponible")) {
+            const message = document.createElement("p");
+            message.id = "qrIndisponible";
+            message.style.cssText = "font-size:11.5px;color:var(--rouge,#EF4444);margin-top:6px;";
+            message.textContent = "QR indisponible pour le moment — vérifiez votre connexion et rechargez la page.";
+            carte.appendChild(message);
+          }
+        });
 
       majAffichageCadenasQR();
 
@@ -1245,7 +1255,8 @@
         return;
       }
       modalQR.classList.add("ouverte");
-      dessinerQRCode(document.getElementById("canvasQRGrand"), urlProfilQR(), 260).catch(() => {});
+      dessinerQRCode(document.getElementById("canvasQRGrand"), urlProfilQR(), 260)
+        .catch((err) => console.error("Dessin du QR code (plein écran) impossible :", err));
       enregistrerVisite("qr", "app_qr", "Code QR MALAGA — profil");
     };
     document.getElementById("btnFermerQR").onclick = () => modalQR.classList.remove("ouverte");

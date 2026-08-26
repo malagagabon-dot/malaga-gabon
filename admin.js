@@ -2216,7 +2216,8 @@ async function dessinerQRCodesFiches(conteneur) {
   await Promise.all(canvases.map((canvas) => {
     const texte = canvas.dataset.ficheQr;
     if (!texte || !window.MALAGA_ID?.dessinerQRCode) return Promise.resolve();
-    return window.MALAGA_ID.dessinerQRCode(canvas, texte, 90).catch(() => {});
+    return window.MALAGA_ID.dessinerQRCode(canvas, texte, 90)
+      .catch((err) => console.error("Dessin du QR (fiche admin) impossible :", err));
   }));
 }
 
