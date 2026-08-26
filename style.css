@@ -289,33 +289,56 @@ body.theme-sombre .hero h1 {
 }
 .filters-bar input:focus, .filters-bar select:focus { outline: none; border-color: var(--vert); }
 
-/* ===== "PRÈS DE CHEZ MOI" (géolocalisation + rayon) ===== */
-.pres-de-moi-bar {
-  max-width: 1200px; margin: -8px auto 16px; padding: 0 20px;
-}
-.btn-pres-de-moi {
-  width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
-  background: #fff; border: 1.5px solid var(--vert); border-radius: 10px;
-  padding: 10px; font-size: 13.5px; font-weight: 700; color: var(--vert); cursor: pointer;
-  transition: .15s;
-}
-.btn-pres-de-moi:hover { background: #ECFDF5; }
-.btn-pres-de-moi.actif { background: var(--vert); color: #fff; }
-.btn-pres-de-moi.chargement { opacity: .7; cursor: wait; }
-
-/* ===== "HÔTELS & MOTELS" : bouton dédié, filtre en un clic (même forme que
-   .btn-pres-de-moi / .btn-catalogues, avec l'accent ambre du domaine hôtelier) ===== */
+/* ===== "HÔTELS & MOTELS" / "LES CATALOGUES" / "PRÈS DE CHEZ MOI" =====
+   Trois boutons indépendants et bien séparés (espace entre chaque bloc),
+   chacun avec ses 4 coins arrondis et un dégradé "luxe" brillant distinct. */
 .hotels-motels-bar {
-  max-width: 1200px; margin: 16px auto -8px; padding: 0 20px;
+  max-width: 1200px; margin: 16px auto; padding: 0 20px;
 }
 .btn-hotels-motels {
-  width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
-  background: #fff; border: 1.5px solid #D97706; border-radius: 10px;
-  padding: 10px; font-size: 13.5px; font-weight: 700; color: #D97706; cursor: pointer;
-  transition: .15s;
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px;
+  background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 48%, #B45309 100%);
+  border: none; border-radius: 12px;
+  padding: 12px; font-size: 13.5px; font-weight: 800; letter-spacing: .2px;
+  color: #fff; cursor: pointer;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55),
+              inset 0 -10px 14px -10px rgba(0,0,0,.3),
+              0 2px 0 rgba(0,0,0,.12);
+  position: relative; overflow: hidden; transition: filter .15s, transform .1s;
 }
-.btn-hotels-motels:hover { background: #FEF3E2; }
-.btn-hotels-motels.actif { background: #D97706; color: #fff; }
+.btn-hotels-motels::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 55%);
+}
+.btn-hotels-motels:hover { filter: brightness(1.1); }
+.btn-hotels-motels:active { transform: scale(.99); }
+.btn-hotels-motels.actif { filter: brightness(.9) saturate(1.2); }
+
+/* ===== "PRÈS DE CHEZ MOI" (géolocalisation + rayon) ===== */
+.pres-de-moi-bar {
+  max-width: 1200px; margin: 16px auto; padding: 0 20px;
+}
+.btn-pres-de-moi {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px;
+  background: linear-gradient(135deg, #34D399 0%, #10B981 48%, #047857 100%);
+  border: none; border-radius: 12px;
+  padding: 12px; font-size: 13.5px; font-weight: 800; letter-spacing: .2px;
+  color: #fff; cursor: pointer;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4),
+              inset 0 -10px 14px -10px rgba(0,0,0,.3),
+              0 4px 10px rgba(4,120,87,.3);
+  position: relative; overflow: hidden; transition: filter .15s, transform .1s;
+}
+.btn-pres-de-moi::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.3) 0%, rgba(255,255,255,0) 55%);
+}
+.btn-pres-de-moi:hover { filter: brightness(1.1); }
+.btn-pres-de-moi:active { transform: scale(.99); }
+.btn-pres-de-moi.actif { filter: brightness(.9) saturate(1.2); }
+.btn-pres-de-moi.chargement { opacity: .7; cursor: wait; }
 
 .rayon-control {
   margin-top: 10px; background: #fff; border: 1.5px solid var(--gris-bordure);
@@ -748,13 +771,10 @@ body.theme-sombre .champ textarea,
 body.theme-sombre .chip,
 body.theme-sombre .toggle-statut button,
 body.theme-sombre .role-carte,
-body.theme-sombre .btn-pres-de-moi,
-body.theme-sombre .btn-hotels-motels,
 body.theme-sombre .rayon-control {
   background: #1A2130;
 }
-body.theme-sombre .btn-pres-de-moi.actif { background: var(--vert); }
-body.theme-sombre .btn-hotels-motels.actif { background: #D97706; }
+/* .btn-pres-de-moi et .btn-hotels-motels gardent leur dégradé luxe dans les deux thèmes */
 body.theme-sombre .rayon-ligne { color: var(--texte); }
 
 /* Titre des cartes d'annonce (.carte-info h3) : fixé en dur (#1A2332) car il
