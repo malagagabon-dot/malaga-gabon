@@ -776,7 +776,17 @@ function initAuthUI() {
     migrerLikesAnonymesVersUid(user.uid);
     enregistrerTokenFCM(user.uid);
 
-    const profil = await getProfil(user.uid);
+    // Isolé dans son propre try/catch : si la lecture du profil échoue
+    // (règles Firestore, document manquant...), l'UI du header (avatar,
+    // menu, et surtout la cloche 🔔 via initCentreAlertes plus bas) doit
+    // quand même se mettre à jour pour un utilisateur connecté, au lieu
+    // de rester bloquée silencieusement comme avant ce correctif.
+    let profil = null;
+    try {
+      profil = await getProfil(user.uid);
+    } catch (err) {
+      console.error("Lecture du profil impossible :", err);
+    }
     const nom = profil?.nom || "Mon compte";
     if (avatar) {
       if (profil?.photoURL) {
