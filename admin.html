@@ -395,7 +395,7 @@
   <div class="page" id="page-entreprises">
     <div class="page-header">
       <h1 data-i18n>🏢 Comptes professionnels</h1>
-      <p data-i18n>Agences et entreprises inscrites — vérification et suivi de leur catalogue</p>
+      <p data-i18n>Agences, entreprises et hôtels/motels inscrits — vérification et suivi de leur catalogue</p>
     </div>
 
     <!-- KPI Cards -->
@@ -405,6 +405,13 @@
         <div class="kpi-info">
           <div class="kpi-num" id="kpiEntreprisesTotal">—</div>
           <div class="kpi-label" data-i18n>Comptes professionnels</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon orange">🏨</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiEntreprisesHotels">—</div>
+          <div class="kpi-label" data-i18n>Dont Hôtels / Motels</div>
         </div>
       </div>
       <div class="kpi-card clickable" role="button" tabindex="0" onclick="filtrerEntreprisesParStatut('attente')" onkeydown="if(event.key==='Enter'){filtrerEntreprisesParStatut('attente')}">
@@ -432,6 +439,11 @@
 
     <div class="filters-bar">
       <input type="text" class="filter-input" id="filterEntreprise" placeholder="🔍 Rechercher une entreprise..." oninput="filtrerEntreprises()" data-i18n-ph />
+      <select class="filter-select" id="filterTypeCompteEntreprise" onchange="filtrerEntreprises()">
+        <option value="" data-i18n>Tous les types de compte</option>
+        <option value="entreprise" data-i18n>🏢 Agence / Entreprise</option>
+        <option value="hotel" data-i18n>🏨 Hôtel / Motel</option>
+      </select>
       <select class="filter-select" id="filterStatutEntreprise" onchange="filtrerEntreprises()">
         <option value="" data-i18n>Tous les statuts</option>
         <option value="attente" data-i18n>⏳ En attente</option>

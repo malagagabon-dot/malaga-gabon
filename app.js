@@ -12,7 +12,7 @@ import { getProfil } from "./auth.js";
 import {
   COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, CENTRES, getIconeType, formatPrix,
   ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
-  EQUIPEMENTS, PALIERS_PIECES, escapeHTML, getBadgeVendeur
+  EQUIPEMENTS, PALIERS_PIECES, escapeHTML, getBadgeVendeur, formatPrixAnnonce, getCategorieVendeur
 } from "./malaga-reference.js";
 import { estFavori, toggleFavori, purgerFavorisInexistants, envoyerPush } from "./nav.js";
 import { numeroAnnonce } from "./malaga-id.js";
@@ -394,9 +394,7 @@ function appliquerFiltres(liste) {
       (a.arrondissement || "").toLowerCase().includes(filtres.texte) ||
       (a.commune || "").toLowerCase().includes(filtres.texte);
     const okFavoris = !modeFavoris || estFavori(a.id);
-    const okVendeur = !filtres.vendeur || (filtres.vendeur === "entreprise"
-      ? a.proprietaireCompteType === "entreprise"
-      : a.proprietaireCompteType !== "entreprise");
+    const okVendeur = !filtres.vendeur || getCategorieVendeur(a) === filtres.vendeur;
 
     // ══ Filtres avancés ══
     const okQuartier = !filtres.quartier || (a.quartier || "").toLowerCase().includes(filtres.quartier);
@@ -646,7 +644,7 @@ function rendreListe(liste) {
       <div class="carte-info">
         <h3>${escapeHTML(a.titre)}</h3>
         ${a.type ? `<span class="type-tag">${escapeHTML(a.type)}</span>` : ""}
-        <div class="prix">${formatPrix(a.prix)}</div>
+        <div class="prix">${formatPrixAnnonce(a)}</div>
         <div class="localisation">📍 ${escapeHTML(a.quartier || "")}${a.quartier ? " — " : ""}${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
         ${(a.etage && a.etage !== "Non précisé") || (a.vue && a.vue !== "Non précisé") ? `
         <div class="localisation" style="margin-top:2px;">${a.etage && a.etage !== "Non précisé" ? "🪜 " + escapeHTML(a.etage) : ""}${a.etage && a.etage !== "Non précisé" && a.vue && a.vue !== "Non précisé" ? " · " : ""}${a.vue && a.vue !== "Non précisé" ? "🌅 " + escapeHTML(a.vue) : ""}</div>` : ""}
@@ -690,7 +688,7 @@ function rendreMarqueurs(liste) {
     marker.bindPopup(`
       <div class="popup-annonce">
         <h4>${escapeHTML(a.titre)}</h4>
-        <div class="prix">${formatPrix(a.prix)}</div>
+        <div class="prix">${formatPrixAnnonce(a)}</div>
         <div style="font-size:11px;color:#888;">📍 ${escapeHTML(a.quartier || "")} — ${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
       </div>
     `);
@@ -787,7 +785,7 @@ function afficherDetail(a) {
   const panneau = document.getElementById("detailPanneau");
   const numeroWhatsApp = (a.whatsapp || a.tel || "").replace(/[^\d]/g, "");
   const texteWhatsAppContact = encodeURIComponent(
-    `Bonjour${a.proprietaireNom ? " " + a.proprietaireNom : ""}, je suis intéressé(e) par votre annonce "${a.titre}" (${formatPrix(a.prix)}) sur MALAGA. Pouvez-vous me préciser les modalités de paiement du loyer ?`
+    `Bonjour${a.proprietaireNom ? " " + a.proprietaireNom : ""}, je suis intéressé(e) par votre annonce "${a.titre}" (${formatPrixAnnonce(a)}) sur MALAGA. Pouvez-vous me préciser les modalités de paiement du loyer ?`
   );
 
   const badgeVendeurDetail = getBadgeVendeur(a);
@@ -797,7 +795,7 @@ function afficherDetail(a) {
       <div style="font-size:44px;margin-bottom:6px;">${getIconeType(a.type)}</div>
       <span class="badge ${badgeVendeurDetail.classe}" style="display:inline-block;margin-bottom:6px;">${badgeVendeurDetail.texte}</span>
       <h2 style="font-size:18px;font-weight:800;padding-right:36px;">${escapeHTML(a.titre)}</h2>
-      <div style="font-size:21px;font-weight:900;color:var(--jaune);margin-top:4px;">${formatPrix(a.prix)}</div>
+      <div style="font-size:21px;font-weight:900;color:var(--jaune);margin-top:4px;">${formatPrixAnnonce(a)}</div>
       <div style="opacity:.9;font-size:13px;margin-top:2px;">📍 ${escapeHTML(a.quartier || "")} — ${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
       <div style="opacity:.85;font-size:11px;margin-top:6px;font-family:'Courier New',monospace;font-weight:700;letter-spacing:.4px;">${numeroAnnonce(a.id)}</div>
       ${a.proprietaireCompteType === "entreprise" ? `<a href="entreprise.html?id=${escapeHTML(a.proprietaireId || "")}" style="display:inline-block;margin-top:8px;font-size:12px;color:#fff;text-decoration:underline;">🏢 Voir tous les biens de ${escapeHTML(a.proprietaireRaisonSociale || a.proprietaireNom || "cette entreprise")}</a>` : ""}
@@ -1121,7 +1119,7 @@ function construireCatalogues() {
 
   const parEntreprise = {};
   toutesLesAnnonces
-    .filter(a => a.proprietaireCompteType === "entreprise" && a.proprietaireId)
+    .filter(a => (a.proprietaireCompteType === "entreprise" || a.proprietaireCompteType === "hotel") && a.proprietaireId)
     .forEach(a => {
       const id = a.proprietaireId;
       if (!parEntreprise[id]) {
@@ -1129,6 +1127,7 @@ function construireCatalogues() {
           id,
           nom: a.proprietaireRaisonSociale || a.proprietaireNom || "Entreprise",
           logoUrl: a.proprietaireLogoUrl || "",
+          estHotel: a.proprietaireCompteType === "hotel",
           total: 0
         };
       }
@@ -1138,16 +1137,16 @@ function construireCatalogues() {
   const entreprises = Object.values(parEntreprise).sort((a, b) => b.total - a.total);
 
   if (entreprises.length === 0) {
-    conteneur.innerHTML = `<div class="catalogues-vide">Aucune agence ou entreprise n'a encore publié de catalogue.</div>`;
+    conteneur.innerHTML = `<div class="catalogues-vide">Aucune agence, entreprise ou hôtel/motel n'a encore publié de catalogue.</div>`;
     return;
   }
 
   conteneur.innerHTML = entreprises.map(e => `
     <a class="catalogue-carte" href="entreprise.html?id=${encodeURIComponent(e.id)}">
-      <div class="logo">${e.logoUrl ? `<img src="${escapeHTML(e.logoUrl)}" alt="">` : "🏢"}</div>
+      <div class="logo">${e.logoUrl ? `<img src="${escapeHTML(e.logoUrl)}" alt="">` : (e.estHotel ? "🏨" : "🏢")}</div>
       <div class="infos">
         <div class="nom">${escapeHTML(e.nom)}</div>
-        <div class="desc">${e.total} logement${e.total > 1 ? "s" : ""} disponible${e.total > 1 ? "s" : ""}</div>
+        <div class="desc">${e.total} ${e.estHotel ? "chambre" : "logement"}${e.total > 1 ? "s" : ""} disponible${e.total > 1 ? "s" : ""}</div>
       </div>
     </a>
   `).join("");

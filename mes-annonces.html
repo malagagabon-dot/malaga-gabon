@@ -109,7 +109,7 @@
   <script type="module">
     import { auth, db, signOut, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "./firebase-config.js";
     import { protegerPage } from "./auth.js";
-    import { getIconeType, formatPrix, escapeHTML, ETAGES, VUES, MOYENS_PAIEMENT } from "./malaga-reference.js";
+    import { getIconeType, formatPrix, formatPrixAnnonce, escapeHTML, ETAGES, VUES, MOYENS_PAIEMENT } from "./malaga-reference.js";
 
     let uidCourant = null;
     let annonceEnEdition = null;
@@ -238,7 +238,7 @@
           <div class="miniature">${photo ? `<img src="${escapeHTML(photo)}" class="miniature-photo">` : getIconeType(a.type)}</div>
           <div>
             <h3>${escapeHTML(a.titre)}</h3>
-            <div class="meta">${formatPrix(a.prix)} · 📍 ${escapeHTML(a.quartier || "")} — ${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")} · 👁️ ${a.vues || 0} vue(s) · ❤️ ${a.nbLikes || 0} like(s)</div>
+            <div class="meta">${formatPrixAnnonce(a)} · 📍 ${escapeHTML(a.quartier || "")} — ${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")} · 👁️ ${a.vues || 0} vue(s) · ❤️ ${a.nbLikes || 0} like(s)</div>
             <div class="meta">${a.numeroBien ? "🏷️ " + escapeHTML(a.numeroBien) + " · " : ""}${a.etage && a.etage !== "Non précisé" ? "🪜 " + escapeHTML(a.etage) + " · " : ""}${a.vue && a.vue !== "Non précisé" ? "🌅 " + escapeHTML(a.vue) : ""}</div>
             <div class="meta">${a.lat && a.lng ? "📍 Géolocalisé" : "⚠️ Pas de position — modifiez l'annonce"} · ${a.whatsapp ? "💬 WhatsApp renseigné" : "⚠️ Pas de WhatsApp"}</div>
             <span class="badge ${a.statut === 'disponible' ? 'badge-disponible' : 'badge-occupe'}" style="margin-top:6px;">

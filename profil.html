@@ -710,32 +710,40 @@
       document.getElementById("profilNom").textContent = p.nom || "Utilisateur MALAGA";
       document.getElementById("profilRole").textContent =
         p.role === "proprietaire"
-          ? (p.compteType === "entreprise" ? "🏢 Agence / Entreprise" : "🏠 Propriétaire")
+          ? (p.compteType === "entreprise" ? "🏢 Agence / Entreprise" : p.compteType === "hotel" ? "🏨 Hôtel / Motel" : "🏠 Propriétaire")
           : "🔍 Chercheur de logement";
       document.getElementById("profilContact").innerHTML = `📞 ${escapeHTML(p.tel || "—")} &nbsp;·&nbsp; ✉️ ${escapeHTML(p.email || "")}`;
       document.getElementById("profilNumero").textContent = "🆔 " + numeroMembre(uidCourant, p);
 
-      // Encart Agence / Entreprise : n'apparaît que pour les comptes
-      // compteType === "entreprise" (voir auth.js → inscrire()). Le badge
+      // Encart Agence/Entreprise ou Hôtel/Motel : n'apparaît que pour les comptes
+      // compteType === "entreprise" ou "hotel" (voir auth.js → inscrire()). Le badge
       // "vérifié" en dépend du champ statutEntreprise ("attente" tant que
       // l'admin n'a pas validé le dossier, voir admin.js).
       const blocEntreprise = document.getElementById("profilEntreprise");
-      if (p.compteType === "entreprise") {
+      const estHotelCompte = p.compteType === "hotel";
+      if (p.compteType === "entreprise" || estHotelCompte) {
         blocEntreprise.style.display = "flex";
         document.getElementById("entrepriseLogo").innerHTML = p.logoUrl
           ? `<img src="${escapeHTML(p.logoUrl)}" alt="">`
-          : "🏢";
-        document.getElementById("entrepriseRaison").textContent = p.raisonSociale || "Agence sans nom";
+          : (estHotelCompte ? "🏨" : "🏢");
+        document.getElementById("entrepriseRaison").textContent = p.raisonSociale || (estHotelCompte ? "Établissement sans nom" : "Agence sans nom");
         document.getElementById("entrepriseSlogan").textContent = p.slogan || "";
         document.getElementById("entrepriseSlogan").style.display = p.slogan ? "block" : "none";
         const metaParts = [];
         if (p.typeEntreprise) metaParts.push(p.typeEntreprise);
+        if (estHotelCompte) {
+          if (p.standing) metaParts.push(`⭐ ${p.standing}`);
+          if (p.nombreChambresTotal) metaParts.push(`🛏️ ${p.nombreChambresTotal} chambres`);
+          if (p.checkIn || p.checkOut) metaParts.push(`🕒 ${p.checkIn || "?"} → ${p.checkOut || "?"}`);
+        }
         if (p.entrepriseTel) metaParts.push(`📞 ${p.entrepriseTel}`);
         if (p.entrepriseAdresse) metaParts.push(`📍 ${p.entrepriseAdresse}`);
         document.getElementById("entrepriseMeta").textContent = metaParts.join(" · ");
         const statutEl = document.getElementById("entrepriseStatut");
         const statut = p.statutEntreprise || "attente";
-        const libellesStatut = { attente: "⏳ Vérification en attente", verifie: "✅ Agence vérifiée", rejete: "❌ Vérification refusée" };
+        const libellesStatut = estHotelCompte
+          ? { attente: "⏳ Vérification en attente", verifie: "✅ Hôtel/Motel vérifié", rejete: "❌ Vérification refusée" }
+          : { attente: "⏳ Vérification en attente", verifie: "✅ Agence vérifiée", rejete: "❌ Vérification refusée" };
         statutEl.textContent = libellesStatut[statut] || libellesStatut.attente;
         statutEl.className = "entreprise-statut " + (statut === "verifie" ? "verifie" : statut === "rejete" ? "rejete" : "attente");
       } else {

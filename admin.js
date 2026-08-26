@@ -400,7 +400,7 @@ function demarrerEcouteUtilisateurs() {
     usersData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     document.getElementById('badgeUsers').textContent = usersData.length;
 
-    const enAttente = usersData.filter(u => u.compteType === 'entreprise' && u.statutEntreprise === 'attente').length;
+    const enAttente = usersData.filter(u => (u.compteType === 'entreprise' || u.compteType === 'hotel') && u.statutEntreprise === 'attente').length;
     const badgeEnt = document.getElementById('badgeEntreprisesAttente');
     if (badgeEnt) badgeEnt.textContent = enAttente;
 
@@ -1724,11 +1724,11 @@ function supprimerUtilisateur(id) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   ENTREPRISES (comptes professionnels)
+   ENTREPRISES (comptes professionnels : agences, sociétés, hôtels/motels)
    Dérivé de usersData (pas de nouvelle écoute Firestore requise) :
    un compte professionnel est un document "users" avec compteType
-   === 'entreprise'. Le nombre de biens publiés est calculé depuis
-   annoncesData (proprietaireId === uid du compte entreprise).
+   === 'entreprise' ou 'hotel'. Le nombre de biens publiés est calculé
+   depuis annoncesData (proprietaireId === uid du compte).
 ══════════════════════════════════════════════════════════ */
 const LABEL_STATUT_ENTREPRISE = {
   attente: { texte: '⏳ En attente', classe: 'badge-yellow' },
@@ -1737,7 +1737,7 @@ const LABEL_STATUT_ENTREPRISE = {
 };
 
 function entreprisesData() {
-  return usersData.filter(u => u.compteType === 'entreprise');
+  return usersData.filter(u => u.compteType === 'entreprise' || u.compteType === 'hotel');
 }
 
 function nbBiensEntreprise(uid) {
@@ -1754,6 +1754,8 @@ function loadEntreprises(liste) {
   document.getElementById('kpiEntreprisesAttente').textContent = tous.filter(u => u.statutEntreprise === 'attente').length;
   document.getElementById('kpiEntreprisesVerifiees').textContent = tous.filter(u => u.statutEntreprise === 'verifie').length;
   document.getElementById('kpiEntreprisesSuspendues').textContent = tous.filter(u => u.statutEntreprise === 'suspendu').length;
+  const elHotels = document.getElementById('kpiEntreprisesHotels');
+  if (elHotels) elHotels.textContent = tous.filter(u => u.compteType === 'hotel').length;
 
   if (data.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Aucun compte professionnel ne correspond</td></tr>';
@@ -1764,6 +1766,7 @@ function loadEntreprises(liste) {
     const statut = LABEL_STATUT_ENTREPRISE[u.statutEntreprise] || LABEL_STATUT_ENTREPRISE.attente;
     const date = formaterDate(champ(u, 'dateCreation'));
     const nbBiens = nbBiensEntreprise(u.id);
+    const estHotel = u.compteType === 'hotel';
 
     let actions = '';
     actions += `<a href="entreprise.html?id=${u.id}" target="_blank" rel="noopener" style="padding:4px 8px;background:#009E60;color:#fff;border-radius:5px;font-size:11px;margin-right:4px;text-decoration:none;display:inline-block;">📋 Catalogue</a>`;
@@ -1782,10 +1785,10 @@ function loadEntreprises(liste) {
     return `
       <tr>
         <td style="font-weight:700;display:flex;align-items:center;gap:8px;">
-          ${u.logoUrl ? `<img src="${escapeHTML(u.logoUrl)}" alt="" style="width:26px;height:26px;border-radius:6px;object-fit:cover;">` : '🏢'}
+          ${u.logoUrl ? `<img src="${escapeHTML(u.logoUrl)}" alt="" style="width:26px;height:26px;border-radius:6px;object-fit:cover;">` : (estHotel ? '🏨' : '🏢')}
           ${escapeHTML(texte(u, 'raisonSociale', 'nom'))}
         </td>
-        <td>${escapeHTML(texte(u, 'typeEntreprise'))}</td>
+        <td>${escapeHTML(texte(u, 'typeEntreprise'))}${estHotel ? `<br><span style="color:#888;font-size:11px;">${escapeHTML(texte(u, 'standing') || 'Standing non précisé')} · ${u.nombreChambresTotal || '?'} chambres</span>` : ''}</td>
         <td>${escapeHTML(texte(u, 'entrepriseTel', 'tel'))}${u.entrepriseEmail ? '<br><span style="color:#888;font-size:11px;">' + escapeHTML(u.entrepriseEmail) + '</span>' : ''}</td>
         <td style="text-align:center;font-weight:700;">${nbBiens}</td>
         <td><span class="badge ${statut.classe}">${statut.texte}</span></td>
@@ -1799,12 +1802,14 @@ function loadEntreprises(liste) {
 function filtrerEntreprises() {
   const texteRecherche = (document.getElementById('filterEntreprise')?.value || '').toLowerCase().trim();
   const statut = document.getElementById('filterStatutEntreprise')?.value || '';
+  const typeCompte = document.getElementById('filterTypeCompteEntreprise')?.value || '';
 
   const filtres = entreprisesData().filter(u => {
     const raison = String(texte(u, 'raisonSociale', 'nom')).toLowerCase();
     const correspondTexte = !texteRecherche || raison.includes(texteRecherche);
     const correspondStatut = !statut || u.statutEntreprise === statut;
-    return correspondTexte && correspondStatut;
+    const correspondType = !typeCompte || u.compteType === typeCompte;
+    return correspondTexte && correspondStatut && correspondType;
   });
 
   loadEntreprises(filtres);
@@ -1826,8 +1831,9 @@ function synchroniserStatutAnnoncesEntreprise(uid, nouveauStatut) {
 function verifierEntreprise(id) {
   const u = usersData.find(x => x.id === id);
   if (!u) return;
+  const badge = u.compteType === 'hotel' ? '🏨 Hôtel/Motel vérifié' : '🏢 Professionnel vérifié';
   document.getElementById('modalTitle').textContent = 'Vérifier ce compte professionnel ?';
-  document.getElementById('modalMsg').textContent = `« ${texte(u, 'raisonSociale', 'nom')} » obtiendra le badge « 🏢 Professionnel vérifié » et son logo s'affichera sur ses annonces.`;
+  document.getElementById('modalMsg').textContent = `« ${texte(u, 'raisonSociale', 'nom')} » obtiendra le badge « ${badge} » et son logo s'affichera sur ses annonces.`;
   const btn = document.getElementById('modalConfirmBtn');
   btn.textContent = 'Vérifier';
   btn.onclick = () => {

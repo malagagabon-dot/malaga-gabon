@@ -54,6 +54,7 @@
 
     /* ===== Sous-choix Particulier / Agence-Entreprise ===== */
     .compte-type-choix{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 18px;}
+    .compte-type-choix-3{grid-template-columns:1fr 1fr 1fr;}
     @media(max-width:480px){.compte-type-choix{grid-template-columns:1fr;}}
     .compte-type-carte{border:1.5px solid var(--gris-bordure,#e2e8f0);border-radius:12px;padding:12px 14px;
       cursor:pointer;text-align:center;transition:border-color .15s,background .15s;}
@@ -192,7 +193,7 @@
         <!-- ===== Sous-choix (uniquement pour un compte Propriétaire) : Particulier ou Agence/Entreprise ===== -->
         <div id="compteTypeWrap" style="display:none;">
           <label style="font-size:12.5px;font-weight:700;color:#444;display:block;margin-bottom:8px;" data-i18n>Vous publiez en tant que...</label>
-          <div class="compte-type-choix">
+          <div class="compte-type-choix compte-type-choix-3">
             <div class="compte-type-carte" data-compte-type="particulier">
               <div class="icone">🙍</div>
               <div class="titre" data-i18n>Particulier</div>
@@ -203,12 +204,18 @@
               <div class="titre" data-i18n>Agence / Entreprise</div>
               <div class="desc" data-i18n>Je gère un catalogue de biens</div>
             </div>
+            <div class="compte-type-carte" data-compte-type="hotel">
+              <div class="icone">🏨</div>
+              <div class="titre" data-i18n>Hôtel / Motel</div>
+              <div class="desc" data-i18n>Je gère un établissement hôtelier</div>
+            </div>
           </div>
         </div>
 
-        <!-- ===== Champs additionnels : profil Agence / Entreprise ===== -->
+        <!-- ===== Champs additionnels : profil Agence/Entreprise OU Hôtel/Motel
+             (mêmes champs de base, labels et options adaptés en JS selon compteTypeChoisi) ===== -->
         <div id="entrepriseExtra" style="display:none;">
-          <h3 style="font-size:14px;margin:0 0 10px;color:var(--vert);" data-i18n>🏢 Profil de votre agence / entreprise</h3>
+          <h3 style="font-size:14px;margin:0 0 10px;color:var(--vert);" id="entrepriseExtraTitre" data-i18n>🏢 Profil de votre agence / entreprise</h3>
 
           <div class="champ-logo-edit">
             <div class="apercu" id="apercuLogo">🏢</div>
@@ -219,7 +226,7 @@
           </div>
 
           <div class="champ">
-            <label data-i18n>Raison sociale *</label>
+            <label id="labelRaisonSociale" data-i18n>Raison sociale *</label>
             <input type="text" id="entRaisonSociale" placeholder="Ex : Gabon Immo Services" data-i18n-ph>
           </div>
           <div class="champ">
@@ -227,29 +234,56 @@
             <input type="text" id="entSlogan" placeholder="Ex : Votre partenaire immobilier de confiance" data-i18n-ph>
           </div>
           <div class="champ">
-            <label data-i18n>Type de structure *</label>
-            <select id="entType">
-              <option value="Agence immobilière" data-i18n>Agence immobilière</option>
-              <option value="Société privée" data-i18n>Société privée</option>
-            </select>
+            <label id="labelTypeStructure" data-i18n>Type de structure *</label>
+            <select id="entType"></select>
           </div>
+
+          <!-- ===== Champs spécifiques Hôtel / Motel uniquement ===== -->
+          <div id="hotelExtraChamps" style="display:none;">
+            <div class="grille-2">
+              <div class="champ">
+                <label data-i18n>Standing / classement</label>
+                <select id="hotStanding"></select>
+              </div>
+              <div class="champ">
+                <label data-i18n>Nombre total de chambres *</label>
+                <input type="number" id="hotNombreChambres" min="1" placeholder="Ex : 24">
+              </div>
+            </div>
+            <div class="grille-2">
+              <div class="champ">
+                <label data-i18n>Heure de check-in</label>
+                <input type="time" id="hotCheckIn" value="14:00">
+              </div>
+              <div class="champ">
+                <label data-i18n>Heure de check-out</label>
+                <input type="time" id="hotCheckOut" value="11:00">
+              </div>
+            </div>
+            <div class="champ">
+              <label data-i18n>Équipements et services de l'établissement</label>
+              <div class="chips" id="chipsEquipementsHotel"></div>
+              <div class="aide" data-i18n>Cochez ce que propose votre établissement. Affiché sur votre profil et vos annonces de chambres.</div>
+            </div>
+          </div>
+
           <div class="grille-2">
             <div class="champ">
-              <label data-i18n>Téléphone du service commercial *</label>
+              <label id="labelEntTel" data-i18n>Téléphone du service commercial *</label>
               <input type="tel" id="entTel" placeholder="+241 XX XX XX XX" data-i18n-ph>
             </div>
             <div class="champ">
-              <label data-i18n>Email du service commercial</label>
+              <label id="labelEntEmail" data-i18n>Email du service commercial</label>
               <input type="email" id="entEmail" placeholder="contact@entreprise.ga" data-i18n-ph>
             </div>
           </div>
           <div class="champ">
-            <label data-i18n>Adresse du service commercial</label>
+            <label id="labelEntAdresse" data-i18n>Adresse du service commercial</label>
             <input type="text" id="entAdresse" placeholder="Ex : Immeuble X, Centre-ville, Libreville" data-i18n-ph>
           </div>
 
           <div class="champ">
-            <label data-i18n>📍 Localisation du siège / bureaux *</label>
+            <label id="labelGeoloc" data-i18n>📍 Localisation du siège / bureaux *</label>
             <div class="geoloc-zone">
               <div class="geoloc-statut" id="geolocStatut" data-i18n>Aucune localisation enregistrée</div>
               <button type="button" class="btn btn-outline" id="btnGeolocaliser" style="width:100%;" data-i18n>🛰️ Utiliser ma position GPS actuelle</button>
@@ -258,7 +292,7 @@
             </div>
           </div>
 
-          <p class="sous-titre" style="margin-top:-6px;" data-i18n>
+          <p class="sous-titre" style="margin-top:-6px;" id="entrepriseExtraNote" data-i18n>
             ℹ️ Votre profil (logo, contact, localisation) sera visible dès la création de votre compte, avec un catalogue prêt à recevoir vos annonces. Le badge
             « 🏢 Professionnel vérifié » s'affichera une fois votre profil validé par l'équipe MALAGA.
           </p>
@@ -395,7 +429,19 @@
   <script type="module">
     import { auth, onAuthStateChanged } from "./firebase-config.js";
     import { inscrire, connecter, messageErreurAuth, getProfil, reinitialiserMotDePasse, enregistrerVerificationIdentite, calculerAge } from "./auth.js";
-    import { LIBREVILLE_CENTER } from "./malaga-reference.js";
+    import { LIBREVILLE_CENTER, TYPES_ETABLISSEMENT_HOTEL, STANDING_HOTEL, EQUIPEMENTS_HOTEL } from "./malaga-reference.js";
+
+    // Remplissage des listes déroulantes / chips spécifiques Hôtel-Motel
+    document.getElementById("hotStanding").innerHTML = STANDING_HOTEL.map(s => `<option>${s}</option>`).join("");
+    document.getElementById("chipsEquipementsHotel").innerHTML =
+      EQUIPEMENTS_HOTEL.map(eq => `<div class="chip" data-val="${eq}">${eq}</div>`).join("");
+    const equipementsHotelChoisis = new Set();
+    document.querySelectorAll("#chipsEquipementsHotel .chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        chip.classList.toggle("actif");
+        chip.classList.contains("actif") ? equipementsHotelChoisis.add(chip.dataset.val) : equipementsHotelChoisis.delete(chip.dataset.val);
+      });
+    });
 
     // --- Cloudinary (même configuration que publier.html) ---
     const CLOUDINARY_CLOUD_NAME = "enpphgwu";
@@ -616,12 +662,54 @@
     const compteTypeWrap = document.getElementById("compteTypeWrap");
     const entrepriseExtra = document.getElementById("entrepriseExtra");
     let compteTypeChoisi = "particulier";
+    const hotelExtraChamps = document.getElementById("hotelExtraChamps");
+    const entTypeSelect = document.getElementById("entType");
+    const LABELS_COMPTE_TYPE = {
+      entreprise: {
+        titre: "🏢 Profil de votre agence / entreprise",
+        raisonSociale: "Raison sociale *",
+        typeStructure: "Type de structure *",
+        typeOptions: ["Agence immobilière", "Société privée"],
+        tel: "Téléphone du service commercial *",
+        email: "Email du service commercial",
+        adresse: "Adresse du service commercial",
+        geoloc: "📍 Localisation du siège / bureaux *",
+        note: "ℹ️ Votre profil (logo, contact, localisation) sera visible dès la création de votre compte, avec un catalogue prêt à recevoir vos annonces. Le badge « 🏢 Professionnel vérifié » s'affichera une fois votre profil validé par l'équipe MALAGA."
+      },
+      hotel: {
+        titre: "🏨 Profil de votre hôtel / motel",
+        raisonSociale: "Nom de l'établissement *",
+        typeStructure: "Type d'établissement *",
+        typeOptions: TYPES_ETABLISSEMENT_HOTEL,
+        tel: "Téléphone de la réception *",
+        email: "Email de réservation",
+        adresse: "Adresse de l'établissement",
+        geoloc: "📍 Localisation de l'établissement *",
+        note: "ℹ️ Votre profil (logo, contact, localisation, équipements) sera visible dès la création de votre compte. Le badge « 🏨 Hôtel/Motel vérifié » s'affichera une fois votre profil validé par l'équipe MALAGA. Vous pourrez ensuite publier vos catégories de chambres, comme des annonces classiques."
+      }
+    };
+
+    function appliquerLabelsCompteType() {
+      const cfg = LABELS_COMPTE_TYPE[compteTypeChoisi] || LABELS_COMPTE_TYPE.entreprise;
+      document.getElementById("entrepriseExtraTitre").textContent = cfg.titre;
+      document.getElementById("labelRaisonSociale").textContent = cfg.raisonSociale;
+      document.getElementById("labelTypeStructure").textContent = cfg.typeStructure;
+      entTypeSelect.innerHTML = cfg.typeOptions.map(t => `<option value="${t}">${t}</option>`).join("");
+      document.getElementById("labelEntTel").textContent = cfg.tel;
+      document.getElementById("labelEntEmail").textContent = cfg.email;
+      document.getElementById("labelEntAdresse").textContent = cfg.adresse;
+      document.getElementById("labelGeoloc").textContent = cfg.geoloc;
+      document.getElementById("entrepriseExtraNote").textContent = cfg.note;
+      hotelExtraChamps.style.display = compteTypeChoisi === "hotel" ? "block" : "none";
+    }
 
     function rafraichirBlocProprio() {
       const estProprio = roleChoisi === "proprietaire";
       proprioInfoPublier.style.display = estProprio ? "block" : "none";
       compteTypeWrap.style.display = estProprio ? "block" : "none";
-      entrepriseExtra.style.display = (estProprio && compteTypeChoisi === "entreprise") ? "block" : "none";
+      const estPro = estProprio && (compteTypeChoisi === "entreprise" || compteTypeChoisi === "hotel");
+      entrepriseExtra.style.display = estPro ? "block" : "none";
+      if (estPro) appliquerLabelsCompteType();
     }
 
     document.querySelectorAll(".role-carte").forEach(carte => {
@@ -696,14 +784,22 @@
         return;
       }
 
-      // Compte Agence/Entreprise : valider les champs obligatoires du profil pro
+      // Compte Agence/Entreprise ou Hôtel/Motel : valider les champs obligatoires du profil pro
       const estEntreprise = roleChoisi === "proprietaire" && compteTypeChoisi === "entreprise";
-      if (estEntreprise) {
+      const estHotel = roleChoisi === "proprietaire" && compteTypeChoisi === "hotel";
+      if (estEntreprise || estHotel) {
         const champsEntrepriseManquants =
           !document.getElementById("entRaisonSociale").value.trim() ||
           !document.getElementById("entTel").value.trim();
         if (champsEntrepriseManquants) {
-          erreurMsg.textContent = "Complétez la raison sociale et le téléphone du service commercial de votre entreprise.";
+          erreurMsg.textContent = estHotel
+            ? "Complétez le nom de l'établissement et le téléphone de la réception."
+            : "Complétez la raison sociale et le téléphone du service commercial de votre entreprise.";
+          erreurMsg.classList.add("visible");
+          return;
+        }
+        if (estHotel && !document.getElementById("hotNombreChambres").value) {
+          erreurMsg.textContent = "Indiquez le nombre total de chambres de votre établissement.";
           erreurMsg.classList.add("visible");
           return;
         }
@@ -716,7 +812,7 @@
 
       btn.disabled = true; btn.textContent = "Création du compte…";
       try {
-        if (estEntreprise && logoFichier) {
+        if ((estEntreprise || estHotel) && logoFichier) {
           btn.textContent = "Envoi du logo…";
           const logoOptimise = await compresserImage(logoFichier, 600, 0.88);
           logoUrlEnAttente = await uploaderVersCloudinary(logoOptimise);
@@ -729,8 +825,8 @@
           email: document.getElementById("inscriptionEmail").value.trim(),
           motDePasse: document.getElementById("inscriptionMdp").value,
           role: roleChoisi,
-          compteType: estEntreprise ? "entreprise" : "particulier",
-          entreprise: estEntreprise ? {
+          compteType: estEntreprise ? "entreprise" : (estHotel ? "hotel" : "particulier"),
+          entreprise: (estEntreprise || estHotel) ? {
             raisonSociale: document.getElementById("entRaisonSociale").value.trim(),
             slogan: document.getElementById("entSlogan").value.trim(),
             typeEntreprise: document.getElementById("entType").value,
@@ -740,6 +836,13 @@
             entrepriseLat: geolocLat,
             entrepriseLng: geolocLng,
             logoUrl: logoUrlEnAttente
+          } : undefined,
+          hotel: estHotel ? {
+            standing: document.getElementById("hotStanding").value,
+            checkIn: document.getElementById("hotCheckIn").value,
+            checkOut: document.getElementById("hotCheckOut").value,
+            nombreChambresTotal: Number(document.getElementById("hotNombreChambres").value) || null,
+            equipementsHotel: Array.from(equipementsHotelChoisis)
           } : undefined
         });
 

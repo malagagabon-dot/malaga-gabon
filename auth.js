@@ -16,12 +16,15 @@ import {
 
 /* ══════════ INSCRIPTION ══════════
    role : "proprietaire" ou "chercheur"
-   compteType (uniquement pour role="proprietaire") : "particulier" ou "entreprise"
-   Si compteType === "entreprise", les champs entreprise.* sont enregistrés et le
-   compte est créé avec statutEntreprise: "attente" (en attente de vérification
-   par l'admin). Les biens publiés restent visibles normalement pendant l'attente ;
-   seuls le badge et le logo "🏢 Professionnel" n'apparaissent qu'une fois vérifié. */
-export async function inscrire({ email, motDePasse, nom, tel, role, compteType, entreprise }) {
+   compteType (uniquement pour role="proprietaire") : "particulier", "entreprise" ou "hotel"
+   Si compteType === "entreprise" OU "hotel", les champs entreprise.* sont enregistrés
+   et le compte est créé avec statutEntreprise: "attente" (en attente de vérification
+   par l'admin) — même mécanisme de vérification pour les deux. Les biens publiés
+   restent visibles normalement pendant l'attente ; seuls le badge et le logo
+   "🏢 Professionnel" / "🏨 Hôtel-Motel" n'apparaissent qu'une fois vérifié.
+   Si compteType === "hotel", l'objet hotel.* (standing, horaires, équipements,
+   nombre total de chambres) est en plus enregistré sur le profil. */
+export async function inscrire({ email, motDePasse, nom, tel, role, compteType, entreprise, hotel }) {
   const credentiels = await createUserWithEmailAndPassword(auth, email, motDePasse);
   const uid = credentiels.user.uid;
 
@@ -33,8 +36,11 @@ export async function inscrire({ email, motDePasse, nom, tel, role, compteType, 
     dateCreation: serverTimestamp()
   };
 
-  if (role === "proprietaire" && compteType === "entreprise" && entreprise) {
-    donnees.compteType = "entreprise";
+  const estProEntreprise = role === "proprietaire" && compteType === "entreprise" && entreprise;
+  const estProHotel = role === "proprietaire" && compteType === "hotel" && entreprise;
+
+  if (estProEntreprise || estProHotel) {
+    donnees.compteType = compteType; // "entreprise" ou "hotel"
     donnees.statutEntreprise = "attente";
     donnees.raisonSociale = entreprise.raisonSociale || "";
     donnees.slogan = entreprise.slogan || "";
@@ -45,6 +51,14 @@ export async function inscrire({ email, motDePasse, nom, tel, role, compteType, 
     donnees.entrepriseAdresse = entreprise.entrepriseAdresse || "";
     donnees.entrepriseLat = typeof entreprise.entrepriseLat === "number" ? entreprise.entrepriseLat : null;
     donnees.entrepriseLng = typeof entreprise.entrepriseLng === "number" ? entreprise.entrepriseLng : null;
+
+    if (estProHotel && hotel) {
+      donnees.standing = hotel.standing || "";
+      donnees.checkIn = hotel.checkIn || "";
+      donnees.checkOut = hotel.checkOut || "";
+      donnees.nombreChambresTotal = typeof hotel.nombreChambresTotal === "number" ? hotel.nombreChambresTotal : null;
+      donnees.equipementsHotel = Array.isArray(hotel.equipementsHotel) ? hotel.equipementsHotel : [];
+    }
   } else if (role === "proprietaire") {
     donnees.compteType = "particulier";
   }

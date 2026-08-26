@@ -350,6 +350,7 @@ body {
 .kpi-icon.blue   { background: var(--blue-l); }
 .kpi-icon.yellow { background: #fffbe6; }
 .kpi-icon.red    { background: var(--red-l); }
+.kpi-icon.orange { background: #FEF3E2; }
 
 .kpi-info { display: flex; flex-direction: column; align-items: center; }
 

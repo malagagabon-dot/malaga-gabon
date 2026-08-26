@@ -76,7 +76,7 @@
             <select id="type" required></select>
           </div>
           <div class="champ">
-            <label data-i18n>Loyer mensuel (FCFA) *</label>
+            <label id="labelPrix" data-i18n>Loyer mensuel (FCFA) *</label>
             <input type="number" id="prix" required min="1000" placeholder="150000">
           </div>
         </div>
@@ -162,6 +162,24 @@
         </div>
         <div class="champ" id="avisTypeNonResidentiel" style="display:none;background:#FFF7E6;border:1px solid #FDE7B0;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#8a6b1f;" data-i18n>
           ℹ️ Chambres, salons, cuisine et douche ne s'appliquent pas à ce type de bien — ces champs sont masqués.
+        </div>
+
+        <!-- ===== Bloc spécifique aux catégories de chambres d'hôtel/motel ===== -->
+        <div id="blocHotelHebergement" style="display:none;">
+          <div class="grille-2">
+            <div class="champ">
+              <label data-i18n>Capacité (nombre de personnes)</label>
+              <input type="number" id="hotCapacite" min="1" placeholder="2">
+            </div>
+            <div class="champ">
+              <label data-i18n>Type de lit</label>
+              <select id="hotTypeLit"></select>
+            </div>
+          </div>
+          <div class="champ">
+            <label data-i18n>Nombre de chambres disponibles dans cette catégorie</label>
+            <input type="number" id="hotNbChambresCategorie" min="1" placeholder="Ex : 6">
+          </div>
         </div>
         <div class="champ">
           <label data-i18n>État du bâtiment</label>
@@ -352,7 +370,8 @@
       COMMUNES, ARRONDISSEMENTS, getQuartiers, CENTRES, TYPES_BIEN, EQUIPEMENTS,
       EAU_OPTIONS, ELECTRICITE_OPTIONS, COMPTEUR_OPTIONS, ETAT_BATIMENT, LIBREVILLE_CENTER,
       ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES, VUES, ETAGES,
-      MOYENS_PAIEMENT, estResidentiel
+      MOYENS_PAIEMENT, estResidentiel, TYPES_HEBERGEMENT_HOTEL, estHebergementHotel,
+      EQUIPEMENTS_HOTEL, TYPES_LIT
     } from "./malaga-reference.js";
 
     let utilisateurCourant = null;
@@ -365,7 +384,12 @@
     let equipementsChoisis = new Set();
     let moyensPaiementChoisis = new Set();
 
-    protegerPage((user) => { utilisateurCourant = user; }, "proprietaire");
+    let profilCourant = null;
+    protegerPage(async (user) => {
+      utilisateurCourant = user;
+      profilCourant = await getProfil(user.uid);
+      initialiserListeType();
+    }, "proprietaire");
 
     // Message d'accueil spécifique juste après une inscription (voir connexion.html)
     if (new URLSearchParams(window.location.search).get("premiereFois") === "1") {
@@ -374,25 +398,55 @@
     }
 
     // Remplissage des listes déroulantes
-    document.getElementById("type").innerHTML = TYPES_BIEN.map(t => `<option>${t}</option>`).join("");
     document.getElementById("etat").innerHTML = ETAT_BATIMENT.map(e => `<option>${e}</option>`).join("");
+    document.getElementById("hotTypeLit").innerHTML = TYPES_LIT.map(t => `<option>${t}</option>`).join("");
 
     // Le formulaire s'adapte au type de bien : chambres/salons/cuisine/douche
     // n'ont de sens que pour un logement résidentiel (pas un bureau, local
-    // commercial ou box de stockage).
+    // commercial ou box de stockage) ; les catégories de chambres d'hôtel/motel
+    // ont leur propre bloc de champs (capacité, type de lit...).
     const selectType = document.getElementById("type");
     const blocPieces = document.getElementById("blocPieces");
     const avisTypeNonResidentiel = document.getElementById("avisTypeNonResidentiel");
+    const blocHotelHebergement = document.getElementById("blocHotelHebergement");
+    const labelPrix = document.getElementById("labelPrix");
+    const chipsEquipementsEl = document.getElementById("chipsEquipements");
+
+    // Un compte Hôtel/Motel ne publie que des catégories de chambres (le formulaire
+    // "bien classique" ne le concerne pas) ; les autres comptes ne voient jamais
+    // les types d'hébergement hôtelier, pour ne pas polluer leurs annonces.
+    function initialiserListeType() {
+      const estCompteHotel = profilCourant?.compteType === "hotel";
+      const options = estCompteHotel ? TYPES_HEBERGEMENT_HOTEL : TYPES_BIEN.filter(t => !estHebergementHotel(t));
+      selectType.innerHTML = options.map(t => `<option>${t}</option>`).join("");
+      adapterFormulaireAuType();
+    }
+    initialiserListeType();
+
     function adapterFormulaireAuType() {
-      const residentiel = estResidentiel(selectType.value);
+      const hebergementHotel = estHebergementHotel(selectType.value);
+      const residentiel = !hebergementHotel && estResidentiel(selectType.value);
       blocPieces.style.display = residentiel ? "" : "none";
-      avisTypeNonResidentiel.style.display = residentiel ? "none" : "block";
+      avisTypeNonResidentiel.style.display = (!residentiel && !hebergementHotel) ? "block" : "none";
+      blocHotelHebergement.style.display = hebergementHotel ? "block" : "none";
+      labelPrix.textContent = hebergementHotel ? "Prix par nuit (FCFA) *" : "Loyer mensuel (FCFA) *";
+      chipsEquipementsEl.innerHTML = (hebergementHotel ? EQUIPEMENTS_HOTEL : EQUIPEMENTS).map(e =>
+        `<div class="chip" data-val="${e}">${e}</div>`).join("");
+      equipementsChoisis.clear();
+      document.querySelectorAll("#chipsEquipements .chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+          chip.classList.toggle("actif");
+          chip.classList.contains("actif") ? equipementsChoisis.add(chip.dataset.val) : equipementsChoisis.delete(chip.dataset.val);
+        });
+      });
       if (!residentiel) {
         ["chambres", "salons", "sdb"].forEach(id => document.getElementById(id).value = "");
       }
+      if (!hebergementHotel) {
+        ["hotCapacite", "hotNbChambresCategorie"].forEach(id => document.getElementById(id).value = "");
+      }
     }
     selectType.addEventListener("change", adapterFormulaireAuType);
-    adapterFormulaireAuType();
     document.getElementById("etage").innerHTML = ETAGES.map(e => `<option>${e}</option>`).join("");
     document.getElementById("vue").innerHTML = VUES.map(v => `<option>${v}</option>`).join("");
 
@@ -419,8 +473,6 @@
     document.getElementById("eau").innerHTML = EAU_OPTIONS.map(e => `<option>${e}</option>`).join("");
     document.getElementById("electricite").innerHTML = ELECTRICITE_OPTIONS.map(e => `<option>${e}</option>`).join("");
     document.getElementById("compteur").innerHTML = COMPTEUR_OPTIONS.map(e => `<option>${e}</option>`).join("");
-    document.getElementById("chipsEquipements").innerHTML = EQUIPEMENTS.map(e =>
-      `<div class="chip" data-val="${e}">${e}</div>`).join("");
     document.getElementById("chipsMoyensPaiement").innerHTML = MOYENS_PAIEMENT.map(m =>
       `<div class="chip" data-val="${m}">${m}</div>`).join("");
 
@@ -448,13 +500,6 @@
     }
     initToggleOuiNon("toggleTerrasse", (val) => terrasseVal = val);
     initToggleOuiNon("toggleCarreaux", (val) => carreauxVal = val);
-
-    document.querySelectorAll("#chipsEquipements .chip").forEach(chip => {
-      chip.addEventListener("click", () => {
-        chip.classList.toggle("actif");
-        chip.classList.contains("actif") ? equipementsChoisis.add(chip.dataset.val) : equipementsChoisis.delete(chip.dataset.val);
-      });
-    });
 
     document.querySelectorAll("#chipsMoyensPaiement .chip").forEach(chip => {
       chip.addEventListener("click", () => {
@@ -596,7 +641,8 @@
 
         const { lat, lng } = marqueur.getLatLng();
         const typeChoisi = document.getElementById("type").value;
-        const residentiel = estResidentiel(typeChoisi);
+        const hebergementHotel = estHebergementHotel(typeChoisi);
+        const residentiel = !hebergementHotel && estResidentiel(typeChoisi);
 
         await setDoc(nouvelleRef, {
           proprietaireId: utilisateurCourant.uid,
@@ -644,6 +690,11 @@
           compteur: document.getElementById("compteur").value,
           equipements: Array.from(equipementsChoisis),
           moyensPaiement: Array.from(moyensPaiementChoisis),
+          // Champs propres aux catégories de chambres d'hôtel/motel (voir estHebergementHotel)
+          uniteTarif: hebergementHotel ? "nuit" : "mois",
+          capacitePersonnes: hebergementHotel ? (Number(document.getElementById("hotCapacite").value) || null) : null,
+          typeLit: hebergementHotel ? document.getElementById("hotTypeLit").value : "",
+          nbChambresCategorie: hebergementHotel ? (Number(document.getElementById("hotNbChambresCategorie").value) || null) : null,
           photos: urlsPhotos,
           video: urlVideo,
           statut: "disponible",

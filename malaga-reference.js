@@ -93,7 +93,8 @@ export const CENTRES = {
 };
 
 export const TYPES_BIEN = [
-  "Maison", "Appartement", "Studio", "Chambre", "Villa", "Bureau", "Local commercial", "Box"
+  "Maison", "Appartement", "Studio", "Chambre", "Villa", "Bureau", "Local commercial", "Box",
+  "Chambre d'hôtel", "Chambre de motel"
 ];
 
 /* Types de biens "à vivre" (habitation), pour lesquels les champs chambres / salons /
@@ -103,6 +104,15 @@ export const TYPES_BIEN = [
 export const TYPES_RESIDENTIELS = ["Maison", "Appartement", "Studio", "Chambre", "Villa"];
 export function estResidentiel(type) {
   return TYPES_RESIDENTIELS.includes(type);
+}
+
+/* Types d'hébergement hôtelier — publiés uniquement par un compte "Hôtel / Motel"
+   (compteType === "hotel", voir auth.js et connexion.html). Chaque annonce de ce
+   type représente une catégorie de chambre (pas une réservation en ligne : le
+   visiteur contacte l'établissement par WhatsApp, comme pour les autres annonces). */
+export const TYPES_HEBERGEMENT_HOTEL = ["Chambre d'hôtel", "Chambre de motel"];
+export function estHebergementHotel(type) {
+  return TYPES_HEBERGEMENT_HOTEL.includes(type);
 }
 
 export const EQUIPEMENTS = [
@@ -130,6 +140,20 @@ export const ICONES_PAIEMENT = {
    COMPTES PROFESSIONNELS (agences / entreprises)
 ═══════════════════════════════════════════════════════════ */
 export const TYPES_ENTREPRISE = ["Agence immobilière", "Société privée"];
+
+/* ═══════════════════════════════════════════════════════════
+   COMPTES HÔTEL / MOTEL — profil de compte dédié à l'hôtellerie
+   (compteType: "hotel", voir auth.js). Réutilise le même mécanisme
+   de vérification admin que les Agences/Entreprises (statutEntreprise).
+═══════════════════════════════════════════════════════════ */
+export const TYPES_ETABLISSEMENT_HOTEL = ["Hôtel", "Motel", "Résidence hôtelière", "Auberge"];
+export const STANDING_HOTEL = ["Non classé", "1 étoile", "2 étoiles", "3 étoiles", "4 étoiles", "5 étoiles"];
+export const TYPES_LIT = ["Simple", "Double", "Twin (2 lits simples)", "King size", "Plusieurs lits"];
+export const EQUIPEMENTS_HOTEL = [
+  "Wifi gratuit", "Climatisation", "Petit-déjeuner inclus", "Piscine", "Parking gratuit",
+  "Restaurant sur place", "Bar", "Room service", "Salle de sport", "Ascenseur",
+  "Coffre-fort en chambre", "Accès PMR", "Groupe électrogène", "Gardiennage 24h/24"
+];
 
 export const STATUTS_ENTREPRISE = {
   attente: { label: "⏳ En attente de vérification", badge: "badge-yellow" },
@@ -211,10 +235,12 @@ export const LIBREVILLE_CENTER = { lat: 0.3924, lng: 9.4536 };
 export const CATEGORIES_VENDEUR = {
   particulier: { label: "Particulier", icone: "🏠", couleur: "#009E60" },
   agence: { label: "Agence immobilière", icone: "🏢", couleur: "#2563EB" },
-  entreprise: { label: "Société privée", icone: "🏛️", couleur: "#7C3AED" }
+  entreprise: { label: "Société privée", icone: "🏛️", couleur: "#7C3AED" },
+  hotel: { label: "Hôtel / Motel", icone: "🏨", couleur: "#D97706" }
 };
 
 export function getCategorieVendeur(annonce) {
+  if (annonce.proprietaireCompteType === "hotel") return "hotel";
   if (annonce.proprietaireCompteType !== "entreprise") return "particulier";
   return annonce.proprietaireTypeEntreprise === "Agence immobilière" ? "agence" : "entreprise";
 }
@@ -236,6 +262,11 @@ export function getBadgeVendeur(annonce) {
       ? { texte: `${icone} Agence vérifiée`, classe: "badge-vendeur-verifie" }
       : { texte: `${icone} Agence immobilière`, classe: "badge-vendeur-entreprise" };
   }
+  if (cat === "hotel") {
+    return annonce.proprietaireStatutEntreprise === "verifie"
+      ? { texte: `${icone} Hôtel/Motel vérifié`, classe: "badge-vendeur-verifie" }
+      : { texte: `${icone} Hôtel / Motel`, classe: "badge-vendeur-entreprise" };
+  }
   return annonce.proprietaireStatutEntreprise === "verifie"
     ? { texte: `${icone} Société vérifiée`, classe: "badge-vendeur-verifie" }
     : { texte: `${icone} Société privée`, classe: "badge-vendeur-entreprise" };
@@ -244,13 +275,28 @@ export function getBadgeVendeur(annonce) {
 export function getIconeType(type) {
   const icons = {
     Villa: "🏡", Appartement: "🏢", Studio: "🛏️", Maison: "🏠",
-    Chambre: "🚪", Bureau: "🏗️", "Local commercial": "🏪", Box: "📦"
+    Chambre: "🚪", Bureau: "🏗️", "Local commercial": "🏪", Box: "📦",
+    "Chambre d'hôtel": "🏨", "Chambre de motel": "🏨"
   };
   return icons[type] || "🏠";
 }
 
 export function formatPrix(prix) {
   return Number(prix).toLocaleString("fr-FR") + " FCFA/mois";
+}
+
+/* Prix par nuit — utilisé pour les annonces d'hébergement hôtelier
+   (voir estHebergementHotel). Ne remplace pas formatPrix() : les annonces
+   de logement classique restent au mois. */
+export function formatPrixNuit(prix) {
+  return Number(prix).toLocaleString("fr-FR") + " FCFA/nuit";
+}
+
+/* Formate le prix d'une annonce en choisissant automatiquement l'unité
+   (nuit pour un hébergement hôtelier, mois sinon) — à utiliser partout où
+   une annonce complète est disponible (cartes, détail, mes-annonces). */
+export function formatPrixAnnonce(annonce) {
+  return estHebergementHotel(annonce.type) ? formatPrixNuit(annonce.prix) : formatPrix(annonce.prix);
 }
 
 /* ══════════ SÉCURITÉ : échappement HTML ══════════
