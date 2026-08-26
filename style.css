@@ -823,3 +823,44 @@ body.theme-sombre .btn-rouge:hover { background: #4A2222; }
 /* Bouton mode sombre du header : rotation douce de l'icône au clic */
 #btnTheme { transition: transform .25s ease, background .15s; }
 #btnTheme:active { transform: rotate(20deg) scale(.9); }
+
+/* ══════════ CENTRE D'ALERTES (🔔 en-tête) ══════════
+   Panneau déroulant injecté dynamiquement par nav.js (voir initCentreAlertes).
+   Remplace l'icône de traduction dans le header — celle-ci reste dans le
+   menu ☰ et dans Paramètres. À ne pas confondre avec le réglage "Activer les
+   notifications" (notifications push du téléphone), qui reste inchangé. */
+.alertes-panel {
+  position: fixed; top: 62px; right: 10px; width: min(340px, calc(100vw - 20px));
+  max-height: 70vh; background: var(--fond-carte, #fff); border: 1px solid var(--gris-bordure, #E2E8F0);
+  border-radius: 16px; box-shadow: 0 12px 32px rgba(0,0,0,.18); z-index: 999;
+  display: none; flex-direction: column; overflow: hidden;
+}
+.alertes-panel.ouvert { display: flex; }
+.alertes-titre {
+  padding: 12px 14px; font-weight: 800; font-size: 14px; color: var(--vert-fonce, #0B4D2E);
+  border-bottom: 1px solid var(--gris-bordure, #E2E8F0);
+}
+.alertes-liste { overflow-y: auto; max-height: 44vh; }
+.alertes-item {
+  display: flex; align-items: flex-start; gap: 9px; padding: 11px 14px;
+  text-decoration: none; color: var(--texte, #1A2130); border-bottom: 1px solid rgba(0,0,0,.05);
+  font-size: 12.8px; line-height: 1.35;
+}
+.alertes-item:last-child { border-bottom: none; }
+.alertes-item.non-vue { background: rgba(16,185,129,.07); font-weight: 600; }
+.alertes-icone { flex-shrink: 0; font-size: 15px; }
+.alertes-vide { padding: 22px 14px; text-align: center; font-size: 12.5px; color: var(--gris-clair, #8A94A6); }
+.alertes-prefs-toggle {
+  border: none; background: transparent; padding: 10px 14px; font-size: 11.5px;
+  color: var(--gris-clair, #8A94A6); text-align: left; cursor: pointer;
+  border-top: 1px solid var(--gris-bordure, #E2E8F0);
+}
+.alertes-prefs {
+  padding: 4px 14px 12px; flex-direction: column; gap: 6px; font-size: 12px;
+}
+.alertes-prefs label { display: flex; align-items: center; gap: 7px; }
+
+body.theme-sombre .alertes-panel { background: #1A2130; border-color: #2A3346; }
+body.theme-sombre .alertes-titre,
+body.theme-sombre .alertes-item { border-color: rgba(255,255,255,.08); }
+body.theme-sombre .alertes-item.non-vue { background: rgba(16,185,129,.12); }

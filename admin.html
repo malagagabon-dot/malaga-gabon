@@ -128,7 +128,9 @@
     <button class="burger-admin" id="burgerAdmin">☰</button>
     <div class="topbar-title" id="topbarTitle" data-i18n>Tableau de bord</div>
     <div class="topbar-right">
-      <button class="btn-theme" id="btnLang" aria-label="Passer en anglais">🌐</button>
+      <button class="btn-theme" id="btnAlertesAdmin" aria-label="Alertes" style="position:relative;">
+        🔔<span class="badge-favoris" id="badgeAlertesAdmin" style="position:absolute;top:-3px;right:-3px;min-width:16px;height:16px;padding:0 4px;background:#DC2626;color:#fff;font-size:9.5px;font-weight:800;border-radius:20px;display:none;align-items:center;justify-content:center;"></span>
+      </button>
       <span class="topbar-date" id="topbarDate"></span>
     </div>
   </header>
@@ -1263,11 +1265,15 @@
      différés automatiquement par le navigateur et s'exécutent avant DOMContentLoaded,
      donc window.MALAGA_REF est garanti disponible quand admin.js l'utilise. -->
 <script type="module">
-  // Branche le moteur de traduction FR/EN partagé (bouton #btnLang de la topbar) :
-  // nav.js applique automatiquement la langue mémorisée à tout élément [data-i18n]
-  // dès son chargement, puis à chaque bascule — les autres init (drawer, favoris...)
-  // qu'il tente au passage sont sans effet ici (aucun élément correspondant dans
-  // admin.html) et n'empêchent jamais ce chargement de fonctionner.
+  // Branche le moteur de traduction FR/EN partagé : nav.js applique
+  // automatiquement la langue mémorisée à tout élément [data-i18n] dès son
+  // chargement, puis à chaque bascule (déclenchée depuis Paramètres ou le
+  // menu ☰ du site public — la topbar admin n'a plus de bouton dédié depuis
+  // que l'icône 🌐 y a été remplacée par la cloche d'alertes 🔔, gérée
+  // directement dans admin.js). Les autres init (drawer, favoris, centre
+  // d'alertes utilisateur...) que nav.js tente au passage sont sans effet ici
+  // (aucun élément correspondant dans admin.html) et n'empêchent jamais ce
+  // chargement de fonctionner.
   import "./nav.js?v=20260824e";
   import {
     ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,

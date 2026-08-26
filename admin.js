@@ -273,6 +273,88 @@ function onLoginSuccess(user) {
       }
     }, 400);
   }
+
+  initClicAlertesAdmin();
+}
+
+/* ══════════════════════════════════════════════════════════
+   CENTRE D'ALERTES ADMIN (🔔 topbar) — remplace l'icône de traduction
+   (celle-ci restait de toute façon sans effet dans la topbar ; elle reste
+   disponible pour les visiteurs via le menu ☰ du site public).
+   Agrège, par catégorie, ce qui nécessite l'attention de l'admin : signale-
+   ments non traités, vérifications d'identité en attente, alertes anti-
+   fraude, demandes de code QR premium en attente. Chaque ligne cliquable
+   ouvre directement l'outil de gestion concerné (showPage). Pas de liste
+   item par item comme côté utilisateur : ici les tableaux dédiés existent
+   déjà pour le détail, l'admin a juste besoin d'un aperçu qui pointe dessus.
+══════════════════════════════════════════════════════════ */
+let clicAlertesAdminInit = false;
+function initClicAlertesAdmin() {
+  if (clicAlertesAdminInit) return;
+  clicAlertesAdminInit = true;
+
+  const btn = document.getElementById('btnAlertesAdmin');
+  if (!btn) return;
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('alertesPanelAdmin')?.classList.toggle('ouvert');
+  });
+  document.addEventListener('click', (e) => {
+    const panel = document.getElementById('alertesPanelAdmin');
+    if (!panel || !panel.classList.contains('ouvert')) return;
+    if (panel.contains(e.target) || e.target.closest('#btnAlertesAdmin')) return;
+    panel.classList.remove('ouvert');
+  });
+}
+
+function construirePanneauAlertesAdmin() {
+  let panel = document.getElementById('alertesPanelAdmin');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'alertesPanelAdmin';
+    panel.className = 'alertes-panel-admin';
+    document.body.appendChild(panel);
+  }
+  return panel;
+}
+
+function rendreAlertesAdmin() {
+  const nbSignal = signalementsData.filter(s => !s.traite).length;
+  const nbVerif = verificationsData.filter(v => v.statut === 'attente').length;
+  const nbFraude = alertesFraudeData.filter(a => !a.traite).length;
+  const nbQR = demandesQRData.filter(q => q.statut === 'en_attente').length;
+  const total = nbSignal + nbVerif + nbFraude + nbQR;
+
+  const badge = document.getElementById('badgeAlertesAdmin');
+  if (badge) {
+    badge.textContent = total || '';
+    badge.style.display = total ? 'flex' : 'none';
+  }
+
+  const categories = [
+    { n: nbSignal, icone: '🚨', texte: 'signalement(s) non traité(s)', page: 'signalements' },
+    { n: nbVerif, icone: '📁', texte: "vérification(s) d'identité en attente", page: 'verification' },
+    { n: nbFraude, icone: '⚠️', texte: 'alerte(s) anti-fraude', page: 'verification' },
+    { n: nbQR, icone: '🔲', texte: 'demande(s) de code QR premium en attente', page: 'codesqr' }
+  ].filter(c => c.n > 0);
+
+  const panel = construirePanneauAlertesAdmin();
+  panel.innerHTML = `
+    <div class="alertes-titre-admin">🔔 Alertes</div>
+    <div class="alertes-liste-admin">
+      ${categories.length ? categories.map(c => `
+        <button type="button" class="alertes-item-admin" data-page="${c.page}">
+          <span class="alertes-icone-admin">${c.icone}</span>
+          <span>${c.n} ${c.texte}</span>
+        </button>`).join('') : `<div class="alertes-vide-admin">Aucune alerte en attente 👍</div>`}
+    </div>`;
+
+  panel.querySelectorAll('.alertes-item-admin').forEach(el => {
+    el.addEventListener('click', () => {
+      showPage(el.dataset.page);
+      panel.classList.remove('ouvert');
+    });
+  });
 }
 
 function adminLogout() {
@@ -348,6 +430,7 @@ function demarrerEcouteVerification() {
     verificationsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     calculerKpiVerif();
     if (pageActuelle === 'verification') filtrerVerif();
+    rendreAlertesAdmin();
   }, (err) => {
     console.error('Erreur de synchronisation des vérifications d\'identité :', err);
     const tbody = document.getElementById('verifTableBody');
@@ -370,6 +453,7 @@ function demarrerEcouteAlertesFraude() {
     const badge = document.getElementById('badgeFraude');
     if (badge) badge.textContent = nbNonTraitees;
     if (pageActuelle === 'verification') { loadAlertesFraude(); filtrerVerif(); }
+    rendreAlertesAdmin();
   }, (err) => {
     console.error('Erreur de synchronisation des alertes anti-fraude :', err);
     const tbody = document.getElementById('alertesFraudeBody');
@@ -396,6 +480,7 @@ function demarrerEcouteQR() {
     const badge = document.getElementById('badgeQR');
     if (badge) badge.textContent = nbAttente;
     if (pageActuelle === 'codesqr') filtrerQR();
+    rendreAlertesAdmin();
   }, (err) => {
     console.error('Erreur de synchronisation des demandes QR :', err);
     const tbody = document.getElementById('qrTableBody');
@@ -566,6 +651,7 @@ function demarrerEcouteSignalements() {
     if (kpi) kpi.textContent = nbNonTraites;
     if (pageActuelle === 'dashboard') loadDashboard();
     if (pageActuelle === 'signalements') loadSignalements();
+    rendreAlertesAdmin();
   }, (err) => {
     console.error('Erreur de synchronisation des signalements :', err);
     const tbody = document.getElementById('signalementsBody');

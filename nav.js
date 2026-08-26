@@ -769,6 +769,7 @@ function initAuthUI() {
       if (drawerAdmin) drawerAdmin.style.display = "none";
       if (bnProfilLabel) bnProfilLabel.textContent = "Profil";
       if (bnProfilLien) bnProfilLien.href = "connexion.html";
+      masquerCentreAlertes();
       return;
     }
 
@@ -792,6 +793,174 @@ function initAuthUI() {
     if (drawerAdmin) drawerAdmin.style.display = user.email === ADMIN_EMAIL ? "block" : "none";
     if (bnProfilLabel) bnProfilLabel.textContent = nom.split(" ")[0];
     if (bnProfilLien) bnProfilLien.href = "profil.html";
+
+    initCentreAlertes(user.uid, profil);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CENTRE D'ALERTES (🔔 dans l'en-tête) — remplace l'icône de traduction
+   (celle-ci reste disponible dans le menu ☰ et dans Paramètres).
+
+   À ne pas confondre avec "🔔 Activer les notifications" du menu ☰, qui gère
+   les VRAIES notifications système du téléphone (push, reçues même appli
+   fermée). Le centre d'alertes ci-dessous est un tableau IN-APP : il liste,
+   pendant que la personne a l'appli ouverte, ce qui la concerne :
+     • Propriétaire : nouveaux likes reçus, nouvelles demandes de visite,
+       réponse de l'admin à sa demande de code QR premium.
+     • Chercheur : réponse du propriétaire à une demande de visite envoyée.
+   Chacun choisit quelles catégories il veut voir ("⚙️ Choisir mes alertes"
+   en bas du panneau) — préférence mémorisée sur l'appareil, comme le thème.
+   Cliquer sur une alerte l'ouvre dans le profil (réutilise les liens profonds
+   ?like= et ?demande= déjà gérés par profil.html) et la marque comme vue.
+═══════════════════════════════════════════════════════════════════════════ */
+const LABEL_STATUT_VISITE_ALERTE = { confirmee: "acceptée ✅", refusee: "refusée 🚫" };
+let alertesEcoutesDemarrees = false;
+let alertesEtatCourant = { likes: [], visitesRecues: [], visitesEnvoyees: [], qr: [] };
+
+function clePrefsAlertes(uid) { return `malaga_prefs_alertes_${uid}`; }
+function cleVuesAlertes(uid) { return `malaga_alertes_vues_${uid}`; }
+
+function prefsAlertes(uid) {
+  try {
+    const brut = JSON.parse(localStorage.getItem(clePrefsAlertes(uid)));
+    return { likes: true, visites: true, qr: true, ...(brut || {}) };
+  } catch { return { likes: true, visites: true, qr: true }; }
+}
+function enregistrerPrefsAlertes(uid, prefs) {
+  try { localStorage.setItem(clePrefsAlertes(uid), JSON.stringify(prefs)); } catch { /* ignoré */ }
+}
+function alertesVues(uid) {
+  try { return new Set(JSON.parse(localStorage.getItem(cleVuesAlertes(uid))) || []); }
+  catch { return new Set(); }
+}
+function marquerAlerteVue(uid, id) {
+  const vues = alertesVues(uid);
+  vues.add(id);
+  try { localStorage.setItem(cleVuesAlertes(uid), JSON.stringify([...vues].slice(-300))); } catch { /* ignoré */ }
+}
+
+function masquerCentreAlertes() {
+  document.querySelectorAll("#btnAlertes").forEach(b => b.style.display = "none");
+  document.getElementById("alertesPanel")?.classList.remove("ouvert");
+}
+
+function initCentreAlertes(uid, profil) {
+  const boutons = document.querySelectorAll("#btnAlertes");
+  if (!boutons.length) return; // page sans en-tête d'alertes (ex. connexion.html)
+  boutons.forEach(b => b.style.display = "flex");
+
+  if (alertesEcoutesDemarrees) { rendreCentreAlertes(uid); return; }
+  alertesEcoutesDemarrees = true;
+
+  boutons.forEach(btn => btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    document.getElementById("alertesPanel")?.classList.toggle("ouvert");
+  }));
+  document.addEventListener("click", (e) => {
+    const panel = document.getElementById("alertesPanel");
+    if (!panel || !panel.classList.contains("ouvert")) return;
+    if (panel.contains(e.target) || e.target.closest("#btnAlertes")) return;
+    panel.classList.remove("ouvert");
+  });
+
+  if (profil?.role === "proprietaire") {
+    onSnapshot(query(collection(db, "likes"), where("proprietaireId", "==", uid)), (snap) => {
+      alertesEtatCourant.likes = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(l => !l.vu);
+      rendreCentreAlertes(uid);
+    }, () => {});
+    onSnapshot(query(collection(db, "demandesVisite"), where("proprietaireId", "==", uid)), (snap) => {
+      alertesEtatCourant.visitesRecues = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(v => v.statut === "en_attente");
+      rendreCentreAlertes(uid);
+    }, () => {});
+    onSnapshot(query(collection(db, "demandesQR"), where("proprietaireId", "==", uid)), (snap) => {
+      alertesEtatCourant.qr = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(q => q.statut === "validee" || q.statut === "refusee");
+      rendreCentreAlertes(uid);
+    }, () => {});
+  } else {
+    onSnapshot(query(collection(db, "demandesVisite"), where("chercheurId", "==", uid)), (snap) => {
+      alertesEtatCourant.visitesEnvoyees = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(v => v.statut === "confirmee" || v.statut === "refusee");
+      rendreCentreAlertes(uid);
+    }, () => {});
+  }
+}
+
+function construirePanneauAlertes() {
+  let panel = document.getElementById("alertesPanel");
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "alertesPanel";
+    panel.className = "alertes-panel";
+    document.body.appendChild(panel);
+  }
+  return panel;
+}
+
+function rendreCentreAlertes(uid) {
+  const prefs = prefsAlertes(uid);
+  const vues = alertesVues(uid);
+  const items = [];
+
+  if (prefs.likes) alertesEtatCourant.likes.forEach(l => items.push({
+    id: `like-${l.id}`, lien: `profil.html?like=${encodeURIComponent(l.id)}`, icone: "❤️",
+    texte: `${l.nomAffiche || "Quelqu'un"} a aimé « ${l.annonceTitre || "votre annonce"} »`, date: l.dateLike
+  }));
+  if (prefs.visites) alertesEtatCourant.visitesRecues.forEach(v => items.push({
+    id: `visite-recue-${v.id}`, lien: `profil.html?demande=${encodeURIComponent(v.id)}`, icone: "📅",
+    texte: `${v.chercheurNom || "Un chercheur"} demande une visite pour « ${v.annonceTitre || "votre annonce"} »`, date: v.dateCreation
+  }));
+  if (prefs.visites) alertesEtatCourant.visitesEnvoyees.forEach(v => items.push({
+    id: `visite-envoyee-${v.id}`, lien: `profil.html?demande=${encodeURIComponent(v.id)}`,
+    icone: v.statut === "confirmee" ? "✅" : "🚫",
+    texte: `Votre demande de visite pour « ${v.annonceTitre || "cette annonce"} » a été ${LABEL_STATUT_VISITE_ALERTE[v.statut] || v.statut}`, date: v.dateCreation
+  }));
+  if (prefs.qr) alertesEtatCourant.qr.forEach(q => items.push({
+    id: `qr-${q.id}`, lien: `profil.html?verifierQR=1`,
+    icone: q.statut === "validee" ? "🔓" : "🚫",
+    texte: q.statut === "validee" ? "Votre code QR premium est activé — plein écran et impression disponibles !" : "Votre demande de code QR premium a été refusée.",
+    date: q.dateTraitement || q.dateDemande
+  }));
+
+  items.sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
+  const nonVues = items.filter(it => !vues.has(it.id));
+
+  document.querySelectorAll("#badgeAlertesHeader").forEach(badge => {
+    badge.textContent = nonVues.length || "";
+    badge.style.display = nonVues.length ? "flex" : "none";
+  });
+
+  const panel = construirePanneauAlertes();
+  panel.innerHTML = `
+    <div class="alertes-titre">🔔 Alertes</div>
+    <div class="alertes-liste">
+      ${items.length ? items.slice(0, 20).map(it => `
+        <a href="${it.lien}" class="alertes-item${vues.has(it.id) ? "" : " non-vue"}" data-alerte-id="${it.id}">
+          <span class="alertes-icone">${it.icone}</span>
+          <span class="alertes-texte">${escapeHTML(it.texte)}</span>
+        </a>`).join("") : `<div class="alertes-vide">Aucune alerte pour l'instant.</div>`}
+    </div>
+    <button type="button" class="alertes-prefs-toggle" id="alertesPrefsToggle">⚙️ Choisir mes alertes</button>
+    <div class="alertes-prefs" id="alertesPrefsBloc" style="display:none;">
+      <label><input type="checkbox" id="prefAlerteLikes" ${prefs.likes ? "checked" : ""}> ❤️ Likes reçus</label>
+      <label><input type="checkbox" id="prefAlerteVisites" ${prefs.visites ? "checked" : ""}> 📅 Demandes de visite</label>
+      <label><input type="checkbox" id="prefAlerteQR" ${prefs.qr ? "checked" : ""}> 🔲 Code QR premium</label>
+    </div>`;
+
+  panel.querySelectorAll(".alertes-item").forEach(el => {
+    el.addEventListener("click", () => marquerAlerteVue(uid, el.dataset.alerteId));
+  });
+  document.getElementById("alertesPrefsToggle")?.addEventListener("click", () => {
+    const bloc = document.getElementById("alertesPrefsBloc");
+    bloc.style.display = bloc.style.display === "none" ? "flex" : "none";
+  });
+  const cases = { prefAlerteLikes: "likes", prefAlerteVisites: "visites", prefAlerteQR: "qr" };
+  Object.entries(cases).forEach(([idCase, cle]) => {
+    document.getElementById(idCase)?.addEventListener("change", (e) => {
+      const p = prefsAlertes(uid);
+      p[cle] = e.target.checked;
+      enregistrerPrefsAlertes(uid, p);
+      rendreCentreAlertes(uid);
+    });
   });
 }
 

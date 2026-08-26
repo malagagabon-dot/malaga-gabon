@@ -151,7 +151,9 @@
       </a>
       <a href="index.html" class="icon-btn" aria-label="Accueil">🏠</a>
       <div class="header-actions">
-        <button class="icon-btn" id="btnLang" aria-label="Passer en anglais">🌐</button>
+        <button class="icon-btn" id="btnAlertes" aria-label="Alertes" style="display:none;">
+          🔔<span class="badge-favoris" id="badgeAlertesHeader"></span>
+        </button>
       </div>
     </div>
   </header>
@@ -1165,6 +1167,15 @@
       }
 
       if (estCompteProprietaireQR()) ecouterStatutDemandeQR();
+
+      // Lien profond depuis le centre d'alertes (🔔) quand l'admin valide ou
+      // refuse une demande d'activation du code QR premium : on amène la
+      // personne directement à sa carte QR au lieu de la laisser en haut de page.
+      if (new URLSearchParams(location.search).get("verifierQR") === "1") {
+        setTimeout(() => {
+          document.getElementById("carteQR")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 300);
+      }
     }
 
     function majAffichageCadenasQR() {

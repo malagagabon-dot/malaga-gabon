@@ -969,3 +969,23 @@ body {
   0%   { background: #FFF3B0; }
   100% { background: transparent; }
 }
+
+/* ══════════ CENTRE D'ALERTES ADMIN (🔔 topbar) ══════════
+   Panneau déroulant injecté dynamiquement par admin.js (rendreAlertesAdmin). */
+.alertes-panel-admin {
+  position: fixed; top: 58px; right: 14px; width: min(320px, calc(100vw - 24px));
+  background: #fff; border: 1px solid #E2E8F0; border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.2); z-index: 999; display: none; overflow: hidden;
+}
+.alertes-panel-admin.ouvert { display: block; }
+.alertes-titre-admin { padding: 12px 14px; font-weight: 800; font-size: 14px; border-bottom: 1px solid #E2E8F0; }
+.alertes-liste-admin { max-height: 50vh; overflow-y: auto; }
+.alertes-item-admin {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 11px 14px; border: none; background: transparent; cursor: pointer;
+  font-size: 12.8px; border-bottom: 1px solid #F1F5F9; color: #1A2130;
+}
+.alertes-item-admin:hover { background: #F8FAFC; }
+.alertes-item-admin:last-child { border-bottom: none; }
+.alertes-icone-admin { font-size: 15px; flex-shrink: 0; }
+.alertes-vide-admin { padding: 20px 14px; text-align: center; font-size: 12.5px; color: #8A94A6; }
