@@ -368,6 +368,20 @@ function iconMarqueur(annonce) {
   });
 }
 
+/* Fiches importées automatiquement depuis OpenStreetMap, en attente de
+   complétion par leur propriétaire (prix, description, photos, standing...).
+   Elles sont enregistrées avec statut "disponible" comme une vraie annonce
+   (donc pas filtrées par la requête Firestore ci-dessous), mais ne doivent
+   jamais être visibles publiquement tant qu'elles n'ont pas été complétées.
+   Repérées par un prix nul (le formulaire publier.html exige toujours un
+   prix > 0 pour une vraie annonce) et, par sécurité supplémentaire, par le
+   texte "à compléter" laissé dans le titre par l'import. */
+function estBrouillonImportOSM(annonce) {
+  const prixNul = !annonce.prix || annonce.prix <= 0;
+  const titreACompleter = (annonce.titre || "").toLowerCase().includes("à compléter");
+  return prixNul || titreACompleter;
+}
+
 /* ══════════ ÉCOUTE TEMPS RÉEL FIRESTORE ══════════
    Les annonces marquées "occupé" disparaissent automatiquement de la liste publique. */
 function ecouterAnnoncesTempsReel() {
@@ -377,7 +391,9 @@ function ecouterAnnoncesTempsReel() {
     orderBy("dateCreation", "desc")
   );
   onSnapshot(q, (snap) => {
-    toutesLesAnnonces = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    toutesLesAnnonces = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(a => !estBrouillonImportOSM(a));
     purgerFavorisInexistants(toutesLesAnnonces.map(a => a.id));
     rendreTout();
     mettreAJourStats();
