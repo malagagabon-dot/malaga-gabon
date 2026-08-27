@@ -48,6 +48,46 @@
       border: 1px solid #D0D5DD; background: #fff; color: #3A4150; cursor: pointer;
     }
     .btn-outline-sm:hover { background: #F0F2F5; }
+
+    /* ═══ Sélection individuelle : photo d'une annonce précise ═══ */
+    .liste-proprietaires-photo { display: flex; flex-direction: column; gap: 8px; }
+    .proprio-groupe {
+      border: 1px solid #E4E7EC; border-radius: 10px; background: #FAFBFC; overflow: hidden;
+    }
+    .proprio-groupe-entete {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 10px 14px; cursor: pointer; list-style: none; font-size: 13px;
+    }
+    .proprio-groupe-entete::-webkit-details-marker { display: none; }
+    .proprio-groupe[open] .proprio-groupe-entete { border-bottom: 1px solid #E4E7EC; }
+    .proprio-nom { font-weight: 700; color: #1A2332; }
+    .proprio-compte { font-size: 11px; color: #8A93A3; background: #EEF1F5; padding: 2px 8px; border-radius: 20px; }
+    .proprio-annonces-liste { display: flex; flex-direction: column; }
+    .proprio-annonce-item {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+      padding: 8px 14px; border: none; background: #fff; border-top: 1px solid #F0F2F5;
+      cursor: pointer; text-align: left; font-family: inherit;
+    }
+    .proprio-annonce-item:hover { background: #F5F9F7; }
+    .proprio-annonce-vignette {
+      width: 40px; height: 40px; border-radius: 7px; background: #F0F2F5; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .proprio-annonce-vignette img { width: 100%; height: 100%; object-fit: cover; }
+    .proprio-annonce-infos { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .proprio-annonce-titre { font-size: 12.5px; font-weight: 600; color: #1A2332; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .proprio-annonce-type { font-size: 11px; color: #8A93A3; }
+    .proprio-annonce-fleche { color: #C4CAD4; font-size: 16px; flex-shrink: 0; }
+
+    /* Grille de photos dans le cadre de téléchargement individuel — réutilise
+       .photos-defaut-grid / .photo-defaut-cadre, avec un badge "principale" */
+    .photo-annonce-indiv-apercu { position: relative; }
+    .photo-annonce-indiv-badge {
+      position: absolute; top: 4px; left: 4px; background: rgba(0,158,96,.92); color: #fff;
+      font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 5px;
+    }
+    .photo-defaut-cadre.photo-annonce-indiv-ajout { cursor: pointer; }
+    .photo-defaut-cadre.photo-annonce-indiv-ajout:hover { background: #F0F2F5; }
   </style>
 </head>
 <body>
@@ -283,6 +323,25 @@
         Les annonces déjà importées gardent leur photo au moment de l'import — utilise ce bouton pour leur appliquer la photo par défaut si tu viens d'en ajouter une nouvelle.
       </p>
       <button class="btn-outline-sm" type="button" id="btnAppliquerPhotosDefaut" onclick="appliquerPhotosDefautAuxAnnonces()" data-i18n>🔄 Appliquer aux annonces déjà importées</button>
+    </div>
+
+    <!-- Sélection individuelle : changer/uploader la photo d'une annonce précise
+         via une liste groupée par catégorie puis par nom de propriétaire, qui
+         dirige vers un cadre de téléchargement dédié à cette seule annonce. -->
+    <div class="card" id="cardPhotoAnnonceIndividuelle" style="margin-bottom:16px;">
+      <div class="card-header">
+        <h2 data-i18n>📸 Modifier la photo d'une annonce précise</h2>
+      </div>
+      <p style="font-size:12.5px;color:#5B6472;margin:-6px 0 12px;" data-i18n>
+        Choisis une catégorie, déplie le nom d'un propriétaire, puis sélectionne son annonce pour aller directement sur son cadre de téléchargement de photo.
+      </p>
+      <div class="filters-bar" style="margin-bottom:12px;">
+        <select class="filter-select" id="filtrePhotoCategorie" onchange="rendreListePhotoParProprietaire()">
+          <option value="" data-i18n>Toutes les catégories</option>
+        </select>
+        <input type="text" class="filter-input" id="filtrePhotoRechercheProprio" placeholder="🔍 Rechercher un propriétaire..." oninput="rendreListePhotoParProprietaire()" data-i18n-ph />
+      </div>
+      <div id="listePhotoParProprietaire" class="liste-proprietaires-photo"></div>
     </div>
 
     <!-- Établissements importés depuis OpenStreetMap : déjà visibles sur le
@@ -1348,6 +1407,27 @@
     <div class="modal-actions">
       <button class="btn-outline" onclick="fermerModalModifier()" data-i18n>Annuler</button>
       <button class="btn-primary" id="modBtnEnregistrer" onclick="enregistrerModificationAnnonce()" data-i18n>💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL : cadre de téléchargement de la photo d'UNE annonce précise ═══
+     Ouvert depuis la liste "📸 Modifier la photo d'une annonce précise"
+     (catégorie → propriétaire → annonce). Upload direct depuis le stockage
+     du téléphone vers Cloudinary, enregistrement immédiat sur l'annonce
+     (comme les photos par défaut / la photo de profil d'un compte pro). -->
+<div class="modal-overlay hidden" id="modalPhotoAnnonceIndividuelle">
+  <div class="modal" style="max-width:560px;width:92%;max-height:88vh;overflow-y:auto;">
+    <h3 data-i18n>📸 Photo de l'annonce</h3>
+    <p style="font-weight:700;margin:-6px 0 2px;font-size:14px;color:#1A2332;" id="titrePhotoAnnonceIndividuelle"></p>
+    <p style="font-size:12px;color:#8A93A3;margin:0 0 14px;" id="sousTitrePhotoAnnonceIndividuelle"></p>
+    <div class="photos-defaut-grid" id="grillePhotoAnnonceIndividuelle"></div>
+    <input type="file" accept="image/*" id="filePhotoAnnonceIndividuelle" style="display:none;" onchange="televerserPhotoAnnonceIndividuelle(this)">
+    <p style="font-size:11.5px;color:#8A93A3;margin:12px 0 0;" data-i18n>
+      La première photo sert d'image principale sur le site public — utilise « ⭐ Principale » pour en changer.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="fermerModalPhotoAnnonceIndividuelle()" data-i18n>Fermer</button>
     </div>
   </div>
 </div>

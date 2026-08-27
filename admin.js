@@ -113,6 +113,9 @@ function initListesReference() {
   remplir('faaMateriau', ref.MATERIAUX, 'Indifférent');
   remplir('faaCouleur', ref.COULEURS_MURALES, 'Indifférente');
 
+  // Sélection individuelle "Modifier la photo d'une annonce précise"
+  remplir('filtrePhotoCategorie', ref.TYPES_BIEN, 'Toutes les catégories');
+
   const optionsPaliers = '<option value="">Indifférent</option>' +
     (ref.PALIERS_PIECES || [1, 2, 3, 4, 5]).map(n => `<option value="${n}">${n}+</option>`).join('');
   ['faaChambres', 'faaSalons', 'faaDouches'].forEach(id => {
@@ -379,7 +382,7 @@ function demarrerEcouteAnnonces() {
     annoncesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     document.getElementById('badgeAnnonces').textContent = annoncesData.length;
     if (pageActuelle === 'dashboard') loadDashboard();
-    if (pageActuelle === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); chargerPhotosDefaut(); verifierAnciensImportsOSM(); }
+    if (pageActuelle === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); chargerPhotosDefaut(); verifierAnciensImportsOSM(); rendreListePhotoParProprietaire(); }
   }, (err) => {
     console.error('Erreur de synchronisation des annonces :', err);
     const tbody = document.getElementById('annoncesTableBody');
@@ -2318,6 +2321,171 @@ window.supprimerPhotoDefaut = supprimerPhotoDefaut;
 window.MALAGA_PHOTOS_DEFAUT = {
   obtenir(typeBrut) { return photosDefautCache[slugPhotoDefaut(typeBrut)] || null; }
 };
+
+/* ══════════════════════════════════════════════════════════
+   SÉLECTION INDIVIDUELLE : PHOTO D'UNE ANNONCE PRÉCISE
+   Liste "annonces" filtrée par catégorie (type de bien), regroupée par
+   nom de propriétaire dans des blocs déployables (<details>). L'admin
+   déplie un nom puis choisit l'annonce voulue, ce qui ouvre un cadre de
+   téléchargement dédié à cette seule annonce (upload direct depuis le
+   stockage du téléphone vers Cloudinary, enregistrement immédiat sur le
+   document Firestore — même logique que les photos par défaut / la photo
+   de profil d'un compte pro, plus haut dans ce fichier).
+══════════════════════════════════════════════════════════ */
+function rendreListePhotoParProprietaire() {
+  const conteneur = document.getElementById('listePhotoParProprietaire');
+  if (!conteneur) return;
+
+  const categorie = document.getElementById('filtrePhotoCategorie')?.value || '';
+  const recherche = (document.getElementById('filtrePhotoRechercheProprio')?.value || '').toLowerCase().trim();
+
+  const filtrees = annoncesData.filter(a => !categorie || champ(a, 'type') === categorie);
+
+  // Regroupement par nom de propriétaire (mêmes champs de repli que modifierAnnonce)
+  const groupes = {};
+  filtrees.forEach(a => {
+    const nomBrut = texte(a, 'proprietaireNom', 'proprio', 'nomProprietaire');
+    const cle = nomBrut === '—' ? 'Propriétaire non renseigné' : nomBrut;
+    (groupes[cle] = groupes[cle] || []).push(a);
+  });
+
+  let noms = Object.keys(groupes);
+  if (recherche) noms = noms.filter(n => n.toLowerCase().includes(recherche));
+  noms.sort((a, b) => a.localeCompare(b, 'fr'));
+
+  if (noms.length === 0) {
+    conteneur.innerHTML = '<p class="photos-empty">Aucun propriétaire ne correspond à ces critères.</p>';
+    return;
+  }
+
+  conteneur.innerHTML = noms.map(nom => {
+    const annonces = groupes[nom].slice()
+      .sort((a, b) => texte(a, 'titre', 'title').localeCompare(texte(b, 'titre', 'title'), 'fr'));
+    return `
+      <details class="proprio-groupe">
+        <summary class="proprio-groupe-entete">
+          <span class="proprio-nom">👤 ${escapeHTML(nom)}</span>
+          <span class="proprio-compte">${annonces.length} annonce${annonces.length > 1 ? 's' : ''}</span>
+        </summary>
+        <div class="proprio-annonces-liste">
+          ${annonces.map(a => `
+            <button type="button" class="proprio-annonce-item" onclick="ouvrirPhotoAnnonceIndividuelle('${a.id}')">
+              <span class="proprio-annonce-vignette">
+                ${a.photos && a.photos[0] ? `<img src="${escapeHTML(a.photos[0])}" alt="">` : '<span class="photo-defaut-icone" style="font-size:16px;">🖼️</span>'}
+              </span>
+              <span class="proprio-annonce-infos">
+                <span class="proprio-annonce-titre">${escapeHTML(texte(a, 'titre', 'title'))}</span>
+                <span class="proprio-annonce-type">${escapeHTML(champ(a, 'type') || '')} · ${a.photos ? a.photos.length : 0} photo${(a.photos && a.photos.length > 1) ? 's' : ''}</span>
+              </span>
+              <span class="proprio-annonce-fleche">›</span>
+            </button>
+          `).join('')}
+        </div>
+      </details>
+    `;
+  }).join('');
+}
+window.rendreListePhotoParProprietaire = rendreListePhotoParProprietaire;
+
+let photoAnnonceIndividuelleId = null;
+let photoAnnonceIndividuellePhotos = [];
+
+function ouvrirPhotoAnnonceIndividuelle(id) {
+  const a = annoncesData.find(x => x.id === id);
+  if (!a) return;
+  photoAnnonceIndividuelleId = id;
+  photoAnnonceIndividuellePhotos = Array.isArray(a.photos) ? [...a.photos] : [];
+
+  document.getElementById('titrePhotoAnnonceIndividuelle').textContent = texte(a, 'titre', 'title');
+  document.getElementById('sousTitrePhotoAnnonceIndividuelle').textContent =
+    `👤 ${texte(a, 'proprietaireNom', 'proprio', 'nomProprietaire')} · ${champ(a, 'type') || ''}`;
+
+  rendrePhotosAnnonceIndividuelle();
+  document.getElementById('modalPhotoAnnonceIndividuelle').classList.remove('hidden');
+}
+window.ouvrirPhotoAnnonceIndividuelle = ouvrirPhotoAnnonceIndividuelle;
+
+function fermerModalPhotoAnnonceIndividuelle() {
+  document.getElementById('modalPhotoAnnonceIndividuelle').classList.add('hidden');
+  photoAnnonceIndividuelleId = null;
+  photoAnnonceIndividuellePhotos = [];
+}
+window.fermerModalPhotoAnnonceIndividuelle = fermerModalPhotoAnnonceIndividuelle;
+
+function rendrePhotosAnnonceIndividuelle() {
+  const grille = document.getElementById('grillePhotoAnnonceIndividuelle');
+  if (!grille) return;
+  const photos = photoAnnonceIndividuellePhotos;
+
+  grille.innerHTML = photos.map((url, i) => `
+      <div class="photo-defaut-cadre">
+        <div class="photo-defaut-apercu photo-annonce-indiv-apercu">
+          ${i === 0 ? '<span class="photo-annonce-indiv-badge">★ Principale</span>' : ''}
+          <img src="${escapeHTML(url)}" alt="Photo ${i + 1}" onclick="ouvrirLightbox(photoAnnonceIndividuellePhotos, ${i})">
+        </div>
+        <div class="photo-defaut-actions">
+          ${i !== 0 ? `<button type="button" class="btn-outline-sm" onclick="definirPhotoPrincipaleIndividuelle(${i})">⭐</button>` : ''}
+          <button type="button" class="btn-outline-sm" onclick="supprimerPhotoAnnonceIndividuelle(${i})">🗑️</button>
+        </div>
+      </div>
+    `).join('') + `
+      <div class="photo-defaut-cadre photo-annonce-indiv-ajout" onclick="document.getElementById('filePhotoAnnonceIndividuelle').click()">
+        <div class="photo-defaut-apercu"><span class="photo-defaut-icone">➕</span></div>
+        <div class="photo-defaut-nom">Ajouter une photo</div>
+      </div>
+    `;
+}
+
+async function sauvegarderPhotosAnnonceIndividuelle(nouvellesPhotos) {
+  if (!photoAnnonceIndividuelleId) return;
+  try {
+    await window.dbAdmin.collection('annonces').doc(photoAnnonceIndividuelleId).update({
+      photos: nouvellesPhotos,
+      dateModification: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    photoAnnonceIndividuellePhotos = nouvellesPhotos;
+    rendrePhotosAnnonceIndividuelle();
+    rendreListePhotoParProprietaire(); // vignette + compteur de photos à jour dans la liste déployable
+  } catch (err) {
+    console.error('Erreur mise à jour des photos de l\'annonce :', err);
+    alert(`Impossible d'enregistrer (${err.message || 'connexion instable'}). Réessaie.`);
+  }
+}
+
+function supprimerPhotoAnnonceIndividuelle(i) {
+  const nouvelles = photoAnnonceIndividuellePhotos.slice();
+  nouvelles.splice(i, 1);
+  sauvegarderPhotosAnnonceIndividuelle(nouvelles);
+}
+window.supprimerPhotoAnnonceIndividuelle = supprimerPhotoAnnonceIndividuelle;
+
+function definirPhotoPrincipaleIndividuelle(i) {
+  const nouvelles = photoAnnonceIndividuellePhotos.slice();
+  const [choisie] = nouvelles.splice(i, 1);
+  nouvelles.unshift(choisie);
+  sauvegarderPhotosAnnonceIndividuelle(nouvelles);
+}
+window.definirPhotoPrincipaleIndividuelle = definirPhotoPrincipaleIndividuelle;
+
+async function televerserPhotoAnnonceIndividuelle(input) {
+  const fichier = input.files && input.files[0];
+  if (!fichier || !photoAnnonceIndividuelleId) return;
+  const grille = document.getElementById('grillePhotoAnnonceIndividuelle');
+  try {
+    if (grille) grille.style.opacity = '0.55';
+    const optimisee = await compresserImage(fichier);
+    const url = await uploaderVersCloudinary(optimisee);
+    await sauvegarderPhotosAnnonceIndividuelle([...photoAnnonceIndividuellePhotos, url]);
+    toast('✅ Photo ajoutée à l\'annonce');
+  } catch (err) {
+    console.error('Erreur import photo annonce individuelle :', err);
+    alert(`Impossible d'importer cette photo (${err.message || 'connexion instable'}). Réessaie.`);
+  } finally {
+    input.value = '';
+    if (grille) grille.style.opacity = '';
+  }
+}
+window.televerserPhotoAnnonceIndividuelle = televerserPhotoAnnonceIndividuelle;
 
 async function marquerCompletOSM(id) {
   try {
