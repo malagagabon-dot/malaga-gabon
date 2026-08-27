@@ -94,7 +94,7 @@ export const CENTRES = {
 
 export const TYPES_BIEN = [
   "Maison", "Appartement", "Studio", "Chambre", "Villa", "Bureau", "Local commercial", "Box",
-  "Chambre d'hôtel", "Chambre de motel"
+  "Chambre d'hôtel", "Chambre de motel", "Chambre d'auberge"
 ];
 
 /* Types de biens "à vivre" (habitation), pour lesquels les champs chambres / salons /
@@ -110,7 +110,7 @@ export function estResidentiel(type) {
    (compteType === "hotel", voir auth.js et connexion.html). Chaque annonce de ce
    type représente une catégorie de chambre (pas une réservation en ligne : le
    visiteur contacte l'établissement par WhatsApp, comme pour les autres annonces). */
-export const TYPES_HEBERGEMENT_HOTEL = ["Chambre d'hôtel", "Chambre de motel"];
+export const TYPES_HEBERGEMENT_HOTEL = ["Chambre d'hôtel", "Chambre de motel", "Chambre d'auberge"];
 export function estHebergementHotel(type) {
   return TYPES_HEBERGEMENT_HOTEL.includes(type);
 }
@@ -276,9 +276,30 @@ export function getIconeType(type) {
   const icons = {
     Villa: "🏡", Appartement: "🏢", Studio: "🛏️", Maison: "🏠",
     Chambre: "🚪", Bureau: "🏗️", "Local commercial": "🏪", Box: "📦",
-    "Chambre d'hôtel": "🏨", "Chambre de motel": "🏨"
+    "Chambre d'hôtel": "🏨", "Chambre de motel": "🏨", "Chambre d'auberge": "🎒"
   };
   return icons[type] || "🏠";
+}
+
+/* ══════════ ABRÉVIATION DE TYPE (bulles de la carte) ══════════
+   Au lieu d'afficher le prix, chaque bulle de la carte affiche désormais
+   l'abréviation de la catégorie de l'annonce (voir app.js → iconMarqueur),
+   colorée de façon stable par type (voir couleurTypeBien dans app.js). */
+export function abregeType(type) {
+  const abreges = {
+    "Maison": "Ma",
+    "Appartement": "AP",
+    "Studio": "St",
+    "Chambre": "Ch",
+    "Villa": "Vi",
+    "Bureau": "Bu",
+    "Local commercial": "LC",
+    "Box": "Bo",
+    "Chambre d'hôtel": "H",
+    "Chambre de motel": "M",
+    "Chambre d'auberge": "Au"
+  };
+  return abreges[type] || (type || "?").slice(0, 2);
 }
 
 export function formatPrix(prix) {

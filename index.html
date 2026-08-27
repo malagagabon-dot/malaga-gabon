@@ -200,13 +200,20 @@
     </select>
   </div>
 
-  <!-- Bouton dédié "Hôtels & Motels" : filtre en un clic, même style que
-       "Les catalogues" / "Près de chez moi" (voir app.js → toggleFiltreHotel).
-       Placé avant ces deux boutons, comme demandé. -->
+  <!-- Sélecteur "Hôtels / Motels / Auberges" : filtre précis en un clic dans
+       un menu déroulant, même style que "Les catalogues" / "Près de chez moi"
+       (voir app.js → onChangeHebergement). Combine le filtre vendeur "hotel"
+       et le filtre type exact, donc reste synchronisé avec tous les autres
+       filtres et avec la carte. Placé avant les deux boutons suivants,
+       comme demandé. -->
   <div class="hotels-motels-bar">
-    <button type="button" class="btn-hotels-motels" id="btnHotelsMotels">
-      🏨 Hôtels &amp; Motels
-    </button>
+    <select id="filterHebergement" class="select-hotels-motels">
+      <option value="tous">🏠 Tous les logements</option>
+      <option value="hotel-tous">🏨 Hôtels, Motels &amp; Auberges</option>
+      <option value="hotel">🏨 Hôtels</option>
+      <option value="motel">🛏️ Motels</option>
+      <option value="auberge">🎒 Auberges</option>
+    </select>
   </div>
 
   <div class="filters-bar" style="margin:16px auto;padding:0 20px;">

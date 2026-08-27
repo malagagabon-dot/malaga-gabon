@@ -13,7 +13,7 @@ import {
   COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, CENTRES, getIconeType, formatPrix,
   ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
   EQUIPEMENTS, PALIERS_PIECES, escapeHTML, getBadgeVendeur, formatPrixAnnonce, getCategorieVendeur,
-  estHebergementHotel, formatPrixNuit
+  estHebergementHotel, formatPrixNuit, abregeType
 } from "./malaga-reference.js";
 import { estFavori, toggleFavori, purgerFavorisInexistants, envoyerPush } from "./nav.js";
 import { numeroAnnonce } from "./malaga-id.js";
@@ -72,23 +72,49 @@ function extraireEtoiles(standing) {
   return m ? parseFloat(m[1].replace(",", ".")) : 0;
 }
 
-/* ══════════ BOUTON DÉDIÉ "HÔTELS & MOTELS" ══════════
-   Filtre en un clic sur la catégorie vendeur "hotel" (voir getCategorieVendeur
-   dans malaga-reference.js). Reste synchronisé avec le select #filterVendeur
-   (utile si un filtre "Recherches avancées" le modifie ailleurs). */
-function toggleFiltreHotel() {
-  const btn = document.getElementById("btnHotelsMotels");
-  const selectVendeur = document.getElementById("filterVendeur");
-  const actif = filtres.vendeur === "hotel";
+/* ══════════ SÉLECTEUR "HÔTELS / MOTELS / AUBERGES" ══════════
+   Remplace l'ancien bouton unique par un menu déroulant permettant de choisir
+   précisément une catégorie d'hébergement. Chaque option combine le filtre
+   vendeur ("hotel", voir getCategorieVendeur) ET le filtre type exact
+   (Chambre d'hôtel / de motel / d'auberge, voir TYPES_HEBERGEMENT_HOTEL dans
+   malaga-reference.js) — donc réutilise entièrement le pipeline de filtres
+   existant (appliquerFiltres) et reste synchronisé avec la carte comme tous
+   les autres filtres. Reste aussi synchronisé avec #filterVendeur/#filterType
+   si l'utilisateur les modifie ailleurs (voir initFiltres). */
+const HEBERGEMENT_OPTIONS = {
+  "tous": { vendeur: "", type: "" },
+  "hotel-tous": { vendeur: "hotel", type: "" },
+  "hotel": { vendeur: "hotel", type: "Chambre d'hôtel" },
+  "motel": { vendeur: "hotel", type: "Chambre de motel" },
+  "auberge": { vendeur: "hotel", type: "Chambre d'auberge" }
+};
 
-  filtres.vendeur = actif ? "" : "hotel";
-  if (selectVendeur) selectVendeur.value = filtres.vendeur;
-  btn.classList.toggle("actif", !actif);
+function onChangeHebergement() {
+  const select = document.getElementById("filterHebergement");
+  const conf = HEBERGEMENT_OPTIONS[select.value] || HEBERGEMENT_OPTIONS.tous;
+
+  filtres.vendeur = conf.vendeur;
+  filtres.type = conf.type;
+
+  // Garde les filtres "Recherches avancées" cohérents avec le choix fait ici.
+  const selectVendeur = document.getElementById("filterVendeur");
+  const selectType = document.getElementById("filterType");
+  if (selectVendeur) selectVendeur.value = conf.vendeur;
+  if (selectType) selectType.value = conf.type;
+
   rendreTout();
 
-  if (!actif) {
+  if (conf.vendeur === "hotel") {
     document.getElementById("liste-annonces-grille")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
+}
+
+/* Remet le sélecteur "Hôtels/Motels/Auberges" sur "Tous les logements" quand
+   le vendeur ou le type sont changés manuellement ailleurs, pour éviter un
+   menu déroulant qui affiche encore une catégorie qui n'est plus active. */
+function resynchroniserSelectHebergement() {
+  const select = document.getElementById("filterHebergement");
+  if (select) select.value = "tous";
 }
 
 function togglePresDeMoi() {
@@ -222,7 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Bouton "Près de chez moi" + slider de rayon — même raison que ci-dessus :
   // pas d'onclick/oninput inline en HTML, tout est relié ici.
   document.getElementById("btnPresDeMoi")?.addEventListener("click", togglePresDeMoi);
-  document.getElementById("btnHotelsMotels")?.addEventListener("click", toggleFiltreHotel);
+  document.getElementById("filterHebergement")?.addEventListener("change", onChangeHebergement);
   document.getElementById("sliderRayon")?.addEventListener("input", (e) => changerRayon(e.target.value));
 
   document.getElementById("btnRechercher").onclick = () => {
@@ -346,12 +372,16 @@ function couleurTypeBien(type) {
 }
 
 function iconMarqueur(annonce) {
-  const classe = annonce.statut === "disponible"
-    ? `marker-prix ${palierPrix(annonce.prix)}`
-    : "marker-prix occupe";
+  const disponible = annonce.statut === "disponible";
+  // La bulle affiche désormais l'abréviation de la catégorie de l'annonce
+  // (H, M, Au, AP...) au lieu du prix, dans la couleur stable de son type
+  // (voir couleurTypeBien / abregeType) — le prix reste visible dans le
+  // popup et sur la carte de la liste.
+  const couleur = disponible ? couleurTypeBien(annonce.type) : "var(--gris-clair)";
+  const classe = disponible ? "marker-prix" : "marker-prix occupe";
   return L.divIcon({
     className: "",
-    html: `<div class="${classe}">${Math.round(annonce.prix / 1000)}k</div>`,
+    html: `<div class="${classe}" style="background:${couleur};">${escapeHTML(abregeType(annonce.type))}</div>`,
     iconSize: null
   });
 }
@@ -392,7 +422,7 @@ function initFiltres() {
   if (selectVendeur) {
     selectVendeur.onchange = () => {
       filtres.vendeur = selectVendeur.value;
-      document.getElementById("btnHotelsMotels")?.classList.remove("actif");
+      resynchroniserSelectHebergement();
       rendreTout();
     };
   }
@@ -406,7 +436,11 @@ function initFiltres() {
     rendreTout();
   };
   selectArrondissement.onchange = () => { filtres.arrondissement = selectArrondissement.value; rendreTout(); };
-  selectType.onchange = () => { filtres.type = selectType.value; rendreTout(); };
+  selectType.onchange = () => {
+    filtres.type = selectType.value;
+    resynchroniserSelectHebergement();
+    rendreTout();
+  };
   selectPrix.onchange = () => { filtres.prixMax = selectPrix.value; rendreTout(); };
   if (inputPrixExact) {
     inputPrixExact.oninput = () => {
