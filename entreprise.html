@@ -221,12 +221,13 @@
         if (!fichier) return;
         btn.textContent = "⏳";
         try {
-          const dataURL = await compresserImageProfil(fichier);
-          await updateDoc(doc(db, "users", entrepriseId), { logoUrl: dataURL });
-          document.getElementById("entLogoImg").innerHTML = `<img src="${dataURL}" alt="">`;
+          const optimisee = await compresserImageProfil(fichier);
+          const url = await uploaderVersCloudinary(optimisee);
+          await updateDoc(doc(db, "users", entrepriseId), { logoUrl: url });
+          document.getElementById("entLogoImg").innerHTML = `<img src="${url}" alt="">`;
         } catch (err) {
           console.error("Erreur import photo de profil :", err);
-          alert("Impossible d'importer cette photo. Réessaie avec une image plus légère.");
+          alert(`Impossible d'importer cette photo (${err.message || "connexion instable"}). Réessaie.`);
         } finally {
           btn.textContent = "📷";
           input.value = "";
@@ -234,8 +235,24 @@
       });
     }
 
-    // Redimensionne/compresse côté client (largeur max 500px, JPEG 0.75) avant
-    // stockage direct dans Firestore — aucune clé Cloudinary n'est branchée ici.
+    // Photo de profil hébergée sur Cloudinary (même compte/preset que le
+    // reste du site — voir connexion.html/publier.html) au lieu d'un base64
+    // stocké en dur dans Firestore : ça évite de faire retélécharger cette
+    // grosse chaîne à chaque affichage du profil entreprise.
+    const CLOUDINARY_CLOUD_NAME = "enpphgwu";
+    const CLOUDINARY_UPLOAD_PRESET = "malaga_photos";
+    async function uploaderVersCloudinary(fichier) {
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+      const formData = new FormData();
+      formData.append("file", fichier);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+      const reponse = await fetch(url, { method: "POST", body: formData });
+      if (!reponse.ok) throw new Error("Échec de l'envoi vers Cloudinary");
+      return (await reponse.json()).secure_url;
+    }
+
+    // Redimensionne/compresse côté client (largeur max 500px, JPEG 0.75)
+    // avant l'envoi vers Cloudinary — rend un fichier JPEG, plus une dataURL.
     function compresserImageProfil(fichier, largeurMax = 500, qualite = 0.75) {
       return new Promise((resolve, reject) => {
         const lecteur = new FileReader();
@@ -249,7 +266,10 @@
             canvas.width = Math.round(img.width * ratio);
             canvas.height = Math.round(img.height * ratio);
             canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL("image/jpeg", qualite));
+            canvas.toBlob(blob => {
+              if (!blob) { reject(new Error("Compression impossible")); return; }
+              resolve(new File([blob], fichier.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+            }, "image/jpeg", qualite);
           };
           img.src = lecteur.result;
         };

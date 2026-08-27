@@ -2081,14 +2081,12 @@ async function importerSelectionOSM() {
   await chargerPhotosDefaut();
   const PHOTO_GENERIQUE = 'https://placehold.co/800x600?text=Photo+%C3%A0+ajouter';
 
-  // Les photos par défaut sont stockées en base64 (dataURL) directement dans
-  // Firestore (aucune clé Cloudinary n'est branchée, voir plus bas). Une
-  // seule photo par type tient sous la limite d'1 Mo par document, mais dès
-  // qu'elle est recopiée dans PLUSIEURS dizaines de nouvelles fiches d'un
-  // coup dans UN SEUL batch, le poids total peut dépasser la limite de
-  // taille d'un batch Firestore et faire échouer tout l'import (aucune
-  // fiche n'est créée, même celles sans photo par défaut). On découpe donc
-  // en petits lots successifs pour rester largement sous cette limite.
+  // Les photos par défaut sont maintenant hébergées sur Cloudinary (URL
+  // légère), donc plus de risque de faire exploser la taille d'un batch en
+  // les recopiant dans plusieurs dizaines de nouvelles fiches d'un coup. On
+  // garde quand même le découpage en petits lots ci-dessous par sécurité
+  // (limite Firestore de 500 écritures par batch, et pour afficher une
+  // progression sur les gros imports).
   const TAILLE_LOT = 10;
   const lots = [];
   for (let i = 0; i < selection.length; i += TAILLE_LOT) lots.push(selection.slice(i, i + TAILLE_LOT));
@@ -2232,11 +2230,27 @@ function rendrePhotosDefaut() {
   }).join('');
 }
 
-/* Redimensionne/compresse côté client avant stockage : aucune clé Cloudinary
-   n'est branchée sur ces cadres pour l'instant, la photo est donc enregistrée
-   directement dans Firestore. On limite la largeur à 900px et on compresse en
-   JPEG qualité 0.72, largement suffisant pour une vignette d'annonce, afin de
-   rester sous la limite de taille d'un document Firestore. */
+/* Photos par défaut hébergées sur Cloudinary (même compte/preset que les
+   photos d'annonces — voir connexion.html/publier.html) au lieu d'un base64
+   stocké en dur dans Firestore : ça évite de faire retélécharger cette même
+   grosse chaîne à chaque chargement du site public pour CHAQUE annonce qui
+   l'utilise en repli, et ça supprime le risque de dépasser la taille max
+   d'un batch lors des imports OSM en masse. */
+const CLOUDINARY_CLOUD_NAME = 'enpphgwu';
+const CLOUDINARY_UPLOAD_PRESET = 'malaga_photos';
+async function uploaderVersCloudinary(fichier) {
+  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+  const formData = new FormData();
+  formData.append('file', fichier);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  const reponse = await fetch(url, { method: 'POST', body: formData });
+  if (!reponse.ok) throw new Error("Échec de l'envoi vers Cloudinary");
+  return (await reponse.json()).secure_url;
+}
+
+/* Redimensionne/compresse côté client avant l'envoi vers Cloudinary. Rend un
+   fichier JPEG (et non plus une dataURL base64) : c'est ce fichier léger qui
+   part vers Cloudinary, seule l'URL renvoyée est ensuite stockée en base. */
 function compresserImage(fichier, largeurMax = 900, qualite = 0.72) {
   return new Promise((resolve, reject) => {
     const lecteur = new FileReader();
@@ -2250,7 +2264,10 @@ function compresserImage(fichier, largeurMax = 900, qualite = 0.72) {
         canvas.width = Math.round(img.width * ratio);
         canvas.height = Math.round(img.height * ratio);
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', qualite));
+        canvas.toBlob(blob => {
+          if (!blob) { reject(new Error('Compression impossible')); return; }
+          resolve(new File([blob], fichier.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
+        }, 'image/jpeg', qualite);
       };
       img.src = lecteur.result;
     };
@@ -2264,16 +2281,17 @@ async function importerPhotoDefaut(slug, input) {
   const cadre = document.getElementById(`apercuPhotoDefaut_${slug}`);
   if (cadre) cadre.innerHTML = '<span class="photo-defaut-icone">⏳</span>';
   try {
-    const dataURL = await compresserImage(fichier);
-    await window.dbAdmin.collection('parametres').doc('photosDefaut').set({ [slug]: dataURL }, { merge: true });
-    photosDefautCache[slug] = dataURL;
+    const optimisee = await compresserImage(fichier);
+    const url = await uploaderVersCloudinary(optimisee);
+    await window.dbAdmin.collection('parametres').doc('photosDefaut').set({ [slug]: url }, { merge: true });
+    photosDefautCache[slug] = url;
     rendrePhotosDefaut();
     rendreImportsEnAttente();
     appliquerPhotosDefautAuxAnnonces(); // corrige tout de suite les fiches déjà importées avec la photo générique
     toast('✅ Photo par défaut enregistrée');
   } catch (err) {
     console.error('Erreur import photo par défaut :', err);
-    alert("Impossible d'importer cette photo. Réessaie avec une image plus légère.");
+    alert(`Impossible d'importer cette photo (${err.message || 'connexion instable'}). Réessaie.`);
     rendrePhotosDefaut();
   } finally {
     input.value = '';
@@ -2356,15 +2374,18 @@ async function migrerAnciensImportsOSM() {
 }
 window.migrerAnciensImportsOSM = migrerAnciensImportsOSM;
 
-/* Corrige rétroactivement les annonces OSM déjà importées qui ont encore la
-   photo générique "Photo à ajouter" (écrite en dur en base avant l'ajout des
-   photos par défaut par type), en la remplaçant par la vraie photo par type
-   si une a été définie depuis. */
+/* Corrige rétroactivement les annonces OSM déjà importées qui ont encore
+   soit la photo générique "Photo à ajouter" (écrite en dur en base avant
+   l'ajout des photos par défaut par type), soit une ancienne photo par
+   défaut en base64 (avant le passage à Cloudinary — ce sont ces grosses
+   chaînes qui ralentissaient le chargement du site), en la remplaçant par
+   la vraie photo Cloudinary du type si une a été définie depuis. */
 async function appliquerPhotosDefautAuxAnnonces() {
   const PHOTO_GENERIQUE = 'https://placehold.co/800x600?text=Photo+%C3%A0+ajouter';
   const enPhotoGenerique = annoncesData.filter(a =>
     a.source === 'osm' &&
-    Array.isArray(a.photos) && a.photos.length === 1 && a.photos[0] === PHOTO_GENERIQUE
+    Array.isArray(a.photos) && a.photos.length === 1 &&
+    (a.photos[0] === PHOTO_GENERIQUE || (typeof a.photos[0] === 'string' && a.photos[0].startsWith('data:image')))
   );
   const aCorriger = enPhotoGenerique.filter(a => window.MALAGA_PHOTOS_DEFAUT?.obtenir(a.typeEtablissement || a.type));
 
@@ -2612,12 +2633,13 @@ async function onFichierImportPhotoCompte(input) {
   const id = compteImportPhotoId;
   if (!fichier || !id) return;
   try {
-    const dataURL = await compresserImage(fichier, 500, 0.75);
-    await window.dbAdmin.collection('users').doc(id).update({ logoUrl: dataURL });
+    const optimisee = await compresserImage(fichier, 500, 0.75);
+    const url = await uploaderVersCloudinary(optimisee);
+    await window.dbAdmin.collection('users').doc(id).update({ logoUrl: url });
     toast('✅ Photo du compte mise à jour');
   } catch (err) {
     console.error('Erreur import photo du compte :', err);
-    alert("Impossible d'importer cette photo. Réessaie avec une image plus légère.");
+    alert(`Impossible d'importer cette photo (${err.message || 'connexion instable'}). Réessaie.`);
   } finally {
     input.value = '';
     compteImportPhotoId = null;
