@@ -904,6 +904,11 @@ function afficherDetail(a) {
   enregistrerVisite("annonce", a.id, a.titre);
   const modal = document.getElementById("detailModal");
   const panneau = document.getElementById("detailPanneau");
+  // Harmonisation avec la carte : si la fiche est ouverte alors que la carte
+  // est en plein écran (ex. clic sur une bulle d'établissement), elle
+  // s'affiche elle aussi en plein écran du téléphone, au-dessus de la carte
+  // (voir règles CSS #detailModal.ouverte / .modal-plein-ecran).
+  modal.classList.toggle("modal-plein-ecran", carteEnPleinEcran);
   const numeroWhatsApp = (a.whatsapp || a.tel || "").replace(/[^\d]/g, "");
   const texteWhatsAppContact = encodeURIComponent(
     `Bonjour${a.proprietaireNom ? " " + a.proprietaireNom : ""}, je suis intéressé(e) par votre annonce "${a.titre}" (${formatPrixAnnonce(a)}) sur MALAGA. Pouvez-vous me préciser les modalités de paiement du loyer ?`
