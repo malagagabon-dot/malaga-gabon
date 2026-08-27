@@ -603,10 +603,15 @@ function appliquerFiltres(liste) {
       if (typeof b.lat !== "number" || typeof b.lng !== "number") return -1;
       return distanceKm(positionUtilisateur, a) - distanceKm(positionUtilisateur, b);
     });
-  } else if (filtres.vendeur === "hotel") {
-    // Catégorie "Hôtels & Motels" : les établissements les mieux classés
-    // (le plus d'étoiles) en tête. Tri stable, donc à standing égal l'ordre
-    // reste celui de la requête Firestore (date de publication décroissante).
+  } else if (filtres.vendeur === "hotel" || estHebergementHotel(filtres.type)) {
+    // Règle par défaut pour tout affichage d'hébergement hôtelier (catégorie
+    // "Hôtels & Motels" choisie via le sélecteur dédié, OU simplement un
+    // filtre type = Chambre d'hôtel/de motel posé depuis les filtres avancés) :
+    // les établissements les mieux classés (le plus d'étoiles) en tête.
+    // Seul un tri explicitement choisi par l'utilisateur (les 2 branches
+    // "Près de chez moi" / proximité ci-dessus) passe devant cette règle.
+    // Tri stable, donc à standing égal l'ordre reste celui de la requête
+    // Firestore (date de publication décroissante).
     resultat.sort((a, b) => extraireEtoiles(b.standing) - extraireEtoiles(a.standing));
   }
 
