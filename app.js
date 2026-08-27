@@ -60,6 +60,18 @@ let positionInfo = null; // { quartier, arrondissement, commune } — reverse-ge
 let cerclePresDeMoi = null;       // L.circle affichant le rayon choisi sur la carte
 let markerPositionUtilisateur = null; // L.marker "vous êtes ici"
 
+/* ══════════ TRI PAR STANDING (Hôtels & Motels) ══════════
+   Le champ `standing` est du texte libre saisi par l'admin (ex. "4 étoiles",
+   "Non classé", "Non classé (à définir)"). On en extrait le nombre d'étoiles
+   pour trier les établissements du plus haut standing au plus bas quand la
+   catégorie "Hôtels & Motels" est affichée. Les fiches sans étoile détectée
+   (non classées, importées OSM en attente...) retombent à 0 et restent en
+   fin de liste. */
+function extraireEtoiles(standing) {
+  const m = String(standing || "").match(/(\d+(?:[.,]\d+)?)\s*[ée]toile/i);
+  return m ? parseFloat(m[1].replace(",", ".")) : 0;
+}
+
 /* ══════════ BOUTON DÉDIÉ "HÔTELS & MOTELS" ══════════
    Filtre en un clic sur la catégorie vendeur "hotel" (voir getCategorieVendeur
    dans malaga-reference.js). Reste synchronisé avec le select #filterVendeur
@@ -463,6 +475,11 @@ function appliquerFiltres(liste) {
       if (typeof b.lat !== "number" || typeof b.lng !== "number") return -1;
       return distanceKm(positionUtilisateur, a) - distanceKm(positionUtilisateur, b);
     });
+  } else if (filtres.vendeur === "hotel") {
+    // Catégorie "Hôtels & Motels" : les établissements les mieux classés
+    // (le plus d'étoiles) en tête. Tri stable, donc à standing égal l'ordre
+    // reste celui de la requête Firestore (date de publication décroissante).
+    resultat.sort((a, b) => extraireEtoiles(b.standing) - extraireEtoiles(a.standing));
   }
 
   return resultat;
