@@ -379,7 +379,7 @@ function demarrerEcouteAnnonces() {
     annoncesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     document.getElementById('badgeAnnonces').textContent = annoncesData.length;
     if (pageActuelle === 'dashboard') loadDashboard();
-    if (pageActuelle === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); chargerPhotosDefaut(); }
+    if (pageActuelle === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); chargerPhotosDefaut(); verifierAnciensImportsOSM(); }
   }, (err) => {
     console.error('Erreur de synchronisation des annonces :', err);
     const tbody = document.getElementById('annoncesTableBody');
@@ -902,7 +902,7 @@ function showPage(pageId) {
   document.getElementById('topbarTitle').textContent = titles[pageId] || 'MALAGA Admin';
 
   if (pageId === 'dashboard') loadDashboard();
-  else if (pageId === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); chargerPhotosDefaut(); }
+  else if (pageId === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); chargerPhotosDefaut(); verifierAnciensImportsOSM(); }
   else if (pageId === 'utilisateurs') filtrerUsers();
   else if (pageId === 'entreprises') filtrerEntreprises();
   else if (pageId === 'verification') { filtrerVerif(); loadAlertesFraude(); }
@@ -1456,6 +1456,9 @@ function enregistrerModificationAnnonce() {
     photos,
     proprietaireNom: document.getElementById('modProprioNom').value.trim(),
     proprietaireTel: document.getElementById('modProprioTel').value.trim(),
+    // Une fois la fiche modifiée manuellement, elle sort du pense-bête
+    // "à compléter" (sans effet si le champ n'existait pas déjà).
+    aCompleter: firebase.firestore.FieldValue.delete(),
     dateModification: firebase.firestore.FieldValue.serverTimestamp()
   }).then(() => {
     toast('✅ Annonce mise à jour');
@@ -1824,10 +1827,12 @@ function supprimerAnnoncesDemo() {
    (recherche texte, en complément) sur la zone Libreville/Akanda/
    Owendo, déduplique avec les annonces déjà en base (par osmPlaceId
    ou nom), puis importe la sélection dans Firestore avec
-   statut "en_attente_validation" : invisibles du site public (qui ne
-   charge que statut === "disponible", voir app.js) tant que l'admin
-   ne les a pas complétés (prix, type de chambre...) et publiés
-   manuellement via "✏️ Modifier" → statut "🟢 Disponible".
+   statut "disponible" : visible tout de suite sur le site public (qui
+   charge tout statut === "disponible", voir app.js), même incomplet.
+   Le champ "aCompleter: true" sert seulement de pense-bête admin (voir
+   rendreImportsEnAttente) pour retrouver plus tard les fiches auxquelles
+   il manque encore le prix, le type de chambre, etc. — il ne masque
+   rien côté public.
 
    OSM ne fournissant ni prix, ni note, ni photo, tout import démarre
    avec une image par défaut et un standing "à définir".
@@ -2064,7 +2069,7 @@ async function importerSelectionOSM() {
   if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
   const selection = resultatsRechercheOSM.filter(r => r.selectionne);
   if (selection.length === 0) return;
-  if (!confirm(`Importer ${selection.length} établissement(s) en statut "à valider" ? Rien ne sera visible sur le site public tant que vous ne les aurez pas complétés et publiés manuellement.`)) return;
+  if (!confirm(`Importer ${selection.length} établissement(s) ? Ils seront tout de suite visibles sur le site public, même incomplets (prix, type de chambre... à ajouter plus tard depuis « ✏️ Compléter »).`)) return;
 
   const btn = document.getElementById('btnImporterSelectionOSM');
   btn.disabled = true; btn.textContent = '⏳ Import...';
@@ -2104,7 +2109,12 @@ async function importerSelectionOSM() {
         photos: PHOTO_PAR_DEFAUT,
         video: null,
         vues: 0,
-        statut: 'en_attente_validation',
+        // Visible tout de suite sur le site public (annuaire, catalogues,
+        // bouton Hôtels & Motels, liste des annonces), même incomplet.
+        // `aCompleter` sert juste de pense-bête admin (voir
+        // rendreImportsEnAttente) et ne masque rien côté public.
+        statut: 'disponible',
+        aCompleter: true,
         source: 'osm',
         osmPlaceId: r.osmPlaceId,
         demo: false,
@@ -2114,7 +2124,7 @@ async function importerSelectionOSM() {
     });
 
     await batch.commit();
-    toast(`✅ ${selection.length} établissement(s) importé(s), en attente de validation`);
+    toast(`✅ ${selection.length} établissement(s) importé(s) et déjà visible(s) sur le site`);
     fermerModalImportOSM();
     showPage('annonces');
   } catch (err) {
@@ -2260,17 +2270,75 @@ window.MALAGA_PHOTOS_DEFAUT = {
   obtenir(typeBrut) { return photosDefautCache[slugPhotoDefaut(typeBrut)] || null; }
 };
 
+async function marquerCompletOSM(id) {
+  try {
+    await window.dbAdmin.collection('annonces').doc(id).update({
+      aCompleter: firebase.firestore.FieldValue.delete()
+    });
+    toast('✅ Marqué comme complet');
+  } catch (err) {
+    console.error('Erreur marquerCompletOSM :', err);
+  }
+}
+window.marquerCompletOSM = marquerCompletOSM;
+
+/* ══════════════════════════════════════════════════════════
+   MIGRATION DES ANCIENS IMPORTS OSM
+   Avant cette mise à jour, l'import OSM créait les fiches en statut
+   "en_attente_validation" (invisibles du site public). On les
+   détecte (source === 'osm' && statut === 'en_attente_validation')
+   pour proposer de les publier toutes en une fois.
+══════════════════════════════════════════════════════════ */
+function verifierAnciensImportsOSM() {
+  const card = document.getElementById('cardMigrationOSM');
+  if (!card) return;
+  const anciens = annoncesData.filter(a => a.source === 'osm' && a.statut === 'en_attente_validation');
+  document.getElementById('compteMigrationOSM').textContent = anciens.length;
+  card.style.display = anciens.length === 0 ? 'none' : 'block';
+}
+
+async function migrerAnciensImportsOSM() {
+  const anciens = annoncesData.filter(a => a.source === 'osm' && a.statut === 'en_attente_validation');
+  if (anciens.length === 0) return;
+  if (!confirm(`Publier ${anciens.length} ancien(s) import(s) OSM sur le site public, même incomplet(s) ?`)) return;
+
+  const btn = document.getElementById('btnMigrerImportsOSM');
+  btn.disabled = true; btn.textContent = '⏳ Publication...';
+  try {
+    const batch = window.dbAdmin.batch();
+    const maintenant = firebase.firestore.FieldValue.serverTimestamp();
+    anciens.forEach(a => {
+      batch.update(window.dbAdmin.collection('annonces').doc(a.id), {
+        statut: 'disponible',
+        aCompleter: true,
+        dateModification: maintenant
+      });
+    });
+    await batch.commit();
+    toast(`✅ ${anciens.length} ancien(s) import(s) publié(s)`);
+  } catch (err) {
+    console.error('Erreur migration anciens imports OSM :', err);
+    toast('❌ Erreur lors de la publication');
+  } finally {
+    btn.disabled = false; btn.textContent = '🔄 Publier les anciens imports OSM';
+  }
+}
+window.migrerAnciensImportsOSM = migrerAnciensImportsOSM;
+
 function rendreImportsEnAttente() {
   const card = document.getElementById('cardImportsEnAttente');
   const tbody = document.getElementById('importsOSMTableBody');
   if (!card || !tbody) return;
 
-  const enAttente = annoncesData.filter(a => a.statut === 'en_attente_validation');
-  document.getElementById('badgeImportsEnAttente').textContent = enAttente.length;
-  card.style.display = enAttente.length === 0 ? 'none' : 'block';
-  if (enAttente.length === 0) return;
+  // Ne sert plus à masquer les fiches (elles sont visibles dès l'import) :
+  // c'est juste un pense-bête pour retrouver les établissements OSM encore
+  // à compléter (prix, type de chambre, photos...).
+  const aCompleter = annoncesData.filter(a => a.aCompleter === true);
+  document.getElementById('badgeImportsEnAttente').textContent = aCompleter.length;
+  card.style.display = aCompleter.length === 0 ? 'none' : 'block';
+  if (aCompleter.length === 0) return;
 
-  tbody.innerHTML = enAttente.map(a => {
+  tbody.innerHTML = aCompleter.map(a => {
     const typePourPhoto = texte(a, 'typeEtablissement', 'type');
     const photo = (Array.isArray(a.photos) && a.photos[0])
       || window.MALAGA_PHOTOS_DEFAUT?.obtenir(typePourPhoto)
@@ -2283,6 +2351,7 @@ function rendreImportsEnAttente() {
         <td style="font-size:12px;">${escapeHTML(texte(a, 'typeEtablissement') || '—')}</td>
         <td>
           <button onclick="modifierAnnonce('${a.id}')" style="padding:4px 8px;background:#F59E0B;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">✏️ Compléter</button>
+          <button onclick="marquerCompletOSM('${a.id}')" style="padding:4px 8px;background:#009E60;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">✅ C'est complet</button>
           <button onclick="supprimerAnnonce('${a.id}')" style="padding:4px 8px;background:#EF4444;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">🗑️ Rejeter</button>
         </td>
       </tr>
