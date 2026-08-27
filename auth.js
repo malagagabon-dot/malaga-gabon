@@ -100,17 +100,30 @@ export function messageErreurAuth(code) {
     "auth/wrong-password": "Mot de passe incorrect.",
     "auth/invalid-credential": "Email ou mot de passe incorrect.",
     "auth/too-many-requests": "Trop de tentatives. Réessayez dans quelques minutes.",
-    "auth/network-request-failed": "Problème de connexion internet. Réessayez."
+    "auth/network-request-failed": "Problème de connexion internet. Réessayez.",
+    "auth/user-disabled": "Ce compte a été désactivé.",
+    "auth/missing-password": "Veuillez saisir un mot de passe."
   };
   return messages[code] || "Une erreur est survenue. Réessayez.";
 }
 
 /* ══════════ PROFIL UTILISATEUR ══════════
-   Récupère le document Firestore /users/{uid}. Retourne null si absent. */
+   Récupère le document Firestore /users/{uid}. Retourne null si absent —
+   et aussi en cas d'erreur réseau/règles Firestore, plutôt que de faire
+   planter l'appelant : sans ce try/catch, un simple aléa réseau ici faisait
+   afficher "Une erreur est survenue. Réessayez." sur l'écran de connexion
+   ALORS MÊME que l'authentification avait réussi (connecter() n'était pas
+   en cause), et côté site public (app.js) ça empêchait carrément l'écoute
+   des demandes de visite de l'utilisateur de démarrer. */
 export async function getProfil(uid) {
   if (!uid) return null;
-  const snap = await getDoc(doc(db, "users", uid));
-  return snap.exists() ? snap.data() : null;
+  try {
+    const snap = await getDoc(doc(db, "users", uid));
+    return snap.exists() ? snap.data() : null;
+  } catch (err) {
+    console.error("Erreur récupération du profil :", err);
+    return null;
+  }
 }
 
 /* ══════════ MISE À JOUR DU PROFIL ══════════
