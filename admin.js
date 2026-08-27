@@ -1406,6 +1406,12 @@ function modifierAnnonce(id) {
     const optionsValides = Array.from(standingEl.options).map(o => o.value);
     standingEl.value = optionsValides.includes(standingBrut) ? standingBrut : 'Non classé';
   }
+  const hintEl = document.getElementById('modStandingSourceHint');
+  if (hintEl) {
+    hintEl.textContent = a.standingSource === 'osm' ? '⭐ Détecté automatiquement depuis OpenStreetMap — vérifie et corrige si besoin.'
+      : a.standingSource === 'chaine_connue' ? '⭐ Détecté automatiquement (chaîne internationale connue) — vérifie et corrige si besoin.'
+      : '';
+  }
   document.getElementById('modTerrasse').value = a.terrasse ? 'oui' : 'non';
   document.getElementById('modCarreaux').value = a.carreaux ? 'oui' : 'non';
   document.getElementById('modStatut').value = (champ(a, 'statut', 'disponibilite') === 'occupe') ? 'occupe' : 'disponible';
@@ -1470,6 +1476,10 @@ function enregistrerModificationAnnonce() {
     materiau: document.getElementById('modMateriau').value,
     couleurMurale: document.getElementById('modCouleurMurale').value,
     standing: TYPES_HEBERGEMENT_ADMIN.includes(typeChoisi) ? document.getElementById('modStanding').value : firebase.firestore.FieldValue.delete(),
+    // Dès qu'un humain enregistre le formulaire, la valeur devient une
+    // correction/confirmation manuelle : on efface l'étiquette "détecté
+    // automatiquement" pour ne plus l'afficher comme telle la prochaine fois.
+    standingSource: firebase.firestore.FieldValue.delete(),
     terrasse: document.getElementById('modTerrasse').value === 'oui',
     carreaux: document.getElementById('modCarreaux').value === 'oui',
     statut: document.getElementById('modStatut').value,
@@ -1934,6 +1944,9 @@ function osmSearchOverpass(tagPairs) {
           nom: tags.name || tags['name:fr'] || null,
           adresse: adresse || 'Libreville, Gabon',
           tel: tags.phone || tags['contact:phone'] || '',
+          // Classement officiel du mappeur OSM, quand renseigné (tag `stars`,
+          // ex. "4" ou "4.5") — voir standingDepuisStars() plus bas.
+          stars: tags.stars || null,
           lat, lng
         };
       }).filter(p => p.nom))
@@ -1949,7 +1962,7 @@ function osmSearchOverpass(tagPairs) {
 function osmSearchNominatim(requete) {
   const url = 'https://nominatim.openstreetmap.org/search'
     + '?q=' + encodeURIComponent(requete + ' Gabon')
-    + '&format=json&limit=15&addressdetails=1&bounded=1'
+    + '&format=json&limit=15&addressdetails=1&extratags=1&bounded=1'
     + '&viewbox=9.30,0.55,9.60,0.20&accept-language=fr';
   return fetch(url, { headers: { Accept: 'application/json' } })
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
@@ -1958,8 +1971,45 @@ function osmSearchNominatim(requete) {
       nom: el.namedetails?.name || (el.display_name || '').split(',')[0],
       adresse: el.display_name || 'Libreville, Gabon',
       tel: '',
+      stars: el.extratags?.stars || null,
       lat: parseFloat(el.lat), lng: parseFloat(el.lon)
     })));
+}
+
+/* ── Table de secours pour les grandes chaînes internationales bien connues,
+   quand OSM n'a pas (ou plus) le tag `stars` pour l'établissement importé.
+   Classement officiel de la chaîne, vérifié manuellement — à compléter au
+   besoin. Comparaison sur le nom en minuscules, sans accents, tolérante à
+   une correspondance partielle (ex. "Radisson Blu Okoume Palace" contient
+   "radisson blu"). Reste modifiable par l'admin dans tous les cas. */
+const STANDING_CHAINES_CONNUES = [
+  { motCle: 'radisson blu', etoiles: 5 },
+  { motCle: 'pullman', etoiles: 5 },
+  { motCle: 'sofitel', etoiles: 5 },
+  { motCle: 'ibis', etoiles: 3 },
+  { motCle: 'novotel', etoiles: 4 },
+  { motCle: 'mercure', etoiles: 4 }
+];
+
+function normaliserNom(nom) {
+  return (nom || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/* Convertit un nombre d'étoiles brut (tag OSM `stars`, ou table de chaînes
+   connues) en la chaîne exacte attendue par le champ standing (voir
+   STANDING_HOTEL dans malaga-reference.js : "1 étoile".."5 étoiles"). Renvoie
+   null si aucune source fiable n'a de valeur pour cet établissement — dans ce
+   cas standing retombe sur 'Non classé (à définir)' comme avant. */
+function standingDepuisEtoiles(nom, starsOSM) {
+  let n = starsOSM ? parseFloat(String(starsOSM).replace(',', '.')) : null;
+  if (!n) {
+    const nomNorm = normaliserNom(nom);
+    const chaine = STANDING_CHAINES_CONNUES.find(c => nomNorm.includes(c.motCle));
+    if (chaine) n = chaine.etoiles;
+  }
+  if (!n) return null;
+  const arrondi = Math.max(1, Math.min(5, Math.round(n)));
+  return `${arrondi} étoile${arrondi > 1 ? 's' : ''}`;
 }
 
 function osmEstDejaPresent(osmPlaceId, nom) {
@@ -1980,6 +2030,7 @@ function osmTraiterResultats(bruts, catKey, vus) {
       nom: p.nom,
       adresse: p.adresse,
       tel: p.tel || '',
+      stars: p.stars || null,
       lat: p.lat || null,
       lng: p.lng || null,
       catKey,
@@ -2063,6 +2114,7 @@ function rendreResultatsOSM() {
     <p style="font-size:12px;color:#5B6472;margin-bottom:8px;">${resultatsRechercheOSM.length} résultat(s) — les doublons déjà en base sont décochés automatiquement :</p>
     ${resultatsRechercheOSM.map((r, i) => {
       const icone = OSM_CAT_CONFIG[r.catKey].typeEtablissement === 'Motel' ? '🅿️' : OSM_CAT_CONFIG[r.catKey].typeEtablissement === 'Auberge' ? '🏠' : '🏨';
+      const standingAuto = standingDepuisEtoiles(r.nom, r.stars);
       return `
         <label style="display:flex;gap:10px;align-items:center;padding:8px;border:1px solid ${r.dejaPresent ? '#FDE68A' : '#E5E7EB'};background:${r.dejaPresent ? '#FFFBEB' : '#fff'};border-radius:8px;margin-bottom:6px;cursor:pointer;">
           <input type="checkbox" ${r.selectionne ? 'checked' : ''} onchange="toggleSelectionResultatOSM(${i})" style="width:18px;height:18px;flex-shrink:0;">
@@ -2071,6 +2123,7 @@ function rendreResultatsOSM() {
             <strong style="display:block;font-size:13px;">${escapeHTML(r.nom)}</strong>
             <span style="display:block;font-size:11.5px;color:#5B6472;">${escapeHTML(r.adresse)}</span>
             ${r.dejaPresent ? '<span style="font-size:11px;color:#92400E;">⚠️ Déjà présent en base</span>' : ''}
+            ${standingAuto ? `<span style="font-size:11px;color:#B45309;font-weight:600;">⭐ ${standingAuto} détecté${r.stars ? ' (OSM)' : ' (chaîne connue)'} — vérifiable ensuite</span>` : '<span style="font-size:11px;color:#9CA3AF;">Standing non trouvé — à renseigner après import</span>'}
           </span>
         </label>
       `;
@@ -2122,13 +2175,20 @@ async function importerSelectionOSM() {
     lot.forEach(r => {
       const typeEtablissement = OSM_CAT_CONFIG[r.catKey].typeEtablissement;
       const ref = window.dbAdmin.collection('annonces').doc();
+      // Standing pré-rempli automatiquement quand une source fiable est
+      // disponible (tag `stars` OSM, ou grande chaîne internationale connue) —
+      // voir standingDepuisEtoiles() ci-dessus. Reste modifiable ensuite par
+      // l'admin ou le propriétaire depuis "✏️ Compléter" ; à défaut de source,
+      // retombe sur "Non classé (à définir)" comme avant.
+      const standingAuto = standingDepuisEtoiles(r.nom, r.stars);
       batch.set(ref, {
         titre: `${r.nom} — à compléter`,
         type: deviner_typeChambre(typeEtablissement),
         proprietaireCompteType: 'hotel',
         nomEtablissement: r.nom,
         typeEtablissement,
-        standing: 'Non classé (à définir)',
+        standing: standingAuto || 'Non classé (à définir)',
+        standingSource: standingAuto ? (r.stars ? 'osm' : 'chaine_connue') : null,
         commune: deviner_commune(r.adresse),
         arrondissement: '',
         quartier: r.adresse || '',
@@ -2185,6 +2245,150 @@ async function importerSelectionOSM() {
   }
 }
 window.importerSelectionOSM = importerSelectionOSM;
+
+/* ══════════════════════════════════════════════════════════
+   RÉTRO-REMPLISSAGE DU STANDING pour les établissements déjà
+   importés (avant l'ajout de la capture du tag OSM `stars`).
+   Ne touche QUE les fiches encore marquées aCompleter avec un
+   standing par défaut ("Non classé (à définir)" ou vide) — une
+   fiche déjà éditée manuellement par l'admin/le propriétaire
+   n'est jamais écrasée. Interroge Overpass par identifiant OSM
+   exact (rapide, un seul appel par lot) pour les établissements
+   importés via Overpass (osmPlaceId "osm_..."), et Nominatim
+   /lookup pour ceux importés via la recherche libre ("nom_...").
+══════════════════════════════════════════════════════════ */
+function standingEstParDefaut(standing) {
+  const v = (standing || '').trim();
+  return v === '' || v === 'Non classé (à définir)' || v === 'Non classé';
+}
+
+async function osmRecupererStarsParIds(nodeIds, wayIds) {
+  if (nodeIds.length === 0 && wayIds.length === 0) return {};
+  const nodeQ = nodeIds.length ? `node(id:${nodeIds.join(',')});` : '';
+  const wayQ = wayIds.length ? `way(id:${wayIds.join(',')});` : '';
+  const query = `[out:json][timeout:25];(${nodeQ}${wayQ});out tags;`;
+  const ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+
+  async function essayer(idx) {
+    const r = await fetch(ENDPOINTS[idx], {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'data=' + encodeURIComponent(query)
+    });
+    if (!r.ok) {
+      if (idx + 1 < ENDPOINTS.length) return essayer(idx + 1);
+      throw new Error('HTTP ' + r.status);
+    }
+    const data = await r.json();
+    const parStars = {};
+    (data.elements || []).forEach(el => {
+      if (el.tags && el.tags.stars) parStars['osm_' + el.type + '_' + el.id] = el.tags.stars;
+    });
+    return parStars;
+  }
+  try { return await essayer(0); } catch { return {}; }
+}
+
+async function osmRecupererStarsParLookupNominatim(osmIdsCourts) {
+  // osmIdsCourts : ex. ["N123456", "W98765"]
+  const parStars = {};
+  const TAILLE_LOT = 40; // limite raisonnable pour un seul appel /lookup
+  for (let i = 0; i < osmIdsCourts.length; i += TAILLE_LOT) {
+    const lot = osmIdsCourts.slice(i, i + TAILLE_LOT);
+    const url = 'https://nominatim.openstreetmap.org/lookup?osm_ids=' + lot.join(',') + '&format=json&extratags=1';
+    try {
+      const r = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!r.ok) continue;
+      const data = await r.json();
+      (data || []).forEach(el => {
+        if (el.extratags && el.extratags.stars) parStars['nom_' + el.osm_type + '_' + el.osm_id] = el.extratags.stars;
+      });
+    } catch { /* on continue avec les lots suivants */ }
+  }
+  return parStars;
+}
+
+async function actualiserStandingsDepuisOSM() {
+  const btn = document.getElementById('btnActualiserStandings');
+  const candidats = annoncesData.filter(a =>
+    a.source === 'osm' && a.osmPlaceId && standingEstParDefaut(a.standing)
+  );
+  if (candidats.length === 0) {
+    toast('✅ Rien à faire : aucun établissement en attente de standing.');
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = `⏳ Recherche en cours... (0/${candidats.length})`; }
+
+  try {
+    // D'abord, une éventuelle correspondance directe avec une chaîne connue
+    // (ne nécessite aucun appel réseau) — voir STANDING_CHAINES_CONNUES.
+    const parIdOSM = {}; // osmPlaceId -> stars bruts (texte)
+    candidats.forEach(a => {
+      const chaine = standingDepuisEtoiles(a.nomEtablissement || a.titre, null);
+      if (chaine) parIdOSM[a.osmPlaceId] = { sourceType: 'chaine_connue', standing: chaine };
+    });
+
+    // Puis complète via OSM pour tous les autres (tag `stars` réel).
+    const restants = candidats.filter(a => !parIdOSM[a.osmPlaceId]);
+    const nodeIds = [], wayIds = [], nominatimIds = [];
+    restants.forEach(a => {
+      const m = /^osm_(node|way)_(\d+)$/.exec(a.osmPlaceId);
+      if (m) { (m[1] === 'node' ? nodeIds : wayIds).push(m[2]); return; }
+      const m2 = /^nom_(node|way|relation)_(\d+)$/.exec(a.osmPlaceId);
+      if (m2) nominatimIds.push((m2[1] === 'node' ? 'N' : m2[1] === 'way' ? 'W' : 'R') + m2[2]);
+    });
+
+    const [starsOverpass, starsNominatim] = await Promise.all([
+      osmRecupererStarsParIds(nodeIds, wayIds),
+      osmRecupererStarsParLookupNominatim(nominatimIds)
+    ]);
+
+    // TAILLE_LOT Firestore : on regroupe les mises à jour par petits lots.
+    const TAILLE_LOT_ECRITURE = 20;
+    let traites = 0, misAJour = 0;
+    for (let i = 0; i < candidats.length; i += TAILLE_LOT_ECRITURE) {
+      const lot = candidats.slice(i, i + TAILLE_LOT_ECRITURE);
+      const batch = window.dbAdmin.batch();
+      let ecrituresDansLot = 0;
+      lot.forEach(a => {
+        let standingTrouve = null, source = null;
+        if (parIdOSM[a.osmPlaceId]) {
+          standingTrouve = parIdOSM[a.osmPlaceId].standing;
+          source = 'chaine_connue';
+        } else {
+          const starsBrut = starsOverpass[a.osmPlaceId] || starsNominatim[a.osmPlaceId];
+          if (starsBrut) {
+            standingTrouve = standingDepuisEtoiles(a.nomEtablissement || a.titre, starsBrut);
+            source = 'osm';
+          }
+        }
+        if (standingTrouve) {
+          batch.update(window.dbAdmin.collection('annonces').doc(a.id), {
+            standing: standingTrouve,
+            standingSource: source,
+            dateModification: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          ecrituresDansLot++;
+          misAJour++;
+        }
+      });
+      if (ecrituresDansLot > 0) await batch.commit();
+      traites += lot.length;
+      if (btn) btn.textContent = `⏳ Recherche en cours... (${traites}/${candidats.length})`;
+    }
+
+    toast(misAJour > 0
+      ? `✅ Standing trouvé et enregistré pour ${misAJour}/${candidats.length} établissement(s). Les autres restent "Non classé" — à compléter manuellement si tu connais l'info.`
+      : `ℹ️ Aucun standing trouvé sur OSM pour ces ${candidats.length} établissement(s) — probablement de petits établissements non classés officiellement. À renseigner manuellement si tu connais l'info.`);
+  } catch (err) {
+    console.error('Erreur actualisation standings OSM :', err);
+    toast(`❌ Erreur pendant la recherche : ${err.message || err}`);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⭐ Rechercher automatiquement le standing (étoiles) de ces établissements'; }
+  }
+}
+window.actualiserStandingsDepuisOSM = actualiserStandingsDepuisOSM;
 
 /* ══════════════════════════════════════════════════════════
    PHOTOS PAR DÉFAUT PAR TYPE DE LOGEMENT

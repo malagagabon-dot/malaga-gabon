@@ -354,6 +354,9 @@
       <p style="font-size:12.5px;color:#5B6472;margin:-6px 0 12px;" data-i18n>
         Ces établissements viennent d'OpenStreetMap et sont déjà visibles sur le site public, même incomplets. Complète le prix, le type de chambre, la description ou les photos via « ✏️ Compléter » quand tu as l'info — ou laisse tel quel, les champs vides n'affichent rien de particulier sur la fiche. « ✅ C'est complet » retire juste ce pense-bête, « 🗑️ Rejeter » supprime la fiche.
       </p>
+      <button type="button" onclick="actualiserStandingsDepuisOSM()" id="btnActualiserStandings" class="btn-outline" style="margin-bottom:12px;" data-i18n>
+        ⭐ Rechercher automatiquement le standing (étoiles) de ces établissements
+      </button>
       <div class="table-wrap">
         <table class="admin-table">
           <thead>
@@ -1278,6 +1281,7 @@
       <div class="form-group" id="modGroupeStanding" style="display:none;">
         <label data-i18n>Standing (nombre d'étoiles)</label>
         <select id="modStanding"></select>
+        <span id="modStandingSourceHint" style="display:block;font-size:11px;color:#B45309;margin-top:4px;"></span>
       </div>
       <div class="form-group">
         <label data-i18n>Commune *</label>
@@ -1525,7 +1529,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
 <script src="firebase-config-compat.js"></script>
-<script src="admin.js?v=20260827a"></script>
+<script src="admin.js?v=20260827b"></script>
 <script src="reservations-admin.js"></script>
 </body>
 </html>
