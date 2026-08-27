@@ -302,6 +302,40 @@ export function abregeType(type) {
   return abreges[type] || (type || "?").slice(0, 2);
 }
 
+/* ══════════ COULEUR PAR TYPE DE BIEN (bulles carte + bordure des cartes) ══════════
+   Une couleur fixe et distincte par catégorie — plus de hasard par hachage de
+   texte, qui pouvait faire retomber deux types différents sur la même couleur
+   (ex. Chambre d'hôtel et Chambre de motel toutes deux violettes). La couleur
+   des types "hôtel/motel/auberge" reprend/prolonge la couleur du bouton
+   "Hôtel / Motel" (#D97706, voir CATEGORIES_VENDEUR) pour rester cohérente
+   avec le badge vendeur affiché sur ces mêmes annonces. */
+export const COULEURS_TYPE_BIEN = {
+  "Maison": "#92400E",            // bronze
+  "Appartement": "#1D4ED8",       // bleu
+  "Studio": "#0D9488",            // émeraude/teal
+  "Chambre": "#475569",           // ardoise
+  "Villa": "#7C3AED",             // violet
+  "Bureau": "#0891B2",            // cyan
+  "Local commercial": "#BE185D",  // magenta/bordeaux
+  "Box": "#4338CA",               // indigo
+  "Chambre d'hôtel": "#D97706",   // ambre (= couleur du bouton "Hôtel/Motel")
+  "Chambre de motel": "#DC2626",  // rouge
+  "Chambre d'auberge": "#16A34A"  // vert
+};
+const PALETTE_TYPES_BIEN_INCONNUS = [
+  "#0F766E", "#B45309", "#1E3A8A", "#7C2D12", "#6D28D9",
+  "#9D174D", "#065F46", "#92400E", "#374151", "#0369A1"
+];
+export function couleurTypeBien(type) {
+  if (COULEURS_TYPE_BIEN[type]) return COULEURS_TYPE_BIEN[type];
+  // Filet de sécurité pour un type qui n'existerait pas encore dans la table
+  // ci-dessus (ex. nouveau type ajouté sans mise à jour de cette liste).
+  const s = (type || "Autre").toString();
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  return PALETTE_TYPES_BIEN_INCONNUS[hash % PALETTE_TYPES_BIEN_INCONNUS.length];
+}
+
 export function formatPrix(prix) {
   return Number(prix).toLocaleString("fr-FR") + " FCFA/mois";
 }

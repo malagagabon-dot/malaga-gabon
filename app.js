@@ -13,7 +13,7 @@ import {
   COMMUNES, ARRONDISSEMENTS, TYPES_BIEN, LIBREVILLE_CENTER, CENTRES, getIconeType, formatPrix,
   ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
   EQUIPEMENTS, PALIERS_PIECES, escapeHTML, getBadgeVendeur, formatPrixAnnonce, getCategorieVendeur,
-  estHebergementHotel, formatPrixNuit, abregeType
+  estHebergementHotel, formatPrixNuit, abregeType, couleurTypeBien
 } from "./malaga-reference.js";
 import { estFavori, toggleFavori, purgerFavorisInexistants, envoyerPush } from "./nav.js";
 import { numeroAnnonce } from "./malaga-id.js";
@@ -109,7 +109,7 @@ function onChangeHebergement() {
   }
 }
 
-/* Remet le sélecteur "Hôtels/Motels/Auberges" sur "Tous les logements" quand
+/* Remet le sélecteur "Hôtels/Motels/Auberges" sur "Services hôteliers" quand
    le vendeur ou le type sont changés manuellement ailleurs, pour éviter un
    menu déroulant qui affiche encore une catégorie qui n'est plus active. */
 function resynchroniserSelectHebergement() {
@@ -349,27 +349,9 @@ function palierPrix(prix) {
   return "prix-t4";                          // violet (haut de gamme)
 }
 
-// Palette de couleurs élégantes attribuées de façon stable à chaque type de bien
-// (Villa, Studio, Local commercial, etc.) : un même type garde toujours la même
-// couleur, sans dépendre de la liste exacte des types définis dans malaga-reference.js.
-const PALETTE_TYPES_BIEN = [
-  "#0F766E", // émeraude
-  "#B45309", // ambre
-  "#1E3A8A", // bleu saphir
-  "#7C2D12", // terracotta
-  "#6D28D9", // violet
-  "#9D174D", // bordeaux
-  "#065F46", // vert forêt
-  "#92400E", // bronze
-  "#374151", // ardoise
-  "#0369A1", // bleu profond
-];
-function couleurTypeBien(type) {
-  const s = (type || "Autre").toString();
-  let hash = 0;
-  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
-  return PALETTE_TYPES_BIEN[hash % PALETTE_TYPES_BIEN.length];
-}
+// couleurTypeBien est désormais importée depuis malaga-reference.js (voir
+// COULEURS_TYPE_BIEN) : une couleur fixe et distincte par catégorie, au lieu
+// d'un hachage de texte qui pouvait faire coïncider deux types différents.
 
 function iconMarqueur(annonce) {
   const disponible = annonce.statut === "disponible";
