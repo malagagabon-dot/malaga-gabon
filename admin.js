@@ -102,6 +102,8 @@ function initListesReference() {
   remplir('modCouleurMurale', ref.COULEURS_MURALES);
   remplir('modEtage', ref.ETAGES);
   remplir('modVue', ref.VUES);
+  // STANDING_HOTEL commence déjà par "Non classé" — pas de placeholder séparé.
+  remplir('modStanding', ref.STANDING_HOTEL);
   remplir('pubEtage', ref.ETAGES);
   remplir('pubVue', ref.VUES);
 
@@ -1355,11 +1357,18 @@ function supprimerPhotoModif(i) {
 /* Même logique que côté publication : masque chambres/salons/sdb/cuisine/douche
    dans la modale de modification quand le type de bien n'est pas résidentiel. */
 function adapterModFormulaireAuType() {
-  const residentiel = TYPES_RESIDENTIELS_ADMIN.includes(document.getElementById('modType').value);
+  const typeActuel = document.getElementById('modType').value;
+  const residentiel = TYPES_RESIDENTIELS_ADMIN.includes(typeActuel);
   ['modGroupeChambres', 'modGroupeSalons', 'modGroupeSdb', 'modGroupeCuisine', 'modGroupeDouche'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = residentiel ? '' : 'none';
   });
+
+  // Champ Standing (nombre d'étoiles) : uniquement utile — et affiché — pour
+  // une chambre d'hôtel/de motel (voir libelleEtoiles côté site public,
+  // app.js). Masqué pour tous les autres types de bien.
+  const groupeStanding = document.getElementById('modGroupeStanding');
+  if (groupeStanding) groupeStanding.style.display = TYPES_HEBERGEMENT_ADMIN.includes(typeActuel) ? '' : 'none';
 }
 window.adapterModFormulaireAuType = adapterModFormulaireAuType;
 
@@ -1388,6 +1397,15 @@ function modifierAnnonce(id) {
   document.getElementById('modDoucheType').value = champ(a, 'doucheType') || '';
   document.getElementById('modMateriau').value = champ(a, 'materiau') || '';
   document.getElementById('modCouleurMurale').value = champ(a, 'couleurMurale') || '';
+  // Les imports OSM arrivent avec standing = "Non classé (à définir)", qui ne
+  // correspond à aucune option exacte de la liste STANDING_HOTEL : on retombe
+  // alors proprement sur "Non classé" plutôt que de laisser le select vide.
+  const standingEl = document.getElementById('modStanding');
+  if (standingEl) {
+    const standingBrut = champ(a, 'standing') || '';
+    const optionsValides = Array.from(standingEl.options).map(o => o.value);
+    standingEl.value = optionsValides.includes(standingBrut) ? standingBrut : 'Non classé';
+  }
   document.getElementById('modTerrasse').value = a.terrasse ? 'oui' : 'non';
   document.getElementById('modCarreaux').value = a.carreaux ? 'oui' : 'non';
   document.getElementById('modStatut').value = (champ(a, 'statut', 'disponibilite') === 'occupe') ? 'occupe' : 'disponible';
@@ -1451,6 +1469,7 @@ function enregistrerModificationAnnonce() {
     doucheType: residentiel ? document.getElementById('modDoucheType').value : '',
     materiau: document.getElementById('modMateriau').value,
     couleurMurale: document.getElementById('modCouleurMurale').value,
+    standing: TYPES_HEBERGEMENT_ADMIN.includes(typeChoisi) ? document.getElementById('modStanding').value : firebase.firestore.FieldValue.delete(),
     terrasse: document.getElementById('modTerrasse').value === 'oui',
     carreaux: document.getElementById('modCarreaux').value === 'oui',
     statut: document.getElementById('modStatut').value,
@@ -3382,6 +3401,9 @@ function loadStats() {
 ══════════════════════════════════════════════════════════ */
 // Types "à vivre" : seuls ceux-ci ont des chambres / salles de bain à renseigner.
 const TYPES_RESIDENTIELS_ADMIN = ['Maison', 'Appartement', 'Studio', 'Villa', 'Chambre'];
+// Types d'hébergement hôtelier (hôtels/motels/résidences/auberges importés OSM ou
+// publiés par un compte "hotel") : seuls ceux-ci affichent le champ Standing/étoiles.
+const TYPES_HEBERGEMENT_ADMIN = ["Chambre d'hôtel", 'Chambre de motel'];
 function adapterPubFormulaireAuType() {
   const residentiel = TYPES_RESIDENTIELS_ADMIN.includes(document.getElementById('pubType').value);
   const gChambres = document.getElementById('pubGroupeChambres');

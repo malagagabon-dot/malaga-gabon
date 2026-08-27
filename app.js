@@ -389,6 +389,10 @@ function initCarte() {
   // Forcer Leaflet à recalculer sa taille une fois le layout stabilisé
   setTimeout(() => { map && map.invalidateSize(); }, 150);
   window.addEventListener("load", () => { map && map.invalidateSize(); });
+
+  // Affiche/masque le nom des établissements sur les bulles selon le zoom
+  // (voir iconMarqueur / rafraichirIconesSelonZoom ci-dessus).
+  map.on("zoomend", rafraichirIconesSelonZoom);
 }
 
 /* Recentre/zoome la carte sur la zone choisie dans les filtres (commune → arrondissement),
@@ -429,7 +433,11 @@ function palierPrix(prix) {
 // COULEURS_TYPE_BIEN) : une couleur fixe et distincte par catégorie, au lieu
 // d'un hachage de texte qui pouvait faire coïncider deux types différents.
 
-function iconMarqueur(annonce) {
+// Zoom à partir duquel une bulle isolée (donc plus lisible, zone type "quartier")
+// affiche en plus le nom de l'établissement à côté du rond coloré.
+const ZOOM_NOM_ETABLISSEMENT = 17;
+
+function iconMarqueur(annonce, zoomActuel) {
   const disponible = annonce.statut === "disponible";
   // La bulle affiche désormais l'abréviation de la catégorie de l'annonce
   // (H, M, Au, AP...) au lieu du prix, dans la couleur stable de son type
@@ -437,10 +445,38 @@ function iconMarqueur(annonce) {
   // popup et sur la carte de la liste.
   const couleur = disponible ? couleurTypeBien(annonce.type) : "var(--gris-clair)";
   const classe = disponible ? "marker-prix" : "marker-prix occupe";
+  const abrege = escapeHTML(abregeType(annonce.type));
+
+  const zoom = typeof zoomActuel === "number" ? zoomActuel : (map ? map.getZoom() : 0);
+
+  // Très zoomé sur un quartier : on ajoute une étiquette avec le nom de
+  // l'établissement (nomEtablissement pour un hôtel/motel/résidence/auberge,
+  // sinon le titre de l'annonce), accrochée au bord du rond en position
+  // absolute — le point d'ancrage du marqueur sur la carte ne bouge donc pas.
+  let etiquette = "";
+  if (zoom >= ZOOM_NOM_ETABLISSEMENT) {
+    const nomBrut = (annonce.nomEtablissement || annonce.titre || "").replace(/\s*—\s*à compléter$/i, "");
+    if (nomBrut) {
+      etiquette = `<div style="position:absolute;left:100%;top:50%;transform:translateY(-50%);margin-left:5px;max-width:170px;background:#fff;color:#1a1a1a;font-size:11.5px;font-weight:700;line-height:1.25;padding:3px 9px;border-radius:10px;box-shadow:0 1px 5px rgba(0,0,0,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHTML(nomBrut)}</div>`;
+    }
+  }
+
   return L.divIcon({
     className: "",
-    html: `<div class="${classe}" style="background:${couleur};">${escapeHTML(abregeType(annonce.type))}</div>`,
+    html: `<div class="${classe}" style="background:${couleur};position:relative;">${abrege}${etiquette}</div>`,
     iconSize: null
+  });
+}
+
+/* Rafraîchit l'icône de chaque marqueur affiché quand le niveau de zoom change,
+   pour faire apparaître/disparaître l'étiquette de nom au bon moment (voir
+   ZOOM_NOM_ETABLISSEMENT ci-dessus). Chaque marker garde une référence directe
+   vers son annonce (marker._annonce, posée dans rendreMarqueurs) pour éviter
+   une recherche dans toutesLesAnnonces à chaque zoom. */
+function rafraichirIconesSelonZoom() {
+  const zoom = map.getZoom();
+  Object.values(markersParId).forEach(marker => {
+    if (marker._annonce) marker.setIcon(iconMarqueur(marker._annonce, zoom));
   });
 }
 
@@ -820,7 +856,8 @@ function rendreMarqueurs(liste) {
   const bounds = [];
   liste.forEach(a => {
     if (typeof a.lat !== "number" || typeof a.lng !== "number") return;
-    const marker = L.marker([a.lat, a.lng], { icon: iconMarqueur(a) }).addTo(map);
+    const marker = L.marker([a.lat, a.lng], { icon: iconMarqueur(a, map.getZoom()) }).addTo(map);
+    marker._annonce = a;
     marker.bindPopup(`
       <div class="popup-annonce">
         <h4>${escapeHTML(a.titre)}</h4>

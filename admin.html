@@ -1271,7 +1271,13 @@
           <option data-i18n>Bureau</option>
           <option data-i18n>Local commercial</option>
           <option data-i18n>Box</option>
+          <option data-i18n>Chambre d'hôtel</option>
+          <option data-i18n>Chambre de motel</option>
         </select>
+      </div>
+      <div class="form-group" id="modGroupeStanding" style="display:none;">
+        <label data-i18n>Standing (nombre d'étoiles)</label>
+        <select id="modStanding"></select>
       </div>
       <div class="form-group">
         <label data-i18n>Commune *</label>
@@ -1504,12 +1510,12 @@
   import "./nav.js?v=20260826a";
   import {
     ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
-    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES, COMMUNES
+    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES, COMMUNES, STANDING_HOTEL
   } from "./malaga-reference.js";
   import { numeroMembre, numeroAnnonce, dessinerQRCode, qrCodeVersDataURL } from "./malaga-id.js";
   window.MALAGA_REF = {
     ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
-    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES, COMMUNES
+    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES, COMMUNES, STANDING_HOTEL
   };
   window.MALAGA_ID = { numeroMembre, numeroAnnonce, dessinerQRCode, qrCodeVersDataURL };
 </script>
