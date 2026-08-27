@@ -72,6 +72,19 @@ function extraireEtoiles(standing) {
   return m ? parseFloat(m[1].replace(",", ".")) : 0;
 }
 
+/* Étoiles affichées sur les fiches Hôtel/Motel/Auberge (badge sur la carte +
+   sur la fiche détaillée), pour justifier visuellement le classement par
+   standing utilisé au tri (voir appliquerFiltres ci-dessus). Rien ne s'affiche
+   si le type n'est pas un hébergement hôtelier ou si aucun nombre d'étoiles
+   n'a pu être extrait du champ `standing` (ex. "Non classé"). */
+function libelleEtoiles(annonce) {
+  if (!estHebergementHotel(annonce.type)) return null;
+  const n = extraireEtoiles(annonce.standing);
+  if (!n) return null;
+  const arrondi = Math.max(1, Math.min(5, Math.round(n)));
+  return { nombre: n, texte: n % 1 === 0 ? String(n) : n.toFixed(1), etoiles: "⭐".repeat(arrondi) };
+}
+
 /* ══════════ SÉLECTEUR "HÔTELS / MOTELS / AUBERGES" ══════════
    Remplace l'ancien bouton unique par un menu déroulant permettant de choisir
    précisément une catégorie d'hébergement. Chaque option combine le filtre
@@ -751,6 +764,7 @@ function rendreListe(liste) {
     carte.style.setProperty("--couleur-type", paletteType);
     const photo = a.photos && a.photos[0];
     const badgeVendeur = getBadgeVendeur(a);
+    const etoiles = libelleEtoiles(a);
     const distanceTexte = dansLeRayon && a._proximite.distance !== null
       ? (a._proximite.distance < 1 ? `${Math.round(a._proximite.distance * 1000)} m` : `${a._proximite.distance.toFixed(1)} km`)
       : "";
@@ -760,6 +774,7 @@ function rendreListe(liste) {
         <button class="btn-favori ${estFavori(a.id) ? "actif" : ""}" data-id="${a.id}" aria-label="Ajouter aux favoris">${estFavori(a.id) ? "❤️" : "🤍"}</button>
         <span class="badge badge-disponible" style="position:absolute;top:8px;right:8px;">🟢 Disponible</span>
         <span class="badge ${badgeVendeur.classe}" style="position:absolute;bottom:8px;left:8px;">${badgeVendeur.texte}</span>
+        ${etoiles ? `<span class="badge-etoiles" title="Classement ${etoiles.texte} étoile${etoiles.nombre > 1 ? "s" : ""}" style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.75);color:#FFD700;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.3px;white-space:nowrap;">${etoiles.etoiles} ${etoiles.texte}</span>` : ""}
         ${distanceTexte ? `<span class="badge-distance">📍 ${distanceTexte}</span>` : ""}
       </div>
       <div class="carte-info">
@@ -915,11 +930,13 @@ function afficherDetail(a) {
   );
 
   const badgeVendeurDetail = getBadgeVendeur(a);
+  const etoilesDetail = libelleEtoiles(a);
   panneau.innerHTML = `
     <div style="background:linear-gradient(135deg,var(--vert) 0%,var(--vert-fonce) 100%);padding:24px 20px;color:#fff;position:relative;">
       <button id="fermerModal" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.25);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
       <div style="font-size:44px;margin-bottom:6px;">${getIconeType(a.type)}</div>
       <span class="badge ${badgeVendeurDetail.classe}" style="display:inline-block;margin-bottom:6px;">${badgeVendeurDetail.texte}</span>
+      ${etoilesDetail ? `<span title="Classement ${etoilesDetail.texte} étoile${etoilesDetail.nombre > 1 ? "s" : ""}" style="display:inline-block;margin-left:6px;margin-bottom:6px;background:rgba(255,255,255,.22);color:#FFD700;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">${etoilesDetail.etoiles} ${etoilesDetail.texte}</span>` : ""}
       <h2 style="font-size:18px;font-weight:800;padding-right:36px;">${escapeHTML(a.titre)}</h2>
       <div style="font-size:21px;font-weight:900;color:var(--jaune);margin-top:4px;">${formatPrixAnnonce(a)}</div>
       <div style="opacity:.9;font-size:13px;margin-top:2px;">📍 ${escapeHTML(a.quartier || "")} — ${escapeHTML(a.arrondissement || "")}, ${escapeHTML(a.commune || "")}</div>
