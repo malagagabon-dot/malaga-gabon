@@ -14,8 +14,12 @@
       padding:24px 20px;color:#fff;display:flex;align-items:center;gap:16px;box-shadow:0 6px 20px rgba(0,62,40,.18);}
     .ent-logo{width:74px;height:74px;border-radius:16px;background:rgba(255,255,255,.18);
       display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;flex-shrink:0;
-      border:3px solid rgba(255,255,255,.4);}
+      border:3px solid rgba(255,255,255,.4);position:relative;}
     .ent-logo img{width:100%;height:100%;object-fit:cover;}
+    .btn-photo-profil{position:absolute;bottom:-4px;right:-4px;width:28px;height:28px;border-radius:50%;
+      background:#fff;color:var(--vert-fonce);border:2px solid rgba(255,255,255,.9);font-size:13px;
+      display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+    .btn-photo-profil:active{transform:scale(.92);}
     .ent-infos{min-width:0;flex:1;}
     .ent-nom{font-size:19px;font-weight:800;font-family:'Playfair Display',serif;line-height:1.25;}
     .ent-badge{display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:800;
@@ -121,7 +125,16 @@
   <!-- ===== EN-TÊTE VITRINE ===== -->
   <div class="ent-hero">
     <div class="ent-carte" id="entCarte">
-      <div class="ent-logo" id="entLogo">🏢</div>
+      <div class="ent-logo" id="entLogo">
+        <span id="entLogoImg">🏢</span>
+        <!-- Visible uniquement par le propriétaire du compte connecté (voir
+             onAuthStateChanged plus bas) : lui permet d'importer sa propre
+             photo de profil depuis le stockage de son téléphone. -->
+        <button type="button" class="btn-photo-profil" id="btnImporterPhotoProfil"
+                title="Changer la photo de profil" aria-label="Changer la photo de profil"
+                onclick="document.getElementById('fileImporterPhotoProfil').click()">📷</button>
+        <input type="file" id="fileImporterPhotoProfil" accept="image/*" style="display:none;">
+      </div>
       <div class="ent-infos">
         <div class="ent-nom" id="entNom">Chargement…</div>
         <div class="ent-badges" id="entBadgeWrap"></div>
@@ -172,7 +185,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module">
-    import { db, doc, getDoc, collection, query, where, onSnapshot } from "./firebase-config.js";
+    import { db, doc, getDoc, updateDoc, collection, query, where, onSnapshot, auth, onAuthStateChanged } from "./firebase-config.js";
     import { getIconeType, formatPrix, escapeHTML, TYPES_BIEN } from "./malaga-reference.js";
 
     const entrepriseId = new URLSearchParams(location.search).get("id");
@@ -184,12 +197,71 @@
     } else {
       chargerEntreprise();
       chargerBiens();
+      initPhotoProfilProprietaire();
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       PHOTO DE PROFIL — importée par le propriétaire du compte
+       Le bouton 📷 (sur le logo) n'est visible que si l'utilisateur
+       connecté est le propriétaire du compte affiché ; il choisit
+       une photo depuis le stockage de son téléphone, elle est
+       compressée côté client puis enregistrée dans "users/{id}.logoUrl".
+    ══════════════════════════════════════════════════════════ */
+    function initPhotoProfilProprietaire() {
+      const btn = document.getElementById("btnImporterPhotoProfil");
+      const input = document.getElementById("fileImporterPhotoProfil");
+      if (!btn || !input) return;
+
+      onAuthStateChanged(auth, (user) => {
+        btn.style.display = (user && user.uid === entrepriseId) ? "flex" : "none";
+      });
+
+      input.addEventListener("change", async () => {
+        const fichier = input.files && input.files[0];
+        if (!fichier) return;
+        btn.textContent = "⏳";
+        try {
+          const dataURL = await compresserImageProfil(fichier);
+          await updateDoc(doc(db, "users", entrepriseId), { logoUrl: dataURL });
+          document.getElementById("entLogoImg").innerHTML = `<img src="${dataURL}" alt="">`;
+        } catch (err) {
+          console.error("Erreur import photo de profil :", err);
+          alert("Impossible d'importer cette photo. Réessaie avec une image plus légère.");
+        } finally {
+          btn.textContent = "📷";
+          input.value = "";
+        }
+      });
+    }
+
+    // Redimensionne/compresse côté client (largeur max 500px, JPEG 0.75) avant
+    // stockage direct dans Firestore — aucune clé Cloudinary n'est branchée ici.
+    function compresserImageProfil(fichier, largeurMax = 500, qualite = 0.75) {
+      return new Promise((resolve, reject) => {
+        const lecteur = new FileReader();
+        lecteur.onerror = () => reject(new Error("Lecture du fichier impossible"));
+        lecteur.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error("Image invalide"));
+          img.onload = () => {
+            const ratio = Math.min(1, largeurMax / img.width);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * ratio);
+            canvas.height = Math.round(img.height * ratio);
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", qualite));
+          };
+          img.src = lecteur.result;
+        };
+        lecteur.readAsDataURL(fichier);
+      });
     }
 
     async function chargerEntreprise() {
       try {
         const snap = await getDoc(doc(db, "users", entrepriseId));
-        if (!snap.exists() || snap.data().compteType !== "entreprise") {
+        const compteType = snap.exists() ? snap.data().compteType : null;
+        if (!snap.exists() || (compteType !== "entreprise" && compteType !== "hotel")) {
           document.getElementById("entNom").textContent = "Profil introuvable";
           return;
         }
@@ -197,7 +269,7 @@
         document.getElementById("entNom").textContent = e.raisonSociale || e.nom || "Entreprise";
         document.title = `${e.raisonSociale || "Entreprise"} — MALAGA`;
 
-        document.getElementById("entLogo").innerHTML = e.logoUrl
+        document.getElementById("entLogoImg").innerHTML = e.logoUrl
           ? `<img src="${escapeHTML(e.logoUrl)}" alt="">` : "🏢";
 
         // ===== Badges de confiance : vérification, type, ancienneté =====

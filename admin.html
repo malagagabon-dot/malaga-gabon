@@ -16,6 +16,38 @@
   <style>
     .logo-img-login { height: 64px; width: auto; display: block; margin: 0 auto 12px; }
     .logo-img-sidebar { height: 36px; width: auto; display: block; }
+    .photos-defaut-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+    }
+    .photo-defaut-cadre {
+      border: 1px solid #E4E7EC;
+      border-radius: 10px;
+      padding: 8px;
+      text-align: center;
+      background: #FAFBFC;
+    }
+    .photo-defaut-apercu {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 8px;
+      background: #F0F2F5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .photo-defaut-apercu img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-defaut-icone { font-size: 28px; opacity: .5; }
+    .photo-defaut-nom { font-size: 11.5px; font-weight: 600; color: #3A4150; margin-bottom: 6px; }
+    .photo-defaut-actions { display: flex; gap: 4px; justify-content: center; }
+    .btn-outline-sm {
+      padding: 3px 8px; font-size: 10.5px; border-radius: 5px;
+      border: 1px solid #D0D5DD; background: #fff; color: #3A4150; cursor: pointer;
+    }
+    .btn-outline-sm:hover { background: #F0F2F5; }
   </style>
 </head>
 <body>
@@ -221,6 +253,19 @@
         <button class="btn-outline" onclick="ouvrirModalImportOSM()" data-i18n>🗺️ Importer depuis OpenStreetMap</button>
         <button class="btn-primary" onclick="showPage('publier')" data-i18n>+ Publier une annonce</button>
       </div>
+    </div>
+
+    <!-- Photos par défaut par type de logement : un cadre d'import par type
+         (Maison, Villa, Hôtel...), photo choisie depuis le stockage du
+         téléphone de l'admin. Sert de repli sur les annonces sans photo. -->
+    <div class="card" id="cardPhotosDefaut" style="margin-bottom:16px;">
+      <div class="card-header">
+        <h2 data-i18n>🖼️ Photos par défaut par type de logement</h2>
+      </div>
+      <p style="font-size:12.5px;color:#5B6472;margin:-6px 0 12px;" data-i18n>
+        Choisis une photo par type de logement depuis le stockage de ton téléphone. Elle s'affichera automatiquement à la place d'une annonce tant que son propriétaire n'a pas encore ajouté ses propres photos — pour que les annonces restent visuellement cohérentes sur le site.
+      </p>
+      <div class="photos-defaut-grid" id="grillePhotosDefaut"></div>
     </div>
 
     <!-- Établissements importés depuis OpenStreetMap, en attente de validation avant publication -->
@@ -501,6 +546,9 @@
         </table>
       </div>
     </div>
+    <!-- Champ caché partagé, utilisé par le bouton "📷 Photo" de chaque ligne
+         (voir ouvrirImportPhotoCompte / onFichierImportPhotoCompte dans admin.js) -->
+    <input type="file" id="fileImportPhotoCompte" accept="image/*" style="display:none;" onchange="onFichierImportPhotoCompte(this)">
   </div>
 
   <!-- ═══ PAGE : VÉRIFICATION & ARCHIVES ═══ -->

@@ -379,7 +379,7 @@ function demarrerEcouteAnnonces() {
     annoncesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     document.getElementById('badgeAnnonces').textContent = annoncesData.length;
     if (pageActuelle === 'dashboard') loadDashboard();
-    if (pageActuelle === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); }
+    if (pageActuelle === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); chargerPhotosDefaut(); }
   }, (err) => {
     console.error('Erreur de synchronisation des annonces :', err);
     const tbody = document.getElementById('annoncesTableBody');
@@ -902,7 +902,7 @@ function showPage(pageId) {
   document.getElementById('topbarTitle').textContent = titles[pageId] || 'MALAGA Admin';
 
   if (pageId === 'dashboard') loadDashboard();
-  else if (pageId === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); }
+  else if (pageId === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); chargerPhotosDefaut(); }
   else if (pageId === 'utilisateurs') filtrerUsers();
   else if (pageId === 'entreprises') filtrerEntreprises();
   else if (pageId === 'verification') { filtrerVerif(); loadAlertesFraude(); }
@@ -2126,6 +2126,140 @@ async function importerSelectionOSM() {
 }
 window.importerSelectionOSM = importerSelectionOSM;
 
+/* ══════════════════════════════════════════════════════════
+   PHOTOS PAR DÉFAUT PAR TYPE DE LOGEMENT
+   Un cadre d'import par type (Maison, Villa, Hôtel, Motel...),
+   photo choisie depuis le stockage du téléphone de l'admin.
+   Stockées dans Firestore (doc "parametres/photosDefaut", un
+   champ par type) — utilisées comme visuel de repli partout où
+   une annonce n'a pas encore de photo (import OpenStreetMap,
+   propriétaire qui n'a pas encore uploadé), pour que les annonces
+   restent visuellement cohérentes sur le site.
+══════════════════════════════════════════════════════════ */
+const TYPES_PHOTOS_DEFAUT = [
+  { slug: 'maison', label: 'Maison', icone: '🏠' },
+  { slug: 'appartement', label: 'Appartement', icone: '🏢' },
+  { slug: 'studio', label: 'Studio', icone: '🛏️' },
+  { slug: 'villa', label: 'Villa', icone: '🏡' },
+  { slug: 'chambre', label: 'Chambre', icone: '🚪' },
+  { slug: 'bureau', label: 'Bureau', icone: '🏬' },
+  { slug: 'local_commercial', label: 'Local commercial', icone: '🏪' },
+  { slug: 'box', label: 'Box', icone: '📦' },
+  { slug: 'hotel', label: 'Hôtel', icone: '🏨' },
+  { slug: 'motel', label: 'Motel', icone: '🅿️' },
+  { slug: 'auberge', label: 'Auberge', icone: '🏘️' }
+];
+let photosDefautCache = {};
+let photosDefautChargees = false;
+
+function slugPhotoDefaut(typeBrut) {
+  return String(typeBrut || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+async function chargerPhotosDefaut() {
+  if (photosDefautChargees) { rendrePhotosDefaut(); return; }
+  photosDefautChargees = true;
+  try {
+    const doc = await window.dbAdmin.collection('parametres').doc('photosDefaut').get();
+    photosDefautCache = doc.exists ? (doc.data() || {}) : {};
+  } catch (err) {
+    console.error('Erreur chargement des photos par défaut :', err);
+    photosDefautCache = {};
+  }
+  rendrePhotosDefaut();
+}
+
+function rendrePhotosDefaut() {
+  const grille = document.getElementById('grillePhotosDefaut');
+  if (!grille) return;
+  grille.innerHTML = TYPES_PHOTOS_DEFAUT.map(t => {
+    const url = photosDefautCache[t.slug];
+    return `
+      <div class="photo-defaut-cadre">
+        <div class="photo-defaut-apercu" id="apercuPhotoDefaut_${t.slug}">
+          ${url ? `<img src="${url}" alt="${escapeHTML(t.label)}">` : `<span class="photo-defaut-icone">${t.icone}</span>`}
+        </div>
+        <div class="photo-defaut-nom">${t.icone} ${escapeHTML(t.label)}</div>
+        <input type="file" accept="image/*" id="filePhotoDefaut_${t.slug}" style="display:none;" onchange="importerPhotoDefaut('${t.slug}', this)">
+        <div class="photo-defaut-actions">
+          <button type="button" class="btn-outline-sm" onclick="document.getElementById('filePhotoDefaut_${t.slug}').click()">📤 ${url ? 'Changer' : 'Choisir'}</button>
+          ${url ? `<button type="button" class="btn-outline-sm" onclick="supprimerPhotoDefaut('${t.slug}')">🗑️</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* Redimensionne/compresse côté client avant stockage : aucune clé Cloudinary
+   n'est branchée sur ces cadres pour l'instant, la photo est donc enregistrée
+   directement dans Firestore. On limite la largeur à 900px et on compresse en
+   JPEG qualité 0.72, largement suffisant pour une vignette d'annonce, afin de
+   rester sous la limite de taille d'un document Firestore. */
+function compresserImage(fichier, largeurMax = 900, qualite = 0.72) {
+  return new Promise((resolve, reject) => {
+    const lecteur = new FileReader();
+    lecteur.onerror = () => reject(new Error('Lecture du fichier impossible'));
+    lecteur.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Image invalide'));
+      img.onload = () => {
+        const ratio = Math.min(1, largeurMax / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', qualite));
+      };
+      img.src = lecteur.result;
+    };
+    lecteur.readAsDataURL(fichier);
+  });
+}
+
+async function importerPhotoDefaut(slug, input) {
+  const fichier = input.files && input.files[0];
+  if (!fichier) return;
+  const cadre = document.getElementById(`apercuPhotoDefaut_${slug}`);
+  if (cadre) cadre.innerHTML = '<span class="photo-defaut-icone">⏳</span>';
+  try {
+    const dataURL = await compresserImage(fichier);
+    await window.dbAdmin.collection('parametres').doc('photosDefaut').set({ [slug]: dataURL }, { merge: true });
+    photosDefautCache[slug] = dataURL;
+    rendrePhotosDefaut();
+    rendreImportsEnAttente();
+    toast('✅ Photo par défaut enregistrée');
+  } catch (err) {
+    console.error('Erreur import photo par défaut :', err);
+    alert("Impossible d'importer cette photo. Réessaie avec une image plus légère.");
+    rendrePhotosDefaut();
+  } finally {
+    input.value = '';
+  }
+}
+window.importerPhotoDefaut = importerPhotoDefaut;
+
+async function supprimerPhotoDefaut(slug) {
+  if (!confirm('Retirer la photo par défaut de ce type de logement ?')) return;
+  try {
+    await window.dbAdmin.collection('parametres').doc('photosDefaut').set({ [slug]: firebase.firestore.FieldValue.delete() }, { merge: true });
+    delete photosDefautCache[slug];
+    rendrePhotosDefaut();
+    rendreImportsEnAttente();
+  } catch (err) {
+    console.error('Erreur suppression photo par défaut :', err);
+  }
+}
+window.supprimerPhotoDefaut = supprimerPhotoDefaut;
+
+/* Exposée pour réutilisation future par d'autres pages (app.js côté site
+   public, entreprise.html côté profil des comptes pro) qui voudraient elles
+   aussi afficher cette photo de repli cohérente par type de logement. */
+window.MALAGA_PHOTOS_DEFAUT = {
+  obtenir(typeBrut) { return photosDefautCache[slugPhotoDefaut(typeBrut)] || null; }
+};
+
 function rendreImportsEnAttente() {
   const card = document.getElementById('cardImportsEnAttente');
   const tbody = document.getElementById('importsOSMTableBody');
@@ -2137,7 +2271,10 @@ function rendreImportsEnAttente() {
   if (enAttente.length === 0) return;
 
   tbody.innerHTML = enAttente.map(a => {
-    const photo = Array.isArray(a.photos) && a.photos[0] ? a.photos[0] : 'https://placehold.co/60x60?text=%F0%9F%8F%A8';
+    const typePourPhoto = texte(a, 'typeEtablissement', 'type');
+    const photo = (Array.isArray(a.photos) && a.photos[0])
+      || window.MALAGA_PHOTOS_DEFAUT?.obtenir(typePourPhoto)
+      || 'https://placehold.co/60x60?text=%F0%9F%8F%A8';
     return `
       <tr>
         <td><img src="${photo}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:6px;"></td>
@@ -2275,6 +2412,7 @@ function loadEntreprises(liste) {
     } else {
       actions += `<button onclick="reactiverEntreprise('${u.id}')" style="padding:4px 8px;background:#3B82F6;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">↩️ Réactiver</button>`;
     }
+    actions += `<button onclick="ouvrirImportPhotoCompte('${u.id}')" style="padding:4px 8px;background:#8B5CF6;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">📷 Photo</button>`;
 
     return `
       <tr>
@@ -2292,6 +2430,40 @@ function loadEntreprises(liste) {
     `;
   }).join('');
 }
+
+/* ══════════════════════════════════════════════════════════
+   IMPORT PHOTO DE PROFIL D'UN COMPTE PRO (depuis le panneau admin)
+   L'admin choisit une photo depuis le stockage du téléphone pour
+   le compte sélectionné (hôtel, motel, agence, entreprise) ; elle
+   est enregistrée dans "users/{id}.logoUrl" et s'affiche ensuite
+   sur le profil du compte (entreprise.html) et sur ses annonces,
+   au même titre qu'un logo choisi par le propriétaire lui-même.
+══════════════════════════════════════════════════════════ */
+let compteImportPhotoId = null;
+
+function ouvrirImportPhotoCompte(id) {
+  compteImportPhotoId = id;
+  document.getElementById('fileImportPhotoCompte')?.click();
+}
+window.ouvrirImportPhotoCompte = ouvrirImportPhotoCompte;
+
+async function onFichierImportPhotoCompte(input) {
+  const fichier = input.files && input.files[0];
+  const id = compteImportPhotoId;
+  if (!fichier || !id) return;
+  try {
+    const dataURL = await compresserImage(fichier, 500, 0.75);
+    await window.dbAdmin.collection('users').doc(id).update({ logoUrl: dataURL });
+    toast('✅ Photo du compte mise à jour');
+  } catch (err) {
+    console.error('Erreur import photo du compte :', err);
+    alert("Impossible d'importer cette photo. Réessaie avec une image plus légère.");
+  } finally {
+    input.value = '';
+    compteImportPhotoId = null;
+  }
+}
+window.onFichierImportPhotoCompte = onFichierImportPhotoCompte;
 
 function filtrerEntreprises() {
   const texteRecherche = (document.getElementById('filterEntreprise')?.value || '').toLowerCase().trim();
