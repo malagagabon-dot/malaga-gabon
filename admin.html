@@ -218,9 +218,36 @@
         <button class="btn-outline" onclick="supprimerAnnoncesDemo()" data-i18n>🗑️ Supprimer les démos</button>
         <button class="btn-outline" onclick="semerAnnoncesDemo()" data-i18n>🌱 Ajouter des annonces démo</button>
         <button class="btn-outline" onclick="semerAnnoncesHotelsDemo()" data-i18n>🏨 Ajouter des chambres démo</button>
+        <button class="btn-outline" onclick="ouvrirModalImportOSM()" data-i18n>🗺️ Importer depuis OpenStreetMap</button>
         <button class="btn-primary" onclick="showPage('publier')" data-i18n>+ Publier une annonce</button>
       </div>
     </div>
+
+    <!-- Établissements importés depuis OpenStreetMap, en attente de validation avant publication -->
+    <div class="card" id="cardImportsEnAttente" style="margin-bottom:16px;display:none;">
+      <div class="card-header">
+        <h2 data-i18n>🕓 Imports OpenStreetMap en attente de validation</h2>
+        <span class="badge" id="badgeImportsEnAttente" style="background:#FEF3C7;color:#92400E;">0</span>
+      </div>
+      <p style="font-size:12.5px;color:#5B6472;margin:-6px 0 12px;" data-i18n>
+        Ces établissements viennent d'OpenStreetMap et sont masqués du site public (statut « import à valider »). Complétez au minimum le prix et le type de chambre via « ✏️ Compléter », puis passez le statut sur « 🟢 Disponible » pour les publier — ou rejetez-les s'ils ne conviennent pas.
+      </p>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th data-i18n>Photo</th>
+              <th data-i18n>Nom (OSM)</th>
+              <th data-i18n>Adresse</th>
+              <th data-i18n>Type</th>
+              <th data-i18n>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="importsOSMTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
 
     <!-- Filtres -->
     <div class="filters-bar">
@@ -229,6 +256,7 @@
         <option value="" data-i18n>Tous les statuts</option>
         <option value="disponible" data-i18n>🟢 Disponible</option>
         <option value="occupe" data-i18n>🔴 Occupé</option>
+        <option value="en_attente_validation" data-i18n>🕓 Import à valider</option>
       </select>
       <select class="filter-select" id="filterVille" onchange="filtrerAnnonces()">
         <option value="" data-i18n>Toutes les communes</option>
@@ -1211,6 +1239,7 @@
         <select id="modStatut">
           <option value="disponible" data-i18n>🟢 Disponible</option>
           <option value="occupe" data-i18n>🔴 Occupé</option>
+          <option value="en_attente_validation" data-i18n>🕓 Import à valider (masqué du site)</option>
         </select>
       </div>
       <div class="form-group full-col">
@@ -1269,6 +1298,45 @@
   </div>
 </div>
 
+<!-- Modal import OpenStreetMap -->
+<div class="modal-overlay hidden" id="modalImportOSM">
+  <div class="modal" style="max-width:640px;width:94%;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <h3 data-i18n>🗺️ Importer des établissements depuis OpenStreetMap</h3>
+      <button class="modal-close" onclick="fermerModalImportOSM()" aria-label="Fermer">✕</button>
+    </div>
+    <p style="font-size:12.5px;color:#5B6472;margin-bottom:14px;" data-i18n>
+      Recherche des hôtels, motels et auberges sur Libreville/Akanda/Owendo via OpenStreetMap (Overpass + Nominatim) — gratuit, sans clé API ni facturation. Les résultats sont importés en statut « à valider » : ils ne sont visibles nulle part sur le site tant que vous ne les publiez pas manuellement (prix, description et étoiles à compléter — OSM ne fournit ni tarif ni classement officiel).
+    </p>
+
+    <div class="form-group">
+      <label data-i18n>Catégories à rechercher</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;background:#F5F5F5;padding:6px 10px;border-radius:8px;cursor:pointer;">
+          <input type="checkbox" id="osmCatHotel" checked> 🏨 Hôtels
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;background:#F5F5F5;padding:6px 10px;border-radius:8px;cursor:pointer;">
+          <input type="checkbox" id="osmCatMotel" checked> 🅿️ Motels
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;background:#F5F5F5;padding:6px 10px;border-radius:8px;cursor:pointer;">
+          <input type="checkbox" id="osmCatAuberge" checked> 🏠 Auberges / Guest houses
+        </label>
+      </div>
+    </div>
+
+    <button class="btn-primary" type="button" style="width:100%;margin-bottom:6px;" id="btnRechercherOSM" onclick="rechercherOSM()" data-i18n>🔍 Rechercher sur OpenStreetMap</button>
+    <div class="erreur-msg" id="importOSMErreur"></div>
+    <div id="importOSMLog" style="font-size:11.5px;color:#8A93A3;margin-top:6px;max-height:110px;overflow-y:auto;"></div>
+
+    <div id="importOSMResultats" style="margin-top:12px;"></div>
+
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn-outline" type="button" style="flex:1;" onclick="fermerModalImportOSM()" data-i18n>Annuler</button>
+      <button class="btn-vert" type="button" style="flex:1;" id="btnImporterSelectionOSM" onclick="importerSelectionOSM()" disabled data-i18n>📥 Importer la sélection (0)</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast hidden" id="toast"></div>
 
@@ -1290,12 +1358,12 @@
   import "./nav.js?v=20260826a";
   import {
     ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
-    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES
+    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES, COMMUNES
   } from "./malaga-reference.js";
   import { numeroMembre, numeroAnnonce, dessinerQRCode, qrCodeVersDataURL } from "./malaga-id.js";
   window.MALAGA_REF = {
     ZONES_CARACTERE, MATERIAUX, CUISINE_TYPES, DOUCHE_TYPES, COULEURS_MURALES,
-    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES
+    TYPES_BIEN, EQUIPEMENTS, PALIERS_PIECES, ETAGES, VUES, COMMUNES
   };
   window.MALAGA_ID = { numeroMembre, numeroAnnonce, dessinerQRCode, qrCodeVersDataURL };
 </script>

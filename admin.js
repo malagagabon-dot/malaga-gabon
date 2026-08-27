@@ -379,7 +379,7 @@ function demarrerEcouteAnnonces() {
     annoncesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     document.getElementById('badgeAnnonces').textContent = annoncesData.length;
     if (pageActuelle === 'dashboard') loadDashboard();
-    if (pageActuelle === 'annonces') filtrerAnnonces();
+    if (pageActuelle === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); }
   }, (err) => {
     console.error('Erreur de synchronisation des annonces :', err);
     const tbody = document.getElementById('annoncesTableBody');
@@ -902,7 +902,7 @@ function showPage(pageId) {
   document.getElementById('topbarTitle').textContent = titles[pageId] || 'MALAGA Admin';
 
   if (pageId === 'dashboard') loadDashboard();
-  else if (pageId === 'annonces') filtrerAnnonces();
+  else if (pageId === 'annonces') { filtrerAnnonces(); rendreImportsEnAttente(); }
   else if (pageId === 'utilisateurs') filtrerUsers();
   else if (pageId === 'entreprises') filtrerEntreprises();
   else if (pageId === 'verification') { filtrerVerif(); loadAlertesFraude(); }
@@ -1811,6 +1811,346 @@ function supprimerAnnoncesDemo() {
   batch.commit()
     .then(() => toast(`✅ ${demos.length} annonce(s) démo supprimée(s)`))
     .catch((err) => { console.error(err); toast('❌ Erreur lors de la suppression'); });
+}
+
+/* ══════════════════════════════════════════════════════════
+   IMPORT D'ÉTABLISSEMENTS DEPUIS OPENSTREETMAP (Overpass + Nominatim)
+   100% gratuit, sans clé API ni facturation — inspiré du moteur OSM
+   utilisé dans l'app AMBI241 (import "Google Maps" qui utilisait déjà
+   en réalité Overpass/Nominatim en coulisse).
+
+   L'admin coche des catégories (Hôtels/Motels/Auberges), l'outil
+   interroge d'abord Overpass (tags OSM structurés) puis Nominatim
+   (recherche texte, en complément) sur la zone Libreville/Akanda/
+   Owendo, déduplique avec les annonces déjà en base (par osmPlaceId
+   ou nom), puis importe la sélection dans Firestore avec
+   statut "en_attente_validation" : invisibles du site public (qui ne
+   charge que statut === "disponible", voir app.js) tant que l'admin
+   ne les a pas complétés (prix, type de chambre...) et publiés
+   manuellement via "✏️ Modifier" → statut "🟢 Disponible".
+
+   OSM ne fournissant ni prix, ni note, ni photo, tout import démarre
+   avec une image par défaut et un standing "à définir".
+══════════════════════════════════════════════════════════ */
+let resultatsRechercheOSM = [];
+
+// Bbox Libreville/Akanda/Owendo (sud,ouest,nord,est) — même zone que l'app AMBI241
+const OSM_BBOX = '0.20,9.30,0.55,9.60';
+
+const OSM_CAT_CONFIG = {
+  hotel:   { checkbox: 'osmCatHotel',   typeEtablissement: 'Hôtel',
+    overpassTags: [['tourism', 'hotel']], queries: ['hotel Libreville', 'hotel Akanda', 'hotel Owendo'] },
+  motel:   { checkbox: 'osmCatMotel',   typeEtablissement: 'Motel',
+    overpassTags: [['tourism', 'motel']], queries: ['motel Libreville', 'motel Owendo'] },
+  auberge: { checkbox: 'osmCatAuberge', typeEtablissement: 'Auberge',
+    overpassTags: [['tourism', 'guest_house'], ['tourism', 'hostel']], queries: ['auberge Libreville', 'guest house Libreville', 'résidence Libreville'] }
+};
+
+function ouvrirModalImportOSM() {
+  document.getElementById('importOSMResultats').innerHTML = '';
+  document.getElementById('importOSMLog').innerHTML = '';
+  document.getElementById('importOSMErreur').classList.remove('visible');
+  resultatsRechercheOSM = [];
+  majBoutonImporterSelectionOSM();
+  document.getElementById('modalImportOSM').classList.remove('hidden');
+}
+window.ouvrirModalImportOSM = ouvrirModalImportOSM;
+
+function fermerModalImportOSM() {
+  document.getElementById('modalImportOSM').classList.add('hidden');
+}
+window.fermerModalImportOSM = fermerModalImportOSM;
+
+function majBoutonImporterSelectionOSM() {
+  const n = resultatsRechercheOSM.filter(r => r.selectionne).length;
+  const btn = document.getElementById('btnImporterSelectionOSM');
+  btn.textContent = `📥 Importer la sélection (${n})`;
+  btn.disabled = n === 0;
+}
+
+function toggleSelectionResultatOSM(index) {
+  resultatsRechercheOSM[index].selectionne = !resultatsRechercheOSM[index].selectionne;
+  majBoutonImporterSelectionOSM();
+}
+window.toggleSelectionResultatOSM = toggleSelectionResultatOSM;
+
+function osmLog(msg) {
+  const wrap = document.getElementById('importOSMLog');
+  if (!wrap) return;
+  const line = document.createElement('div');
+  line.textContent = new Date().toLocaleTimeString('fr') + ' — ' + msg;
+  wrap.appendChild(line);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+/* ── Requête Overpass (tags OSM structurés), avec 2 miroirs de secours ── */
+function osmSearchOverpass(tagPairs) {
+  const nodeQ = tagPairs.map(([k, v]) => `node["${k}"="${v}"](${OSM_BBOX});`).join('\n');
+  const wayQ = tagPairs.map(([k, v]) => `way["${k}"="${v}"](${OSM_BBOX});`).join('\n');
+  const query = `[out:json][timeout:25];\n(\n${nodeQ}\n${wayQ}\n);\nout center;`;
+  const ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+
+  function essayer(idx) {
+    return fetch(ENDPOINTS[idx], {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'data=' + encodeURIComponent(query)
+    })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(data => (data.elements || []).map(el => {
+        const tags = el.tags || {};
+        const lat = el.lat || (el.center && el.center.lat) || 0;
+        const lng = el.lon || (el.center && el.center.lon) || 0;
+        const adresse = [tags['addr:street'], tags['addr:suburb'], tags['addr:city'] || 'Libreville'].filter(Boolean).join(', ');
+        return {
+          osmPlaceId: 'osm_' + el.type + '_' + el.id,
+          nom: tags.name || tags['name:fr'] || null,
+          adresse: adresse || 'Libreville, Gabon',
+          tel: tags.phone || tags['contact:phone'] || '',
+          lat, lng
+        };
+      }).filter(p => p.nom))
+      .catch(err => {
+        if (idx + 1 < ENDPOINTS.length) return essayer(idx + 1);
+        throw err;
+      });
+  }
+  return essayer(0);
+}
+
+/* ── Recherche texte libre Nominatim, en complément d'Overpass ── */
+function osmSearchNominatim(requete) {
+  const url = 'https://nominatim.openstreetmap.org/search'
+    + '?q=' + encodeURIComponent(requete + ' Gabon')
+    + '&format=json&limit=15&addressdetails=1&bounded=1'
+    + '&viewbox=9.30,0.55,9.60,0.20&accept-language=fr';
+  return fetch(url, { headers: { Accept: 'application/json' } })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(data => (data || []).map(el => ({
+      osmPlaceId: 'nom_' + el.osm_type + '_' + el.osm_id,
+      nom: el.namedetails?.name || (el.display_name || '').split(',')[0],
+      adresse: el.display_name || 'Libreville, Gabon',
+      tel: '',
+      lat: parseFloat(el.lat), lng: parseFloat(el.lon)
+    })));
+}
+
+function osmEstDejaPresent(osmPlaceId, nom) {
+  return annoncesData.some(a =>
+    a.osmPlaceId === osmPlaceId ||
+    (a.nomEtablissement || '').toLowerCase().trim() === (nom || '').toLowerCase().trim()
+  );
+}
+
+function osmTraiterResultats(bruts, catKey, vus) {
+  let nouveaux = 0;
+  bruts.forEach(p => {
+    if (!p.osmPlaceId || vus.has(p.osmPlaceId)) return;
+    vus.add(p.osmPlaceId);
+    const dejaPresent = osmEstDejaPresent(p.osmPlaceId, p.nom);
+    resultatsRechercheOSM.push({
+      osmPlaceId: p.osmPlaceId,
+      nom: p.nom,
+      adresse: p.adresse,
+      tel: p.tel || '',
+      lat: p.lat || null,
+      lng: p.lng || null,
+      catKey,
+      dejaPresent,
+      selectionne: !dejaPresent
+    });
+    if (!dejaPresent) nouveaux++;
+  });
+  return nouveaux;
+}
+
+async function rechercherOSM() {
+  const erreurEl = document.getElementById('importOSMErreur');
+  const resultatsEl = document.getElementById('importOSMResultats');
+  erreurEl.classList.remove('visible');
+  resultatsEl.innerHTML = '';
+  document.getElementById('importOSMLog').innerHTML = '';
+  resultatsRechercheOSM = [];
+  majBoutonImporterSelectionOSM();
+
+  const cats = Object.keys(OSM_CAT_CONFIG).filter(k => document.getElementById(OSM_CAT_CONFIG[k].checkbox)?.checked);
+  if (cats.length === 0) {
+    erreurEl.textContent = '❌ Sélectionnez au moins une catégorie (Hôtels, Motels ou Auberges).';
+    erreurEl.classList.add('visible');
+    return;
+  }
+
+  const btn = document.getElementById('btnRechercherOSM');
+  btn.disabled = true; btn.textContent = '⏳ Recherche...';
+  const vus = new Set();
+
+  try {
+    osmLog('🗺️ Recherche via OpenStreetMap (gratuit, sans clé API)...');
+    for (const catKey of cats) {
+      const cfg = OSM_CAT_CONFIG[catKey];
+      osmLog(`📂 ${cfg.typeEtablissement} — Overpass...`);
+      try {
+        const resOverpass = await osmSearchOverpass(cfg.overpassTags);
+        const nv = osmTraiterResultats(resOverpass, catKey, vus);
+        osmLog(`  ✓ Overpass : ${resOverpass.length} trouvé(s), ${nv} nouveau(x)`);
+      } catch (err) {
+        osmLog(`  ⚠️ Overpass indisponible (${err.message}) → Nominatim...`);
+      }
+
+      for (const q of cfg.queries) {
+        osmLog(`  → Nominatim "${q}"...`);
+        try {
+          const resNom = await osmSearchNominatim(q);
+          const nv = osmTraiterResultats(resNom, catKey, vus);
+          osmLog(`  ✓ ${resNom.length} résultat(s), ${nv} nouveau(x)`);
+        } catch (err) {
+          osmLog(`  ⚠️ Erreur "${q}" : ${err.message}`);
+        }
+        // Politique Nominatim : 1 requête/seconde maximum
+        await new Promise(r => setTimeout(r, 1100));
+      }
+    }
+
+    osmLog(`🎉 Total : ${resultatsRechercheOSM.length} établissement(s), ${resultatsRechercheOSM.filter(r => !r.dejaPresent).length} nouveau(x)`);
+
+    if (resultatsRechercheOSM.length === 0) {
+      resultatsEl.innerHTML = '<p class="table-empty">Aucun établissement trouvé. Les données OSM sur Libreville sont parfois incomplètes — vous pouvez publier une annonce manuellement.</p>';
+      return;
+    }
+
+    rendreResultatsOSM();
+    majBoutonImporterSelectionOSM();
+  } catch (err) {
+    console.error('Erreur recherche OSM :', err);
+    erreurEl.textContent = `❌ Échec de la recherche (${err.message}).`;
+    erreurEl.classList.add('visible');
+  } finally {
+    btn.disabled = false; btn.textContent = '🔍 Rechercher sur OpenStreetMap';
+  }
+}
+window.rechercherOSM = rechercherOSM;
+
+function rendreResultatsOSM() {
+  const resultatsEl = document.getElementById('importOSMResultats');
+  resultatsEl.innerHTML = `
+    <p style="font-size:12px;color:#5B6472;margin-bottom:8px;">${resultatsRechercheOSM.length} résultat(s) — les doublons déjà en base sont décochés automatiquement :</p>
+    ${resultatsRechercheOSM.map((r, i) => {
+      const icone = OSM_CAT_CONFIG[r.catKey].typeEtablissement === 'Motel' ? '🅿️' : OSM_CAT_CONFIG[r.catKey].typeEtablissement === 'Auberge' ? '🏠' : '🏨';
+      return `
+        <label style="display:flex;gap:10px;align-items:center;padding:8px;border:1px solid ${r.dejaPresent ? '#FDE68A' : '#E5E7EB'};background:${r.dejaPresent ? '#FFFBEB' : '#fff'};border-radius:8px;margin-bottom:6px;cursor:pointer;">
+          <input type="checkbox" ${r.selectionne ? 'checked' : ''} onchange="toggleSelectionResultatOSM(${i})" style="width:18px;height:18px;flex-shrink:0;">
+          <span style="font-size:22px;flex-shrink:0;">${icone}</span>
+          <span style="flex:1;min-width:0;">
+            <strong style="display:block;font-size:13px;">${escapeHTML(r.nom)}</strong>
+            <span style="display:block;font-size:11.5px;color:#5B6472;">${escapeHTML(r.adresse)}</span>
+            ${r.dejaPresent ? '<span style="font-size:11px;color:#92400E;">⚠️ Déjà présent en base</span>' : ''}
+          </span>
+        </label>
+      `;
+    }).join('')}
+  `;
+}
+
+function deviner_typeChambre(typeEtablissement) {
+  return typeEtablissement === 'Motel' ? 'Chambre de motel' : "Chambre d'hôtel";
+}
+
+function deviner_commune(adresse) {
+  const communes = window.MALAGA_REF?.COMMUNES || ['Libreville', 'Akanda', 'Owendo'];
+  return communes.find(c => (adresse || '').toLowerCase().includes(c.toLowerCase())) || 'Libreville';
+}
+
+async function importerSelectionOSM() {
+  if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
+  const selection = resultatsRechercheOSM.filter(r => r.selectionne);
+  if (selection.length === 0) return;
+  if (!confirm(`Importer ${selection.length} établissement(s) en statut "à valider" ? Rien ne sera visible sur le site public tant que vous ne les aurez pas complétés et publiés manuellement.`)) return;
+
+  const btn = document.getElementById('btnImporterSelectionOSM');
+  btn.disabled = true; btn.textContent = '⏳ Import...';
+  // OSM ne fournissant aucune photo, tout import démarre avec cette image par défaut
+  const PHOTO_PAR_DEFAUT = ['https://placehold.co/800x600?text=Photo+%C3%A0+ajouter'];
+
+  try {
+    const batch = window.dbAdmin.batch();
+    const maintenant = firebase.firestore.FieldValue.serverTimestamp();
+
+    selection.forEach(r => {
+      const typeEtablissement = OSM_CAT_CONFIG[r.catKey].typeEtablissement;
+      const ref = window.dbAdmin.collection('annonces').doc();
+      batch.set(ref, {
+        titre: `${r.nom} — à compléter`,
+        type: deviner_typeChambre(typeEtablissement),
+        proprietaireCompteType: 'hotel',
+        nomEtablissement: r.nom,
+        typeEtablissement,
+        standing: 'Non classé (à définir)',
+        commune: deviner_commune(r.adresse),
+        arrondissement: '',
+        quartier: r.adresse || '',
+        pointRepere: '',
+        lat: r.lat,
+        lng: r.lng,
+        prix: 0,
+        surface: null,
+        capacite: null,
+        typeLit: '',
+        etat: '',
+        description: `Établissement importé depuis OpenStreetMap. À compléter avant publication : prix par nuit, type de chambre, description, équipements, photos et standing.`,
+        equipements: [],
+        proprietaireNom: r.nom,
+        proprietaireTel: r.tel || '',
+        whatsapp: r.tel || '',
+        photos: PHOTO_PAR_DEFAUT,
+        video: null,
+        vues: 0,
+        statut: 'en_attente_validation',
+        source: 'osm',
+        osmPlaceId: r.osmPlaceId,
+        demo: false,
+        dateCreation: maintenant,
+        dateModification: maintenant
+      });
+    });
+
+    await batch.commit();
+    toast(`✅ ${selection.length} établissement(s) importé(s), en attente de validation`);
+    fermerModalImportOSM();
+    showPage('annonces');
+  } catch (err) {
+    console.error('Erreur import OSM :', err);
+    toast('❌ Erreur lors de l\'import');
+  } finally {
+    btn.disabled = false; majBoutonImporterSelectionOSM();
+  }
+}
+window.importerSelectionOSM = importerSelectionOSM;
+
+function rendreImportsEnAttente() {
+  const card = document.getElementById('cardImportsEnAttente');
+  const tbody = document.getElementById('importsOSMTableBody');
+  if (!card || !tbody) return;
+
+  const enAttente = annoncesData.filter(a => a.statut === 'en_attente_validation');
+  document.getElementById('badgeImportsEnAttente').textContent = enAttente.length;
+  card.style.display = enAttente.length === 0 ? 'none' : 'block';
+  if (enAttente.length === 0) return;
+
+  tbody.innerHTML = enAttente.map(a => {
+    const photo = Array.isArray(a.photos) && a.photos[0] ? a.photos[0] : 'https://placehold.co/60x60?text=%F0%9F%8F%A8';
+    return `
+      <tr>
+        <td><img src="${photo}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:6px;"></td>
+        <td style="font-weight:600;">${escapeHTML(texte(a, 'nomEtablissement', 'titre'))}</td>
+        <td style="font-size:12px;">${escapeHTML(texte(a, 'quartier', 'adresse'))}</td>
+        <td style="font-size:12px;">${escapeHTML(texte(a, 'typeEtablissement') || '—')}</td>
+        <td>
+          <button onclick="modifierAnnonce('${a.id}')" style="padding:4px 8px;background:#F59E0B;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;margin-right:4px;">✏️ Compléter</button>
+          <button onclick="supprimerAnnonce('${a.id}')" style="padding:4px 8px;background:#EF4444;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;">🗑️ Rejeter</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 /* ══════════════════════════════════════════════════════════
