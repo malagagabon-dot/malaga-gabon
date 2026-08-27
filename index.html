@@ -168,6 +168,7 @@
 
   <!-- Carte — placée juste après les statistiques -->
   <div class="map-wrap" id="carteWrap">
+    <button type="button" id="btnPleinEcranCarte" class="btn-plein-ecran" title="Agrandir la carte" aria-label="Agrandir la carte">⛶</button>
     <div id="carteMap"></div>
   </div>
 
@@ -595,6 +596,67 @@
         max-height: 420px !important;
         min-height: 420px !important;
       }
+    }
+
+    /* ═══ BOUTON PLEIN ÉCRAN + MODE PLEIN ÉCRAN DE LA CARTE ═══ */
+    .btn-plein-ecran {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      width: 38px;
+      height: 38px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255,255,255,.95);
+      color: #1a1a1a;
+      font-size: 18px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,.28);
+      padding: 0;
+    }
+    .btn-plein-ecran:active { transform: scale(0.94); }
+
+    /* Quand active, la carte quitte le flux de la page et occupe tout l'écran */
+    .map-wrap.plein-ecran {
+      position: fixed !important;
+      inset: 0 !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      max-height: 100dvh !important;
+      min-height: 100vh !important;
+      min-height: 100dvh !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      z-index: 9999 !important;
+    }
+    .map-wrap.plein-ecran #carteMap {
+      width: 100% !important;
+      height: 100% !important;
+      max-height: none !important;
+    }
+    .map-wrap.plein-ecran .btn-plein-ecran {
+      top: max(10px, env(safe-area-inset-top));
+      right: max(10px, env(safe-area-inset-right));
+      width: 42px;
+      height: 42px;
+      font-size: 20px;
+    }
+    /* Empêche la page de défiler derrière la carte en plein écran */
+    body.carte-plein-ecran {
+      overflow: hidden !important;
     }
 
     /* Liste des annonces — pleine largeur, sous la carte */

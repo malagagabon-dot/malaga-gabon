@@ -291,7 +291,70 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => map.invalidateSize(), 100);
     }
   });
+
+  // Bouton plein écran de la carte
+  document.getElementById("btnPleinEcranCarte")?.addEventListener("click", togglePleinEcranCarte);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && carteEnPleinEcran) togglePleinEcranCarte();
+  });
+  window.addEventListener("popstate", (e) => {
+    if (carteEnPleinEcran && !e.state?.cartePleinEcran) fermerPleinEcranCarte();
+  });
 });
+
+/* ══════════ PLEIN ÉCRAN DE LA CARTE ══════════
+   Bascule la carte entre son aperçu compact (dans le flux de la page) et un
+   mode plein écran (position fixed, dimensions exactes de l'écran) pour que
+   l'utilisateur voie toute la zone couverte d'un coup d'œil. Un état est
+   poussé dans l'historique du navigateur à l'ouverture, pour que le bouton
+   "retour" du téléphone referme la carte plutôt que de quitter la page. */
+let carteEnPleinEcran = false;
+
+function togglePleinEcranCarte() {
+  if (carteEnPleinEcran) {
+    // Si l'état d'historique dédié est toujours actif, on revient en arrière
+    // pour le dépiler ; sinon (fermeture via Échap par ex.) on ferme directement.
+    if (history.state?.cartePleinEcran) {
+      history.back();
+    } else {
+      fermerPleinEcranCarte();
+    }
+    return;
+  }
+
+  const wrap = document.getElementById("carteWrap");
+  const btn = document.getElementById("btnPleinEcranCarte");
+  if (!wrap) return;
+
+  carteEnPleinEcran = true;
+  wrap.classList.add("plein-ecran");
+  document.body.classList.add("carte-plein-ecran");
+  if (btn) {
+    btn.textContent = "✕";
+    btn.title = "Réduire la carte";
+    btn.setAttribute("aria-label", "Réduire la carte");
+  }
+  history.pushState({ cartePleinEcran: true }, "");
+
+  // Laisse le temps au reflow CSS avant de recalculer la taille Leaflet
+  setTimeout(() => map && map.invalidateSize(), 260);
+}
+
+function fermerPleinEcranCarte() {
+  const wrap = document.getElementById("carteWrap");
+  const btn = document.getElementById("btnPleinEcranCarte");
+
+  carteEnPleinEcran = false;
+  wrap?.classList.remove("plein-ecran");
+  document.body.classList.remove("carte-plein-ecran");
+  if (btn) {
+    btn.textContent = "⛶";
+    btn.title = "Agrandir la carte";
+    btn.setAttribute("aria-label", "Agrandir la carte");
+  }
+
+  setTimeout(() => map && map.invalidateSize(), 260);
+}
 
 /* ══════════ CARTE LEAFLET ══════════ */
 function initCarte() {
