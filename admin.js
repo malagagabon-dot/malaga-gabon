@@ -2081,11 +2081,25 @@ async function importerSelectionOSM() {
   await chargerPhotosDefaut();
   const PHOTO_GENERIQUE = 'https://placehold.co/800x600?text=Photo+%C3%A0+ajouter';
 
+  // Les photos par défaut sont stockées en base64 (dataURL) directement dans
+  // Firestore (aucune clé Cloudinary n'est branchée, voir plus bas). Une
+  // seule photo par type tient sous la limite d'1 Mo par document, mais dès
+  // qu'elle est recopiée dans PLUSIEURS dizaines de nouvelles fiches d'un
+  // coup dans UN SEUL batch, le poids total peut dépasser la limite de
+  // taille d'un batch Firestore et faire échouer tout l'import (aucune
+  // fiche n'est créée, même celles sans photo par défaut). On découpe donc
+  // en petits lots successifs pour rester largement sous cette limite.
+  const TAILLE_LOT = 10;
+  const lots = [];
+  for (let i = 0; i < selection.length; i += TAILLE_LOT) lots.push(selection.slice(i, i + TAILLE_LOT));
+
+  let importes = 0;
   try {
-    const batch = window.dbAdmin.batch();
     const maintenant = firebase.firestore.FieldValue.serverTimestamp();
 
-    selection.forEach(r => {
+    for (const lot of lots) {
+    const batch = window.dbAdmin.batch();
+    lot.forEach(r => {
       const typeEtablissement = OSM_CAT_CONFIG[r.catKey].typeEtablissement;
       const ref = window.dbAdmin.collection('annonces').doc();
       batch.set(ref, {
@@ -2129,12 +2143,23 @@ async function importerSelectionOSM() {
     });
 
     await batch.commit();
-    toast(`✅ ${selection.length} établissement(s) importé(s) et déjà visible(s) sur le site`);
+    importes += lot.length;
+    if (lots.length > 1) btn.textContent = `⏳ Import... (${importes}/${selection.length})`;
+    }
+
+    toast(`✅ ${importes} établissement(s) importé(s) et déjà visible(s) sur le site`);
     fermerModalImportOSM();
     showPage('annonces');
   } catch (err) {
     console.error('Erreur import OSM :', err);
-    toast('❌ Erreur lors de l\'import');
+    if (importes > 0) {
+      // Certains lots sont déjà passés (chaque lot est un batch indépendant) :
+      // on le dit clairement pour éviter de ré-importer les mêmes fiches en double.
+      toast(`⚠️ ${importes}/${selection.length} importé(s), puis erreur : ${err.message || err.code || 'inconnue'}`);
+      rendreImportsEnAttente();
+    } else {
+      toast(`❌ Erreur lors de l'import : ${err.message || err.code || 'inconnue'}`);
+    }
   } finally {
     btn.disabled = false; majBoutonImporterSelectionOSM();
   }
@@ -2337,30 +2362,54 @@ window.migrerAnciensImportsOSM = migrerAnciensImportsOSM;
    si une a été définie depuis. */
 async function appliquerPhotosDefautAuxAnnonces() {
   const PHOTO_GENERIQUE = 'https://placehold.co/800x600?text=Photo+%C3%A0+ajouter';
-  const aCorriger = annoncesData.filter(a =>
+  const enPhotoGenerique = annoncesData.filter(a =>
     a.source === 'osm' &&
-    Array.isArray(a.photos) && a.photos.length === 1 && a.photos[0] === PHOTO_GENERIQUE &&
-    window.MALAGA_PHOTOS_DEFAUT?.obtenir(a.typeEtablissement || a.type)
+    Array.isArray(a.photos) && a.photos.length === 1 && a.photos[0] === PHOTO_GENERIQUE
   );
+  const aCorriger = enPhotoGenerique.filter(a => window.MALAGA_PHOTOS_DEFAUT?.obtenir(a.typeEtablissement || a.type));
+
+  // Certaines fiches restent en photo générique simplement parce qu'aucune
+  // photo par défaut n'a encore été enregistrée pour LEUR type précis
+  // (Hôtel / Motel / Auberge...) : on le signale explicitement au lieu de
+  // les ignorer silencieusement, sinon ça ressemble à un bug côté admin.
+  const typesManquants = [...new Set(
+    enPhotoGenerique
+      .filter(a => !window.MALAGA_PHOTOS_DEFAUT?.obtenir(a.typeEtablissement || a.type))
+      .map(a => a.typeEtablissement || a.type || '—')
+  )];
+
   if (aCorriger.length === 0) {
-    toast('Aucune annonce à corriger pour l\'instant');
+    toast(typesManquants.length
+      ? `Aucune photo par défaut définie pour : ${typesManquants.join(', ')}`
+      : 'Aucune annonce à corriger pour l\'instant');
     return;
   }
   const btn = document.getElementById('btnAppliquerPhotosDefaut');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Application...'; }
+
+  // Même risque de dépassement de taille de batch que pour l'import OSM
+  // (photos par défaut en base64) si beaucoup de fiches sont corrigées d'un
+  // coup : on découpe en petits lots successifs.
+  const TAILLE_LOT = 10;
+  const lots = [];
+  for (let i = 0; i < aCorriger.length; i += TAILLE_LOT) lots.push(aCorriger.slice(i, i + TAILLE_LOT));
+
   try {
-    const batch = window.dbAdmin.batch();
-    aCorriger.forEach(a => {
-      batch.update(window.dbAdmin.collection('annonces').doc(a.id), {
-        photos: [window.MALAGA_PHOTOS_DEFAUT.obtenir(a.typeEtablissement || a.type)],
-        dateModification: firebase.firestore.FieldValue.serverTimestamp()
+    for (const lot of lots) {
+      const batch = window.dbAdmin.batch();
+      lot.forEach(a => {
+        batch.update(window.dbAdmin.collection('annonces').doc(a.id), {
+          photos: [window.MALAGA_PHOTOS_DEFAUT.obtenir(a.typeEtablissement || a.type)],
+          dateModification: firebase.firestore.FieldValue.serverTimestamp()
+        });
       });
-    });
-    await batch.commit();
-    toast(`✅ Photo par défaut appliquée à ${aCorriger.length} annonce(s)`);
+      await batch.commit();
+    }
+    const suffixe = typesManquants.length ? ` (toujours en photo générique pour : ${typesManquants.join(', ')})` : '';
+    toast(`✅ Photo par défaut appliquée à ${aCorriger.length} annonce(s)${suffixe}`);
   } catch (err) {
     console.error('Erreur appliquerPhotosDefautAuxAnnonces :', err);
-    toast('❌ Erreur lors de la mise à jour');
+    toast(`❌ Erreur lors de la mise à jour : ${err.message || err.code || 'inconnue'}`);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '🔄 Appliquer aux annonces déjà importées'; }
   }
