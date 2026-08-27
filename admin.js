@@ -2073,8 +2073,13 @@ async function importerSelectionOSM() {
 
   const btn = document.getElementById('btnImporterSelectionOSM');
   btn.disabled = true; btn.textContent = '⏳ Import...';
-  // OSM ne fournissant aucune photo, tout import démarre avec cette image par défaut
-  const PHOTO_PAR_DEFAUT = ['https://placehold.co/800x600?text=Photo+%C3%A0+ajouter'];
+  // S'assure d'avoir les photos par défaut par type (voir plus bas dans ce
+  // fichier) chargées avant de construire les fiches, pour ne PAS écrire un
+  // simple texte "Photo à ajouter" dans le champ `photos` — le site public
+  // affiche telle quelle la 1ʳᵉ photo du tableau, il faut donc y mettre la
+  // vraie image dès l'écriture en base.
+  await chargerPhotosDefaut();
+  const PHOTO_GENERIQUE = 'https://placehold.co/800x600?text=Photo+%C3%A0+ajouter';
 
   try {
     const batch = window.dbAdmin.batch();
@@ -2106,7 +2111,7 @@ async function importerSelectionOSM() {
         proprietaireNom: r.nom,
         proprietaireTel: r.tel || '',
         whatsapp: r.tel || '',
-        photos: PHOTO_PAR_DEFAUT,
+        photos: [window.MALAGA_PHOTOS_DEFAUT?.obtenir(typeEtablissement) || PHOTO_GENERIQUE],
         video: null,
         vues: 0,
         // Visible tout de suite sur le site public (annuaire, catalogues,
@@ -2239,6 +2244,7 @@ async function importerPhotoDefaut(slug, input) {
     photosDefautCache[slug] = dataURL;
     rendrePhotosDefaut();
     rendreImportsEnAttente();
+    appliquerPhotosDefautAuxAnnonces(); // corrige tout de suite les fiches déjà importées avec la photo générique
     toast('✅ Photo par défaut enregistrée');
   } catch (err) {
     console.error('Erreur import photo par défaut :', err);
@@ -2324,6 +2330,42 @@ async function migrerAnciensImportsOSM() {
   }
 }
 window.migrerAnciensImportsOSM = migrerAnciensImportsOSM;
+
+/* Corrige rétroactivement les annonces OSM déjà importées qui ont encore la
+   photo générique "Photo à ajouter" (écrite en dur en base avant l'ajout des
+   photos par défaut par type), en la remplaçant par la vraie photo par type
+   si une a été définie depuis. */
+async function appliquerPhotosDefautAuxAnnonces() {
+  const PHOTO_GENERIQUE = 'https://placehold.co/800x600?text=Photo+%C3%A0+ajouter';
+  const aCorriger = annoncesData.filter(a =>
+    a.source === 'osm' &&
+    Array.isArray(a.photos) && a.photos.length === 1 && a.photos[0] === PHOTO_GENERIQUE &&
+    window.MALAGA_PHOTOS_DEFAUT?.obtenir(a.typeEtablissement || a.type)
+  );
+  if (aCorriger.length === 0) {
+    toast('Aucune annonce à corriger pour l\'instant');
+    return;
+  }
+  const btn = document.getElementById('btnAppliquerPhotosDefaut');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Application...'; }
+  try {
+    const batch = window.dbAdmin.batch();
+    aCorriger.forEach(a => {
+      batch.update(window.dbAdmin.collection('annonces').doc(a.id), {
+        photos: [window.MALAGA_PHOTOS_DEFAUT.obtenir(a.typeEtablissement || a.type)],
+        dateModification: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    await batch.commit();
+    toast(`✅ Photo par défaut appliquée à ${aCorriger.length} annonce(s)`);
+  } catch (err) {
+    console.error('Erreur appliquerPhotosDefautAuxAnnonces :', err);
+    toast('❌ Erreur lors de la mise à jour');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 Appliquer aux annonces déjà importées'; }
+  }
+}
+window.appliquerPhotosDefautAuxAnnonces = appliquerPhotosDefautAuxAnnonces;
 
 function rendreImportsEnAttente() {
   const card = document.getElementById('cardImportsEnAttente');

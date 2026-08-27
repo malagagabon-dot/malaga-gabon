@@ -279,6 +279,10 @@
         Choisis une photo par type de logement depuis le stockage de ton téléphone. Elle s'affichera automatiquement à la place d'une annonce tant que son propriétaire n'a pas encore ajouté ses propres photos — pour que les annonces restent visuellement cohérentes sur le site.
       </p>
       <div class="photos-defaut-grid" id="grillePhotosDefaut"></div>
+      <p style="font-size:11.5px;color:#8A93A3;margin:12px 0 6px;" data-i18n>
+        Les annonces déjà importées gardent leur photo au moment de l'import — utilise ce bouton pour leur appliquer la photo par défaut si tu viens d'en ajouter une nouvelle.
+      </p>
+      <button class="btn-outline-sm" type="button" id="btnAppliquerPhotosDefaut" onclick="appliquerPhotosDefautAuxAnnonces()" data-i18n>🔄 Appliquer aux annonces déjà importées</button>
     </div>
 
     <!-- Établissements importés depuis OpenStreetMap : déjà visibles sur le
