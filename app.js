@@ -239,6 +239,119 @@ function calculerProximite(annonce) {
   return { niveau: 4, distance };
 }
 
+/* ══════════════════════════════════════════════════════════
+   SUGGESTIONS DE RECHERCHE (autocomplétion clavier/tactile)
+   Propose, pendant la frappe dans la barre de recherche du Hero, jusqu'à 8
+   annonces/établissements dont le nom, le titre, le quartier ou la commune
+   correspondent — sans appel réseau (filtre sur toutesLesAnnonces déjà
+   chargé en temps réel). Navigable au clavier (↑ ↓ Entrée Échap) en plus du
+   tactile ; sélectionner une suggestion lance directement la recherche.
+══════════════════════════════════════════════════════════ */
+let suggestionActiveIndex = -1;
+let suggestionsCourantes = [];
+
+function calculerSuggestionsRecherche(saisie) {
+  const q = saisie.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const vus = new Set();
+  const resultats = [];
+  for (const a of toutesLesAnnonces) {
+    const nom = a.nomEtablissement || a.titre || "";
+    const cible = [nom, a.quartier, a.arrondissement, a.commune].filter(Boolean).join(" ").toLowerCase();
+    if (!cible.includes(q)) continue;
+    const cle = nom.toLowerCase() + "|" + (a.quartier || "");
+    if (vus.has(cle)) continue; // évite les doublons (ex. plusieurs chambres du même hôtel)
+    vus.add(cle);
+    resultats.push(a);
+    if (resultats.length >= 8) break;
+  }
+  return resultats;
+}
+
+function surlignerSuggestion(texte, saisie) {
+  const i = texte.toLowerCase().indexOf(saisie.toLowerCase());
+  if (i === -1) return escapeHTML(texte);
+  return escapeHTML(texte.slice(0, i)) + "<strong>" + escapeHTML(texte.slice(i, i + saisie.length)) + "</strong>" + escapeHTML(texte.slice(i + saisie.length));
+}
+
+function rendreSuggestionsRecherche(saisie) {
+  const liste = document.getElementById("search-suggestions");
+  if (!liste) return;
+  suggestionsCourantes = calculerSuggestionsRecherche(saisie);
+  suggestionActiveIndex = -1;
+  if (suggestionsCourantes.length === 0) { liste.hidden = true; liste.innerHTML = ""; return; }
+
+  liste.innerHTML = suggestionsCourantes.map((a, i) => {
+    const nom = a.nomEtablissement || a.titre || "";
+    const sousTitre = [a.quartier, a.commune].filter(Boolean).join(", ");
+    return `
+      <li role="option" data-index="${i}">
+        <span class="sugg-icone">${escapeHTML(abregeType(a.type))}</span>
+        <span class="sugg-texte">
+          ${surlignerSuggestion(nom, saisie)}
+          ${sousTitre ? `<span class="sugg-sous"> — ${escapeHTML(sousTitre)}</span>` : ""}
+        </span>
+      </li>
+    `;
+  }).join("");
+  liste.hidden = false;
+
+  liste.querySelectorAll("li").forEach(li => {
+    li.addEventListener("mousedown", (e) => {
+      // mousedown (pas click) : se déclenche avant le blur de l'input, sinon
+      // la liste se ferme avant que la sélection soit prise en compte.
+      e.preventDefault();
+      choisirSuggestionRecherche(parseInt(li.dataset.index, 10));
+    });
+  });
+}
+
+function deplacerSelectionSuggestion(delta) {
+  const liste = document.getElementById("search-suggestions");
+  if (!liste || liste.hidden || suggestionsCourantes.length === 0) return;
+  suggestionActiveIndex = (suggestionActiveIndex + delta + suggestionsCourantes.length) % suggestionsCourantes.length;
+  liste.querySelectorAll("li").forEach((li, i) => li.classList.toggle("sugg-active", i === suggestionActiveIndex));
+  liste.children[suggestionActiveIndex]?.scrollIntoView({ block: "nearest" });
+}
+
+function choisirSuggestionRecherche(index) {
+  const a = suggestionsCourantes[index];
+  if (!a) return;
+  const input = document.getElementById("search-input");
+  input.value = a.nomEtablissement || a.titre || "";
+  fermerSuggestionsRecherche();
+  filtres.texte = input.value.trim().toLowerCase();
+  rendreTout();
+  // Le résultat cherché est presque toujours unique : ouvrir directement sa
+  // fiche évite un clic supplémentaire dans la liste filtrée.
+  afficherDetail(a);
+}
+
+function fermerSuggestionsRecherche() {
+  const liste = document.getElementById("search-suggestions");
+  if (liste) { liste.hidden = true; liste.innerHTML = ""; }
+  suggestionActiveIndex = -1;
+  suggestionsCourantes = [];
+}
+
+function initAutocompleteRecherche() {
+  const input = document.getElementById("search-input");
+  const liste = document.getElementById("search-suggestions");
+  if (!input || !liste) return;
+
+  input.addEventListener("input", () => rendreSuggestionsRecherche(input.value));
+  input.addEventListener("focus", () => { if (input.value.trim().length >= 2) rendreSuggestionsRecherche(input.value); });
+  input.addEventListener("blur", () => setTimeout(fermerSuggestionsRecherche, 120));
+
+  input.addEventListener("keydown", (e) => {
+    if (liste.hidden) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); deplacerSelectionSuggestion(1); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); deplacerSelectionSuggestion(-1); }
+    else if (e.key === "Enter" && suggestionActiveIndex >= 0) { e.preventDefault(); choisirSuggestionRecherche(suggestionActiveIndex); }
+    else if (e.key === "Escape") { fermerSuggestionsRecherche(); }
+  });
+}
+
 /* ══════════ INITIALISATION ══════════ */
 document.addEventListener("DOMContentLoaded", () => {
   initCarte();
@@ -266,11 +379,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("btnRechercher").onclick = () => {
     filtres.texte = document.getElementById("search-input").value.trim().toLowerCase();
+    fermerSuggestionsRecherche();
     rendreTout();
   };
   document.getElementById("search-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") document.getElementById("btnRechercher").click();
+    if (e.key === "Enter" && suggestionActiveIndex === -1) document.getElementById("btnRechercher").click();
   });
+  initAutocompleteRecherche();
 
   // Bascule vers l'affichage "Mes favoris uniquement" depuis le header ou la barre basse
   const basculerFavoris = (e) => {

@@ -1496,6 +1496,63 @@
 <!-- Toast -->
 <div class="toast hidden" id="toast"></div>
 
+<!-- ═══════════════════ NAVIGATION BASSE (mobile) ═══════════════════
+     Style posé ici en inline (plutôt que dans admin.css) pour ne pas
+     dépendre de son cache. Réutilise showPage() + la classe .nav-item
+     (déjà gérée par showPage() pour l'état actif) — les 4 onglets les plus
+     utilisés au quotidien, plus "Plus" qui ouvre le menu latéral complet
+     pour accéder à toutes les autres sections (Entreprises, Vérification,
+     Codes QR, Signalements, Messages, Statistiques, Classement,
+     Notifications...). Masquée automatiquement au-delà de 900px (voir
+     media query) puisque le menu latéral reste visible en desktop. -->
+<style>
+  .bottom-nav-admin {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    display: flex; justify-content: space-around; align-items: stretch;
+    background: #fff; border-top: 1px solid #E5E7EB;
+    box-shadow: 0 -4px 16px rgba(0,0,0,.08);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .bottom-nav-admin .bnav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; padding: 8px 4px 6px; text-decoration: none; color: #8A93A3;
+    font-size: 10.5px; font-weight: 600; border: none; background: none; cursor: pointer;
+    position: relative;
+  }
+  .bottom-nav-admin .bnav-item .bnav-icon { font-size: 19px; line-height: 1; }
+  .bottom-nav-admin .bnav-item.active { color: #009E60; }
+  .bottom-nav-admin .bnav-item .bnav-dot {
+    position: absolute; top: 4px; right: calc(50% - 16px);
+    width: 8px; height: 8px; border-radius: 50%; background: #EF4444;
+    display: none;
+  }
+  .bottom-nav-admin .bnav-item .bnav-dot.visible { display: block; }
+  body { padding-bottom: 62px; }
+  @media (min-width: 900px) {
+    .bottom-nav-admin { display: none; }
+    body { padding-bottom: 0; }
+  }
+</style>
+<nav class="bottom-nav-admin" id="bottomNavAdmin">
+  <a class="nav-item bnav-item" data-page="dashboard" onclick="showPage('dashboard')">
+    <span class="bnav-icon">📊</span> Tableau de bord
+  </a>
+  <a class="nav-item bnav-item" data-page="annonces" onclick="showPage('annonces')">
+    <span class="bnav-icon">🏠</span> Annonces
+    <span class="bnav-dot" id="bnavDotAnnonces"></span>
+  </a>
+  <a class="nav-item bnav-item" data-page="utilisateurs" onclick="showPage('utilisateurs')">
+    <span class="bnav-icon">👥</span> Utilisateurs
+  </a>
+  <a class="nav-item bnav-item" data-page="reservations" onclick="showPage('reservations')">
+    <span class="bnav-icon">💳</span> Réservations
+    <span class="bnav-dot" id="bnavDotReservations"></span>
+  </a>
+  <button type="button" class="bnav-item" id="btnBnavPlus" onclick="document.getElementById('burgerAdmin')?.click()">
+    <span class="bnav-icon">☰</span> Plus
+  </button>
+</nav>
+
 <!-- Firebase -->
 <!-- Pont ES module → global : expose les listes de référence de malaga-reference.js
      à admin.js (script classique) via window.MALAGA_REF. Les scripts "module" sont
@@ -1529,7 +1586,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
 <script src="firebase-config-compat.js"></script>
-<script src="admin.js?v=20260827b"></script>
+<script src="admin.js?v=20260828a"></script>
 <script src="reservations-admin.js"></script>
 </body>
 </html>

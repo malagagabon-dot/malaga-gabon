@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initTopbarDate();
   initSidebar();
+  initBottomNavBadges();
   initToggleMdp();
   initMdpOublieAdmin();
   initListesReference();
@@ -887,7 +888,10 @@ function showPage(pageId) {
 
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(n => n.classList.remove('active'));
-  document.querySelector(`[data-page="${pageId}"]`)?.classList.add('active');
+  // querySelectorAll (pas querySelector) : le même data-page existe à la fois
+  // dans le menu latéral et dans la barre basse mobile (voir bottom-nav-admin
+  // dans admin.html) — les deux doivent se surligner ensemble.
+  document.querySelectorAll(`[data-page="${pageId}"]`).forEach(el => el.classList.add('active'));
 
   const titles = {
     'dashboard': 'Tableau de bord',
@@ -3727,6 +3731,24 @@ function initTopbarDate() {
   const d = new Date();
   const options = { weekday: 'long', day: 'numeric', month: 'long' };
   document.getElementById('topbarDate').textContent = d.toLocaleDateString('fr-FR', options);
+}
+
+// Reflète les pastilles rouges du menu latéral (badgeAnnonces / badgeReservations,
+// alimentées ailleurs — dont reservations-admin.js) sur les points de la barre
+// basse mobile, sans dépendre de l'endroit exact où chaque badge est mis à
+// jour : un simple sondage léger toutes les 2s suffit ici (aucun impact
+// perceptible, la barre basse n'a que 2 pastilles).
+function initBottomNavBadges() {
+  const paires = [['badgeAnnonces', 'bnavDotAnnonces'], ['badgeReservations', 'bnavDotReservations']];
+  setInterval(() => {
+    paires.forEach(([idBadge, idDot]) => {
+      const badge = document.getElementById(idBadge);
+      const dot = document.getElementById(idDot);
+      if (!badge || !dot) return;
+      const n = parseInt(badge.textContent, 10) || 0;
+      dot.classList.toggle('visible', n > 0);
+    });
+  }, 2000);
 }
 
 function initSidebar() {
