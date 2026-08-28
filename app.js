@@ -586,7 +586,10 @@ function togglePleinEcranCarte() {
   wrap.classList.add("plein-ecran");
   document.body.classList.add("carte-plein-ecran");
   if (btn) {
-    btn.textContent = "✕";
+    const icone = btn.querySelector(".btn-plein-ecran-icone");
+    const label = btn.querySelector(".btn-plein-ecran-label");
+    if (icone) icone.textContent = "✕"; else btn.textContent = "✕";
+    if (label) label.textContent = "fermer";
     btn.title = "Réduire la carte";
     btn.setAttribute("aria-label", "Réduire la carte");
   }
@@ -604,7 +607,10 @@ function fermerPleinEcranCarte() {
   wrap?.classList.remove("plein-ecran");
   document.body.classList.remove("carte-plein-ecran");
   if (btn) {
-    btn.textContent = "⛶";
+    const icone = btn.querySelector(".btn-plein-ecran-icone");
+    const label = btn.querySelector(".btn-plein-ecran-label");
+    if (icone) icone.textContent = "⛶"; else btn.textContent = "⛶";
+    if (label) label.textContent = "plein écran";
     btn.title = "Agrandir la carte";
     btn.setAttribute("aria-label", "Agrandir la carte");
   }
@@ -632,6 +638,15 @@ function initCarte() {
   // Forcer Leaflet à recalculer sa taille une fois le layout stabilisé
   setTimeout(() => { map && map.invalidateSize(); }, 150);
   window.addEventListener("load", () => { map && map.invalidateSize(); });
+
+  // Légende miniature "agrandir" sous les boutons +/- de zoom (voir .leaflet-zoom-label dans index.html)
+  const zoomEl = carteWrap?.querySelector(".leaflet-control-zoom");
+  if (zoomEl && !zoomEl.nextElementSibling?.classList.contains("leaflet-zoom-label")) {
+    const label = document.createElement("div");
+    label.className = "leaflet-zoom-label";
+    label.textContent = "agrandir";
+    zoomEl.insertAdjacentElement("afterend", label);
+  }
 
   // Affiche/masque le nom des établissements sur les bulles selon le zoom
   // (voir iconMarqueur / rafraichirIconesSelonZoom ci-dessus).
@@ -946,13 +961,36 @@ function initFiltresAvances() {
   };
 
   $("btnReinitialiserFiltres").onclick = () => {
+    // Panneau "Recherches avancées"
     ["faQuartier", "faRue", "faPrixMin", "faPrixMax"].forEach(id => $(id).value = "");
     ["faZone", "faChambres", "faSalons", "faDouches", "faDoucheType", "faCuisineType",
       "faMateriau", "faCouleur", "faTerrasse", "faCarreaux"].forEach(id => $(id).value = "");
     $("faPresLocalisation").checked = false;
     $("faEquipements").querySelectorAll(".chip.actif").forEach(c => c.classList.remove("actif"));
 
+    // Barre de filtres rapides (commune, arrondissement, type, budget, prix exact, vendeur)
+    const selectCommune = $("filterCommune");
+    const selectArrondissement = $("filterArrondissement");
+    selectCommune.value = "";
+    selectArrondissement.innerHTML = '<option value="">Tous les arrondissements</option>';
+    $("filterType").value = "";
+    $("filterPrix").value = "";
+    $("filterPrixExact").value = "";
+    if ($("filterVendeur")) $("filterVendeur").value = "";
+
+    // Sélecteur "Hôtels / Motels / Auberges"
+    if ($("filterHebergement")) $("filterHebergement").value = "tous";
+
+    // Barre de recherche du héros
+    if ($("search-input")) $("search-input").value = "";
+
+    // Bouton "Près de chez moi" (géolocalisation + rayon)
+    if (presDeMoiActif) togglePresDeMoi();
+
+    // Filtres liés à la barre rapide, à la recherche et aux boutons de statistiques
     Object.assign(filtres, {
+      commune: "", arrondissement: "", type: "", prixMax: "", prixExact: "",
+      texte: "", vendeur: "", disponibles: false, recentes: false, zoneSelectionnee: false,
       quartier: "", rue: "", zone: "", presLocalisation: false,
       chambresMin: "", salonsMin: "", douchesMin: "", doucheType: "", cuisineType: "",
       materiau: "", couleur: "", terrasse: "", carreaux: "",

@@ -211,7 +211,10 @@
 
   <!-- Carte — placée juste après les statistiques -->
   <div class="map-wrap" id="carteWrap">
-    <button type="button" id="btnPleinEcranCarte" class="btn-plein-ecran" title="Agrandir la carte" aria-label="Agrandir la carte">⛶</button>
+    <button type="button" id="btnPleinEcranCarte" class="btn-plein-ecran" title="Agrandir la carte" aria-label="Agrandir la carte">
+      <span class="btn-plein-ecran-icone">⛶</span>
+      <span class="btn-plein-ecran-label">plein écran</span>
+    </button>
     <div id="carteMap"></div>
   </div>
 
@@ -648,7 +651,8 @@
       right: 10px;
       z-index: 1000;
       width: 38px;
-      height: 38px;
+      height: auto;
+      min-height: 38px;
       border: none;
       border-radius: 10px;
       background: rgba(255,255,255,.95);
@@ -656,13 +660,44 @@
       font-size: 18px;
       line-height: 1;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 2px;
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,.28);
-      padding: 0;
+      padding: 5px 2px 4px;
     }
     .btn-plein-ecran:active { transform: scale(0.94); }
+    .btn-plein-ecran-icone { line-height: 1; }
+    .btn-plein-ecran-label {
+      font-size: 7.5px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: .1px;
+      text-transform: lowercase;
+      white-space: nowrap;
+    }
+
+    /* ═══ Légende miniature "agrandir" sous les boutons +/- de zoom (Leaflet) ═══ */
+    .leaflet-zoom-label {
+      margin: 2px auto 0;
+      width: fit-content;
+      max-width: 46px;
+      background: rgba(255,255,255,.95);
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-size: 7.5px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: #1a1a1a;
+      text-align: center;
+      text-transform: lowercase;
+      letter-spacing: .1px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.18);
+      pointer-events: none;
+      white-space: nowrap;
+    }
 
     /* Quand active, la carte quitte le flux de la page et occupe tout l'écran */
     .map-wrap.plein-ecran {
@@ -694,9 +729,11 @@
       top: max(10px, env(safe-area-inset-top));
       right: max(10px, env(safe-area-inset-right));
       width: 42px;
-      height: 42px;
+      height: auto;
+      min-height: 42px;
       font-size: 20px;
     }
+    .map-wrap.plein-ecran .btn-plein-ecran-label { font-size: 8px; }
     /* Empêche la page de défiler derrière la carte en plein écran */
     body.carte-plein-ecran {
       overflow: hidden !important;
