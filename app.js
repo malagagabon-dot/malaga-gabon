@@ -47,6 +47,12 @@ let filtres = {
 let modeFavoris = false;
 let map, markersParId = {};
 let positionUtilisateur = null; // { lat, lng } — utilisée pour le tri "près de moi"
+/* Photos utilisées par PLUSIEURS annonces différentes à la fois : signe fiable
+   d'une photo générique (par type d'établissement, voir MALAGA_PHOTOS_DEFAUT
+   dans admin.js) plutôt qu'une vraie photo individuelle du lieu — voir
+   construirePhotosPartagees() / le tri des hôtels dans appliquerFiltres().
+   Recalculée à chaque mise à jour de toutesLesAnnonces (ecouterAnnoncesTempsReel). */
+let photosPartageesConnues = new Set();
 
 /* ══════════ "PRÈS DE CHEZ MOI" (bouton dédié + rayon ajustable) ══════════
    Distinct du simple tri "presLocalisation" du tiroir de filtres avancés :
@@ -748,6 +754,7 @@ function ecouterAnnoncesTempsReel() {
   );
   onSnapshot(q, (snap) => {
     toutesLesAnnonces = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    photosPartageesConnues = construirePhotosPartagees(toutesLesAnnonces);
     purgerFavorisInexistants(toutesLesAnnonces.map(a => a.id));
     rendreTout();
     mettreAJourStats();
@@ -757,6 +764,20 @@ function ecouterAnnoncesTempsReel() {
     document.getElementById("liste-annonces-grille").innerHTML =
       `<p class="spinner">Impossible de charger les annonces pour le moment.</p>`;
   });
+}
+
+/* Une photo utilisée par 2 annonces ou plus est presque certainement une photo
+   générique par type d'établissement (voir MALAGA_PHOTOS_DEFAUT dans
+   admin.js), pas une vraie photo individuelle — bien plus fiable que le
+   drapeau `aCompleter`, qui peut rester à true même après qu'une vraie photo
+   a été ajoutée (seul le prix/la description restant à compléter). */
+function construirePhotosPartagees(liste) {
+  const compte = {};
+  liste.forEach(a => {
+    const p = a.photos && a.photos[0];
+    if (p) compte[p] = (compte[p] || 0) + 1;
+  });
+  return new Set(Object.keys(compte).filter(p => compte[p] > 1));
 }
 
 /* ══════════ FILTRES ══════════ */
@@ -876,18 +897,17 @@ function appliquerFiltres(liste) {
     // photographiés). Tri stable, donc à score égal l'ordre reste celui de
     // la requête Firestore (date de publication décroissante).
     //
-    // Attention : les fiches importées automatiquement depuis OpenStreetMap
-    // (aCompleter === true, voir admin.js → importerSelectionOSM) reçoivent
-    // une photo générique par type d'établissement (pas une vraie photo du
-    // lieu) pour ne pas laisser de case vide — leur champ `photos` n'est donc
-    // JAMAIS vide, même sans vraie photo. Sans cette exclusion, ces fiches
-    // encore incomplètes remonteraient à tort devant de vrais établissements
-    // photographiés. Ce drapeau est supprimé par l'admin dès qu'une fiche est
-    // complétée (voir "✏️ Compléter" dans admin.js), donc une fiche réellement
-    // renseignée n'est jamais pénalisée par cette règle.
+    // "Vraie photo" = une photo qui n'est PAS partagée avec une autre annonce
+    // (voir photosPartageesConnues / construirePhotosPartagees ci-dessus). Les
+    // fiches importées automatiquement (OpenStreetMap) reçoivent par défaut
+    // une même photo générique par type d'établissement — donc réutilisée sur
+    // toutes les fiches de ce type — tant qu'une vraie photo individuelle n'a
+    // pas été ajoutée. On ne se fie plus au drapeau `aCompleter` seul : une
+    // fiche peut déjà avoir reçu une vraie photo individuelle alors que son
+    // prix/sa description restent encore à compléter.
     const scoreEtablissement = (a) => {
-      const estValidee = a.aCompleter !== true;
-      const aUneVraiePhoto = estValidee && !!(a.photos && a.photos.length && a.photos[0]);
+      const photo = a.photos && a.photos[0];
+      const aUneVraiePhoto = !!photo && !photosPartageesConnues.has(photo);
       return (aUneVraiePhoto ? 100 : 0) + extraireEtoiles(a.standing);
     };
     resultat.sort((a, b) => scoreEtablissement(b) - scoreEtablissement(a));
