@@ -174,6 +174,9 @@
     <a class="nav-item" onclick="showPage('notifications')" data-page="notifications">
       <span class="nav-icon">🔔</span> Notifications
     </a>
+    <a class="nav-item" onclick="showPage('parametres')" data-page="parametres">
+      <span class="nav-icon">⚙️</span> Paramètres du site
+    </a>
     <div class="nav-sep"></div>
     <a class="nav-item" href="index.html" target="_blank">
       <span class="nav-icon">🌐</span> Voir le site
@@ -1108,6 +1111,132 @@
     </div>
   </div>
 
+  <!-- ═══ PAGE : PARAMÈTRES DU SITE ═══
+       Réglages appliqués en direct sur le site public (index.html/app.js) :
+       couleurs de thème, textes d'accueil, coordonnées de contact, listes de
+       catégories/équipements. Stockés dans le document Firestore
+       parametres/site (lecture publique, écriture admin uniquement — voir
+       les règles Firestore à ajouter, transmises séparément). Chaque carte
+       porte une couleur distincte en repère visuel, sans lien avec les
+       couleurs de thème choisies par l'admin ci-dessous. -->
+  <div class="page" id="page-parametres">
+    <div class="page-header">
+      <h1 data-i18n>⚙️ Paramètres du site</h1>
+      <p data-i18n>Ces réglages sont appliqués en direct sur le site public — pas besoin de republier le code pour un changement de couleur, de texte d'accueil ou de coordonnées.</p>
+    </div>
+
+    <!-- 🎨 Couleurs & thème -->
+    <div class="card form-card" style="border-left:5px solid #FCD116;">
+      <h3 style="margin-bottom:4px;" data-i18n>🎨 Couleurs &amp; thème du site</h3>
+      <p style="font-size:12.5px;color:#5B6472;margin:0 0 14px;" data-i18n>
+        S'applique à l'en-tête, au pied de page, aux boutons principaux et au titre d'accueil du site public.
+      </p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label data-i18n>Couleur principale (en-tête, boutons verts)</label>
+          <input type="color" id="paramCouleurPrincipale" value="#009E60" style="width:100%;height:42px;padding:2px;">
+        </div>
+        <div class="form-group">
+          <label data-i18n>Couleur d'accent (boutons jaunes, titre d'accueil)</label>
+          <input type="color" id="paramCouleurAccent" value="#FCD116" style="width:100%;height:42px;padding:2px;">
+        </div>
+        <div class="form-group">
+          <label data-i18n>Couleur secondaire (bouton bleu — .btn-bleu)</label>
+          <input type="color" id="paramCouleurSecondaire" value="#3A75C4" style="width:100%;height:42px;padding:2px;">
+        </div>
+      </div>
+      <div id="paramApercuTheme" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 14px;padding:12px;border-radius:10px;background:#F5F5F5;">
+        <span style="font-size:12px;color:#5B6472;" data-i18n>Aperçu :</span>
+        <span id="paramApercuHeader" style="padding:6px 14px;border-radius:8px;color:#fff;font-weight:700;font-size:12.5px;">En-tête</span>
+        <span id="paramApercuBtnVert" style="padding:6px 14px;border-radius:8px;color:#fff;font-weight:700;font-size:12.5px;">Bouton vert</span>
+        <span id="paramApercuBtnJaune" style="padding:6px 14px;border-radius:8px;color:#1a1a1a;font-weight:700;font-size:12.5px;">Bouton jaune</span>
+        <span id="paramApercuBtnBleu" style="padding:6px 14px;border-radius:8px;color:#fff;font-weight:700;font-size:12.5px;">Bouton bleu</span>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-outline" type="button" onclick="reinitialiserCouleursSite()" data-i18n>↺ Couleurs par défaut</button>
+        <button class="btn-primary" type="button" onclick="enregistrerParametresSite()" data-i18n>💾 Enregistrer les couleurs</button>
+      </div>
+    </div>
+
+    <!-- 🏠 Textes d'accueil -->
+    <div class="card form-card" style="border-left:5px solid #009E60;">
+      <h3 style="margin-bottom:4px;" data-i18n>🏠 Textes d'accueil</h3>
+      <p style="font-size:12.5px;color:#5B6472;margin:0 0 14px;" data-i18n>
+        Le grand titre et la phrase d'accroche affichés en haut de la page d'accueil du site public.
+      </p>
+      <div class="form-grid">
+        <div class="form-group full-col">
+          <label data-i18n>Titre d'accueil</label>
+          <input type="text" id="paramHeroTitre" placeholder="Ex : Trouvez votre logement idéal à Libreville" data-i18n-ph>
+        </div>
+        <div class="form-group full-col">
+          <label data-i18n>Sous-titre / accroche (facultatif)</label>
+          <input type="text" id="paramHeroDescription" placeholder="Ex : La plateforme n°1 de location au Gabon" data-i18n-ph>
+        </div>
+      </div>
+      <button class="btn-primary" type="button" onclick="enregistrerParametresSite()" data-i18n>💾 Enregistrer les textes</button>
+    </div>
+
+    <!-- 📞 Coordonnées de contact -->
+    <div class="card form-card" style="border-left:5px solid #2563EB;">
+      <h3 style="margin-bottom:4px;" data-i18n>📞 Coordonnées de contact</h3>
+      <p style="font-size:12.5px;color:#5B6472;margin:0 0 14px;" data-i18n>
+        Affichées dans le menu, le pied de page et utilisées pour les liens WhatsApp du site public.
+      </p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label data-i18n>Numéro WhatsApp (avec indicatif, ex : +24160141924)</label>
+          <input type="text" id="paramContactWhatsapp" placeholder="+24160141924" data-i18n-ph>
+        </div>
+        <div class="form-group">
+          <label data-i18n>Téléphone affiché</label>
+          <input type="text" id="paramContactTelephone" placeholder="+241 60 14 19 24" data-i18n-ph>
+        </div>
+        <div class="form-group">
+          <label data-i18n>Email de contact</label>
+          <input type="email" id="paramContactEmail" placeholder="contact@malaga.ga" data-i18n-ph>
+        </div>
+        <div class="form-group">
+          <label data-i18n>Page Facebook (facultatif, URL complète)</label>
+          <input type="text" id="paramContactFacebook" placeholder="https://facebook.com/..." data-i18n-ph>
+        </div>
+        <div class="form-group">
+          <label data-i18n>Compte Instagram (facultatif, URL complète)</label>
+          <input type="text" id="paramContactInstagram" placeholder="https://instagram.com/..." data-i18n-ph>
+        </div>
+      </div>
+      <button class="btn-primary" type="button" onclick="enregistrerParametresSite()" data-i18n>💾 Enregistrer les coordonnées</button>
+    </div>
+
+    <!-- 🏷️ Catégories & filtres -->
+    <div class="card form-card" style="border-left:5px solid #F59E0B;">
+      <h3 style="margin-bottom:4px;" data-i18n>🏷️ Catégories &amp; filtres</h3>
+      <p style="font-size:12.5px;color:#5B6472;margin:0 0 14px;" data-i18n>
+        Décoche un type de bien ou un équipement standard pour le masquer sur le site public (sans le supprimer définitivement), ou ajoute-en un nouveau. Le standing (nombre d'étoiles) reste une classification fixe, non modifiable ici.
+      </p>
+
+      <div style="margin-bottom:18px;">
+        <strong style="display:block;font-size:13px;margin-bottom:8px;" data-i18n>Types de bien</strong>
+        <div id="paramListeTypesBien" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="paramNouveauTypeBien" placeholder="Ajouter un type (ex : Duplex)" style="flex:1;" data-i18n-ph>
+          <button class="btn-outline" type="button" onclick="ajouterTypeBienPersonnalise()" data-i18n>+ Ajouter</button>
+        </div>
+      </div>
+
+      <div>
+        <strong style="display:block;font-size:13px;margin-bottom:8px;" data-i18n>Équipements</strong>
+        <div id="paramListeEquipements" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="paramNouvelEquipement" placeholder="Ajouter un équipement (ex : Ascenseur)" style="flex:1;" data-i18n-ph>
+          <button class="btn-outline" type="button" onclick="ajouterEquipementPersonnalise()" data-i18n>+ Ajouter</button>
+        </div>
+      </div>
+
+      <button class="btn-primary" type="button" style="margin-top:14px;" onclick="enregistrerParametresSite()" data-i18n>💾 Enregistrer les catégories</button>
+    </div>
+  </div>
+
   <!-- ═══ PAGE : PUBLIER ═══ -->
   <div class="page" id="page-publier">
     <div class="page-header">
@@ -1586,7 +1715,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
 <script src="firebase-config-compat.js"></script>
-<script src="admin.js?v=20260828a"></script>
+<script src="admin.js?v=20260828c"></script>
 <script src="reservations-admin.js"></script>
 </body>
 </html>

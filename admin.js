@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTopbarDate();
   initSidebar();
   initBottomNavBadges();
+  preChargerCouleursAdmin();
   initToggleMdp();
   initMdpOublieAdmin();
   initListesReference();
@@ -906,7 +907,8 @@ function showPage(pageId) {
     'stats': 'Statistiques',
     'publier': 'Publier une annonce',
     'classement': '🔥 Classement des likes',
-    'notifications': '🔔 Notifications'
+    'notifications': '🔔 Notifications',
+    'parametres': '⚙️ Paramètres du site'
   };
   document.getElementById('topbarTitle').textContent = titles[pageId] || 'MALAGA Admin';
 
@@ -923,6 +925,7 @@ function showPage(pageId) {
   else if (pageId === 'publier') { initPubMiniMap(); adapterPubFormulaireAuType(); }
   else if (pageId === 'classement') { demarrerEcouteLikes(); rendreClassement(); }
   else if (pageId === 'notifications') { demarrerEcouteNotifsPrefs(); demarrerEcouteNotificationsGlobales(); }
+  else if (pageId === 'parametres') chargerParametresSite();
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -3749,6 +3752,237 @@ function initBottomNavBadges() {
       dot.classList.toggle('visible', n > 0);
     });
   }, 2000);
+}
+
+/* ══════════════════════════════════════════════════════════
+   PARAMÈTRES DU SITE — appliqués en direct sur le site public
+   (voir appliquerParametresSite() dans app.js). Document unique
+   Firestore parametres/site, lecture publique / écriture admin.
+══════════════════════════════════════════════════════════ */
+const PARAMS_SITE_DEFAUT = {
+  couleurPrincipale: '#009E60',
+  couleurAccent: '#FCD116',
+  couleurSecondaire: '#3A75C4',
+  heroTitre: '',
+  heroDescription: '',
+  contactWhatsapp: '',
+  contactTelephone: '',
+  contactEmail: '',
+  contactFacebook: '',
+  contactInstagram: '',
+  typesBienExtra: [],
+  typesBienMasques: [],
+  equipementsExtra: [],
+  equipementsMasques: []
+};
+let parametresSiteCourants = { ...PARAMS_SITE_DEFAUT };
+
+function assombrirCouleur(hex, pourcentage) {
+  const n = parseInt((hex || '').replace('#', ''), 16);
+  if (isNaN(n)) return hex;
+  const r = Math.max(0, Math.round(((n >> 16) & 255) * (1 - pourcentage)));
+  const g = Math.max(0, Math.round(((n >> 8) & 255) * (1 - pourcentage)));
+  const b = Math.max(0, Math.round((n & 255) * (1 - pourcentage)));
+  return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+// Applique les mêmes couleurs choisies pour le site public aux variables de
+// admin.css (--green/--yellow/--blue...), pour que l'admin reste cohérent
+// visuellement avec le site public qu'il pilote. N'affecte pas les couleurs
+// fixes des 4 cartes de la page Paramètres (repères volontairement stables).
+function appliquerCouleursAdmin(p) {
+  const vert = p.couleurPrincipale || '#009E60';
+  const jaune = p.couleurAccent || '#FCD116';
+  const bleu = p.couleurSecondaire || '#3A75C4';
+  const racine = document.documentElement.style;
+  racine.setProperty('--green', vert);
+  racine.setProperty('--green-d', assombrirCouleur(vert, 0.2));
+  // --green-dark alimente le dégradé (sombre → normal) de l'en-tête du menu
+  // latéral admin — sans ce recalcul, il resterait fixé sur l'ancien vert
+  // même si l'admin choisit une tout autre couleur principale.
+  racine.setProperty('--green-dark', assombrirCouleur(vert, 0.55));
+  racine.setProperty('--yellow', jaune);
+  racine.setProperty('--yellow-d', assombrirCouleur(jaune, 0.15));
+  racine.setProperty('--blue', bleu);
+  racine.setProperty('--blue-d', assombrirCouleur(bleu, 0.2));
+}
+
+function majApercuTheme() {
+  const p = document.getElementById('paramCouleurPrincipale').value;
+  const a = document.getElementById('paramCouleurAccent').value;
+  const b = document.getElementById('paramCouleurSecondaire').value;
+  document.getElementById('paramApercuHeader').style.background = p;
+  document.getElementById('paramApercuBtnVert').style.background = p;
+  document.getElementById('paramApercuBtnJaune').style.background = a;
+  document.getElementById('paramApercuBtnBleu').style.background = b;
+}
+
+function reinitialiserCouleursSite() {
+  document.getElementById('paramCouleurPrincipale').value = PARAMS_SITE_DEFAUT.couleurPrincipale;
+  document.getElementById('paramCouleurAccent').value = PARAMS_SITE_DEFAUT.couleurAccent;
+  document.getElementById('paramCouleurSecondaire').value = PARAMS_SITE_DEFAUT.couleurSecondaire;
+  majApercuTheme();
+}
+window.reinitialiserCouleursSite = reinitialiserCouleursSite;
+
+function rendreListeCategorieParam(conteneurId, standards, extra, masques) {
+  const conteneur = document.getElementById(conteneurId);
+  const chips = [];
+  standards.forEach(nom => {
+    const masque = masques.includes(nom);
+    chips.push(`
+      <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;background:${masque ? '#FEF2F2' : '#F0FDF4'};padding:6px 10px;border-radius:8px;cursor:pointer;border:1px solid ${masque ? '#FCA5A5' : '#86EFAC'};">
+        <input type="checkbox" data-nom="${escapeHTML(nom)}" data-standard="1" ${masque ? '' : 'checked'} onchange="majApercuListeCategorie(this)"> ${escapeHTML(nom)}
+      </label>
+    `);
+  });
+  extra.forEach(nom => {
+    chips.push(`
+      <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;background:#EFF6FF;padding:6px 10px;border-radius:8px;border:1px solid #93C5FD;">
+        ✨ ${escapeHTML(nom)}
+        <button type="button" onclick="this.closest('label').remove()" style="border:none;background:none;color:#EF4444;cursor:pointer;font-weight:700;font-size:13px;line-height:1;" title="Retirer">✕</button>
+      </label>
+    `);
+  });
+  conteneur.innerHTML = chips.join('') || '<span style="font-size:12px;color:#9CA3AF;">Aucune valeur.</span>';
+}
+
+function majApercuListeCategorie(checkbox) {
+  // Aucune donnée à charger : on ajuste juste la couleur du chip pour
+  // refléter immédiatement l'état masqué/visible au clic, sans re-render.
+  checkbox.closest('label').style.background = checkbox.checked ? '#F0FDF4' : '#FEF2F2';
+  checkbox.closest('label').style.borderColor = checkbox.checked ? '#86EFAC' : '#FCA5A5';
+}
+window.majApercuListeCategorie = majApercuListeCategorie;
+
+function ajouterTypeBienPersonnalise() {
+  const input = document.getElementById('paramNouveauTypeBien');
+  const nom = input.value.trim();
+  if (!nom) return;
+  const conteneur = document.getElementById('paramListeTypesBien');
+  conteneur.insertAdjacentHTML('beforeend', `
+    <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;background:#EFF6FF;padding:6px 10px;border-radius:8px;border:1px solid #93C5FD;">
+      ✨ ${escapeHTML(nom)}
+      <button type="button" onclick="this.closest('label').remove()" style="border:none;background:none;color:#EF4444;cursor:pointer;font-weight:700;font-size:13px;line-height:1;" title="Retirer">✕</button>
+    </label>
+  `);
+  input.value = '';
+}
+window.ajouterTypeBienPersonnalise = ajouterTypeBienPersonnalise;
+
+function ajouterEquipementPersonnalise() {
+  const input = document.getElementById('paramNouvelEquipement');
+  const nom = input.value.trim();
+  if (!nom) return;
+  const conteneur = document.getElementById('paramListeEquipements');
+  conteneur.insertAdjacentHTML('beforeend', `
+    <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;background:#EFF6FF;padding:6px 10px;border-radius:8px;border:1px solid #93C5FD;">
+      ✨ ${escapeHTML(nom)}
+      <button type="button" onclick="this.closest('label').remove()" style="border:none;background:none;color:#EF4444;cursor:pointer;font-weight:700;font-size:13px;line-height:1;" title="Retirer">✕</button>
+    </label>
+  `);
+  input.value = '';
+}
+window.ajouterEquipementPersonnalise = ajouterEquipementPersonnalise;
+
+async function chargerParametresSite() {
+  if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
+  try {
+    const snap = await window.dbAdmin.collection('parametres').doc('site').get();
+    parametresSiteCourants = { ...PARAMS_SITE_DEFAUT, ...(snap.exists ? snap.data() : {}) };
+  } catch (err) {
+    console.error('Erreur chargement paramètres site :', err);
+    toast('❌ Impossible de charger les paramètres actuels');
+    parametresSiteCourants = { ...PARAMS_SITE_DEFAUT };
+  }
+
+  const p = parametresSiteCourants;
+  appliquerCouleursAdmin(p);
+  document.getElementById('paramCouleurPrincipale').value = p.couleurPrincipale;
+  document.getElementById('paramCouleurAccent').value = p.couleurAccent;
+  document.getElementById('paramCouleurSecondaire').value = p.couleurSecondaire;
+  majApercuTheme();
+  ['paramCouleurPrincipale', 'paramCouleurAccent', 'paramCouleurSecondaire'].forEach(id =>
+    document.getElementById(id).oninput = majApercuTheme
+  );
+
+  document.getElementById('paramHeroTitre').value = p.heroTitre || '';
+  document.getElementById('paramHeroDescription').value = p.heroDescription || '';
+  document.getElementById('paramContactWhatsapp').value = p.contactWhatsapp || '';
+  document.getElementById('paramContactTelephone').value = p.contactTelephone || '';
+  document.getElementById('paramContactEmail').value = p.contactEmail || '';
+  document.getElementById('paramContactFacebook').value = p.contactFacebook || '';
+  document.getElementById('paramContactInstagram').value = p.contactInstagram || '';
+
+  const ref = window.MALAGA_REF || {};
+  rendreListeCategorieParam('paramListeTypesBien', ref.TYPES_BIEN || [], p.typesBienExtra || [], p.typesBienMasques || []);
+  rendreListeCategorieParam('paramListeEquipements', ref.EQUIPEMENTS || [], p.equipementsExtra || [], p.equipementsMasques || []);
+}
+window.chargerParametresSite = chargerParametresSite;
+
+function lireListeCategorieParam(conteneurId) {
+  const conteneur = document.getElementById(conteneurId);
+  const standardsMasques = [];
+  const extra = [];
+  conteneur.querySelectorAll('label').forEach(label => {
+    const checkbox = label.querySelector('input[type="checkbox"]');
+    if (checkbox) {
+      if (!checkbox.checked) standardsMasques.push(checkbox.dataset.nom);
+    } else {
+      // Un chip "✨ ..." personnalisé : le nom est le texte du label sans le
+      // "✨ " initial ni le bouton ✕ à la fin.
+      const nom = label.textContent.replace('✨', '').replace('✕', '').trim();
+      if (nom) extra.push(nom);
+    }
+  });
+  return { standardsMasques, extra };
+}
+
+async function enregistrerParametresSite() {
+  if (!window.dbAdmin) { toast('❌ Firebase non initialisé'); return; }
+  const typesBien = lireListeCategorieParam('paramListeTypesBien');
+  const equipements = lireListeCategorieParam('paramListeEquipements');
+
+  const donnees = {
+    couleurPrincipale: document.getElementById('paramCouleurPrincipale').value,
+    couleurAccent: document.getElementById('paramCouleurAccent').value,
+    couleurSecondaire: document.getElementById('paramCouleurSecondaire').value,
+    heroTitre: document.getElementById('paramHeroTitre').value.trim(),
+    heroDescription: document.getElementById('paramHeroDescription').value.trim(),
+    contactWhatsapp: document.getElementById('paramContactWhatsapp').value.trim(),
+    contactTelephone: document.getElementById('paramContactTelephone').value.trim(),
+    contactEmail: document.getElementById('paramContactEmail').value.trim(),
+    contactFacebook: document.getElementById('paramContactFacebook').value.trim(),
+    contactInstagram: document.getElementById('paramContactInstagram').value.trim(),
+    typesBienExtra: typesBien.extra,
+    typesBienMasques: typesBien.standardsMasques,
+    equipementsExtra: equipements.extra,
+    equipementsMasques: equipements.standardsMasques,
+    dateModification: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    await window.dbAdmin.collection('parametres').doc('site').set(donnees, { merge: true });
+    parametresSiteCourants = { ...parametresSiteCourants, ...donnees };
+    appliquerCouleursAdmin(parametresSiteCourants);
+    toast('✅ Paramètres enregistrés — visibles sur le site public en direct.');
+  } catch (err) {
+    console.error('Erreur enregistrement paramètres site :', err);
+    toast('❌ Échec de l\'enregistrement : ' + (err.message || err));
+  }
+}
+window.enregistrerParametresSite = enregistrerParametresSite;
+
+// Applique la teinte déjà choisie dès l'ouverture de l'admin (avant même
+// d'aller sur la page Paramètres) — best-effort : window.dbAdmin peut ne pas
+// être encore prêt selon l'ordre de chargement, dans ce cas on abandonne
+// silencieusement (chargerParametresSite() réappliquera de toute façon dès
+// l'ouverture de la page Paramètres).
+function preChargerCouleursAdmin() {
+  if (!window.dbAdmin) return;
+  window.dbAdmin.collection('parametres').doc('site').get()
+    .then(snap => { if (snap.exists) appliquerCouleursAdmin({ ...PARAMS_SITE_DEFAUT, ...snap.data() }); })
+    .catch(() => {});
 }
 
 function initSidebar() {

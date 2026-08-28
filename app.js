@@ -352,8 +352,136 @@ function initAutocompleteRecherche() {
   });
 }
 
+/* ══════════════════════════════════════════════════════════
+   PARAMÈTRES DU SITE — chargés depuis Firestore parametres/site
+   (réglés depuis l'admin, voir "⚙️ Paramètres du site"). Appliqués en
+   direct : couleurs de thème, textes d'accueil, coordonnées de contact,
+   catégories/équipements personnalisés. Abonnement temps réel (onSnapshot,
+   comme le reste du site) : un changement dans l'admin se répercute donc
+   sans avoir besoin de recharger la page publique.
+══════════════════════════════════════════════════════════ */
+function assombrirCouleur(hex, pourcentage) {
+  const n = parseInt((hex || "").replace("#", ""), 16);
+  if (isNaN(n)) return hex;
+  const r = Math.max(0, Math.round(((n >> 16) & 255) * (1 - pourcentage)));
+  const g = Math.max(0, Math.round(((n >> 8) & 255) * (1 - pourcentage)));
+  const b = Math.max(0, Math.round((n & 255) * (1 - pourcentage)));
+  return "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+
+function appliquerCouleursSite(p) {
+  // style.css s'appuie déjà partout sur ces variables (en-tête en dégradé,
+  // boutons, badges, prix, puces actives, bouton "Près de chez moi"...) —
+  // il suffit donc de les redéfinir ici pour que TOUT le site suive, sans
+  // avoir à cibler chaque élément un par un. Les variantes "-fonce" (dégradés,
+  // hover) sont calculées automatiquement à ~20% plus sombre.
+  const vert = p.couleurPrincipale || "#009E60";
+  const jaune = p.couleurAccent || "#FCD116";
+  const bleu = p.couleurSecondaire || "#3A75C4";
+  const racine = document.documentElement.style;
+  racine.setProperty("--vert", vert);
+  racine.setProperty("--vert-fonce", assombrirCouleur(vert, 0.2));
+  racine.setProperty("--jaune", jaune);
+  racine.setProperty("--jaune-fonce", assombrirCouleur(jaune, 0.15));
+  racine.setProperty("--bleu", bleu);
+  racine.setProperty("--bleu-fonce", assombrirCouleur(bleu, 0.2));
+}
+
+function appliquerTextesAccueil(p) {
+  if (p.heroTitre) {
+    const titre = document.querySelector(".hero h1.titre-lux");
+    if (titre) titre.textContent = p.heroTitre;
+  }
+  if (p.heroDescription) {
+    let sousTitre = document.getElementById("hero-sous-titre");
+    if (!sousTitre) {
+      sousTitre = document.createElement("p");
+      sousTitre.id = "hero-sous-titre";
+      sousTitre.style.cssText = "text-align:center;color:#fff;opacity:.85;font-size:14px;margin:-10px 0 18px;";
+      document.querySelector(".hero h1.titre-lux")?.insertAdjacentElement("afterend", sousTitre);
+    }
+    sousTitre.textContent = p.heroDescription;
+  }
+}
+
+function appliquerCoordonneesContact(p) {
+  if (p.contactWhatsapp) {
+    const numero = p.contactWhatsapp.replace(/[^\d+]/g, "");
+    document.querySelectorAll('a[href^="https://wa.me/"]').forEach(a => { a.href = `https://wa.me/${numero.replace("+", "")}`; });
+  }
+  if (p.contactTelephone) {
+    document.querySelectorAll('a[href^="tel:"]').forEach(a => { a.href = `tel:${p.contactTelephone.replace(/\s/g, "")}`; });
+  }
+  // Pied de page : téléphone/email affichés en toutes lettres (voir footer
+  // dans index.html) + liens Facebook/Instagram ajoutés uniquement s'ils
+  // sont renseignés, pour ne rien afficher d'inutile sinon.
+  const footerContact = document.querySelector(".footer p");
+  if (footerContact && (p.contactTelephone || p.contactEmail)) {
+    footerContact.innerHTML = [
+      p.contactTelephone ? `📞 ${escapeHTML(p.contactTelephone)}` : "",
+      p.contactEmail ? `✉️ ${escapeHTML(p.contactEmail)}` : ""
+    ].filter(Boolean).join(" &nbsp;|&nbsp; ");
+  }
+  if ((p.contactFacebook || p.contactInstagram) && !document.getElementById("footer-reseaux")) {
+    const ligne = document.createElement("p");
+    ligne.id = "footer-reseaux";
+    ligne.style.cssText = "font-size:11px;margin-top:8px;";
+    ligne.innerHTML = [
+      p.contactFacebook ? `<a href="${escapeHTML(p.contactFacebook)}" target="_blank" style="color:rgba(255,255,255,.7);">Facebook</a>` : "",
+      p.contactInstagram ? `<a href="${escapeHTML(p.contactInstagram)}" target="_blank" style="color:rgba(255,255,255,.7);">Instagram</a>` : ""
+    ].filter(Boolean).join(" &nbsp;·&nbsp; ");
+    document.querySelector(".footer .brand")?.insertAdjacentElement("afterend", ligne);
+  }
+}
+
+// Merge en place des listes de référence (TYPES_BIEN/EQUIPEMENTS restent les
+// mêmes tableaux importés, réutilisés partout ailleurs dans ce fichier —
+// modifier leur contenu ici suffit donc à répercuter le choix de l'admin
+// sur les filtres, sans dupliquer la logique de rendu des selects/chips).
+function fusionnerListeCategorie(tableauRef, extra, masques) {
+  (masques || []).forEach(nom => {
+    const i = tableauRef.indexOf(nom);
+    if (i !== -1) tableauRef.splice(i, 1);
+  });
+  (extra || []).forEach(nom => {
+    if (!tableauRef.includes(nom)) tableauRef.push(nom);
+  });
+}
+
+function appliquerParametresSite(p) {
+  if (!p) return;
+  appliquerCouleursSite(p);
+  appliquerTextesAccueil(p);
+  appliquerCoordonneesContact(p);
+  try {
+    fusionnerListeCategorie(TYPES_BIEN, p.typesBienExtra, p.typesBienMasques);
+    fusionnerListeCategorie(EQUIPEMENTS, p.equipementsExtra, p.equipementsMasques);
+  } catch (err) {
+    // Si TYPES_BIEN/EQUIPEMENTS sont figés (Object.freeze) côté
+    // malaga-reference.js, on n'interrompt pas le reste du site pour autant.
+    console.warn("Impossible de personnaliser les catégories (tableau figé ?) :", err);
+  }
+}
+
 /* ══════════ INITIALISATION ══════════ */
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Chargé et appliqué AVANT initFiltres()/initFiltresAvances() : ces deux
+  // fonctions construisent les select/chips de types de bien et équipements
+  // à partir de TYPES_BIEN/EQUIPEMENTS, qu'appliquerParametresSite() vient
+  // de compléter/filtrer selon les réglages admin — l'ordre compte ici.
+  try {
+    const paramsSnap = await getDoc(doc(db, "parametres", "site"));
+    if (paramsSnap.exists()) appliquerParametresSite(paramsSnap.data());
+  } catch (err) {
+    console.warn("Paramètres du site non chargés (valeurs par défaut conservées) :", err);
+  }
+  // Recharge en direct si l'admin modifie les couleurs/textes/contact pendant
+  // que la page est ouverte — les catégories, elles, restent celles appliquées
+  // au chargement (éviter les doublons dans des select déjà construits).
+  onSnapshot(doc(db, "parametres", "site"), (snap) => {
+    if (snap.exists()) { appliquerCouleursSite(snap.data()); appliquerTextesAccueil(snap.data()); appliquerCoordonneesContact(snap.data()); }
+  });
+
   initCarte();
   initFiltres();
   initFiltresAvances();
