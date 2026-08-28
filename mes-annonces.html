@@ -64,6 +64,13 @@
   <div class="dashboard-header">
     <h1 data-i18n>Mes annonces</h1>
     <p id="sousTitreDashboard" data-i18n>Chargement…</p>
+    <button type="button" class="btn btn-outline" id="btnOuvrirRevendication" style="margin-top:12px;" data-i18n>🔑 Revendiquer un établissement existant</button>
+  </div>
+
+  <!-- Mes demandes de revendication en cours (masqué s'il n'y en a aucune) -->
+  <div id="revMesDemandesWrap" class="rev-mes-demandes" hidden>
+    <h3 data-i18n>🔑 Vos demandes de revendication</h3>
+    <div id="revMesDemandesListe"></div>
   </div>
 
   <div class="liste-dashboard" id="listeDashboard">
@@ -106,8 +113,62 @@
     </div>
   </div>
 
+  <!-- Modal revendication d'établissement -->
+  <div class="modal-overlay" id="modalRevendiquer">
+    <div class="modal-panneau">
+      <div class="form-card">
+        <h2 data-i18n>🔑 Revendiquer un établissement</h2>
+        <p class="sous-titre" data-i18n>Vous gérez déjà un établissement publié sur MALAGA sans y être rattaché (import automatique, fiche créée par un tiers) ? Faites votre demande ci-dessous — un administrateur vérifie votre position et vos photos avant de vous l'attribuer.</p>
+        <form id="formRevendiquer">
+          <div class="champ">
+            <label data-i18n>Rechercher l'établissement</label>
+            <input type="text" id="revChercheEtablissement" placeholder="Nom de l'hôtel, du restaurant, du quartier…" data-i18n-ph autocomplete="off">
+            <div id="revListeEtablissements" class="rev-liste-etablissements">
+              <p class="spinner" data-i18n>Chargement des établissements…</p>
+            </div>
+          </div>
+
+          <div class="champ rev-choisi-wrap" id="revEtablissementChoisiWrap" hidden>
+            <label data-i18n>Établissement sélectionné</label>
+            <div class="rev-etablissement-choisi">
+              <span id="revEtablissementChoisiTexte"></span>
+              <button type="button" class="btn-lien" id="btnRevChangerEtablissement" data-i18n>Changer</button>
+            </div>
+          </div>
+
+          <div class="champ">
+            <label data-i18n>Votre nom (ou raison sociale)</label>
+            <input type="text" id="revNom" required>
+          </div>
+
+          <div class="champ">
+            <label data-i18n>Téléphone (WhatsApp de préférence)</label>
+            <input type="tel" id="revTelephone" required placeholder="Ex : 077 12 34 56" data-i18n-ph>
+          </div>
+
+          <div class="champ">
+            <label data-i18n>Votre position actuelle</label>
+            <button type="button" class="btn btn-outline" id="btnRevLocaliser" style="width:100%;" data-i18n>📍 Utiliser ma position actuelle</button>
+            <p class="meta" id="revPositionStatut" style="margin-top:6px;" data-i18n>Nécessaire pour que l'admin vérifie que vous êtes bien sur place.</p>
+          </div>
+
+          <div class="champ">
+            <label data-i18n>Photos justificatives (panneau à l'entrée, facture, badge…)</label>
+            <input type="file" id="revPhotosInput" accept="image/*" multiple>
+            <div id="revPhotosApercu" class="rev-photos-apercu"></div>
+          </div>
+
+          <div style="display:flex;gap:10px;">
+            <button type="button" class="btn btn-blanc" id="btnAnnulerRevendication" style="flex:1;" data-i18n>Annuler</button>
+            <button type="submit" class="btn btn-vert" style="flex:1;" id="btnEnvoyerRevendication" data-i18n>Envoyer la demande</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
-    import { auth, db, signOut, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "./firebase-config.js";
+    import { auth, db, signOut, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, serverTimestamp } from "./firebase-config.js";
     import { protegerPage } from "./auth.js";
     import { getIconeType, formatPrix, formatPrixAnnonce, escapeHTML, ETAGES, VUES, MOYENS_PAIEMENT } from "./malaga-reference.js";
 
@@ -192,9 +253,271 @@
     }
     injecterStylesLightbox();
 
+    /* ══════════ REVENDICATION D'ÉTABLISSEMENT ══════════
+       Formulaire public permettant à un compte connecté de demander à
+       devenir propriétaire d'un établissement déjà publié mais sans
+       proprietaireId (imports OpenStreetMap notamment — voir
+       importerSelectionOSM côté admin). La demande est écrite dans
+       demandesRevendication (voir firestore.rules) : l'admin seul peut
+       ensuite l'accepter (avec une durée) ou la refuser depuis l'onglet
+       🔑 Propriétaires. Rien n'est modifié sur l'annonce elle-même ici. */
+    let etablissementsSansProprietaire = [];
+    let etablissementsChargesUneFois = false;
+    let etablissementChoisi = null;   // { id, nom }
+    let revPositionCourante = null;   // { lat, lng }
+    let revPhotosFichiers = [];       // File[] choisis, avant compression/envoi
+    let mesRevendicationsEnCours = new Set(); // ids d'établissements déjà en_attente pour cet utilisateur
+
+    function injecterStylesRevendication() {
+      const style = document.createElement("style");
+      style.textContent = `
+        .rev-liste-etablissements{margin-top:8px;max-height:220px;overflow-y:auto;border:1px solid #E5E7EB;border-radius:10px;}
+        .rev-etablissement-item{display:flex;flex-direction:column;gap:2px;padding:10px 12px;cursor:pointer;border-bottom:1px solid #F1F2F4;}
+        .rev-etablissement-item:last-child{border-bottom:none;}
+        .rev-etablissement-item:hover{background:#F7F8FA;}
+        .rev-etablissement-item .nom{font-weight:600;font-size:13.5px;}
+        .rev-etablissement-item .lieu{font-size:12px;color:#8A93A3;}
+        .rev-etablissement-choisi{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#F0FDF6;border:1px solid #009E60;border-radius:10px;padding:10px 12px;font-size:13.5px;font-weight:600;}
+        .btn-lien{background:none;border:none;color:#009E60;font-weight:700;font-size:12.5px;text-decoration:underline;cursor:pointer;padding:0;}
+        .rev-photos-apercu{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+        .rev-photos-apercu img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #E5E7EB;}
+        .rev-mes-demandes{margin:0 16px 18px;}
+        .rev-mes-demandes h3{font-size:14px;margin:0 0 8px;}
+        .rev-demande-ligne{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:8px;}
+      `;
+      document.head.appendChild(style);
+    }
+    injecterStylesRevendication();
+
+    // Chargée une seule fois par ouverture de session (pas de onSnapshot :
+    // la liste des établissements sans propriétaire bouge rarement, et un
+    // getDocs() unique évite de garder une écoute temps réel ouverte sur
+    // toute la collection annonces juste pour ce formulaire secondaire.
+    async function chargerEtablissementsSansProprietaire() {
+      if (etablissementsChargesUneFois) return;
+      try {
+        const snap = await getDocs(collection(db, "annonces"));
+        etablissementsSansProprietaire = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(a => !a.proprietaireId);
+        etablissementsChargesUneFois = true;
+        rendreListeEtablissements("");
+      } catch (err) {
+        console.error(err);
+        document.getElementById("revListeEtablissements").innerHTML =
+          `<p class="spinner">Impossible de charger la liste des établissements.</p>`;
+      }
+    }
+
+    function rendreListeEtablissements(recherche) {
+      const conteneur = document.getElementById("revListeEtablissements");
+      const r = (recherche || "").toLowerCase().trim();
+      let liste = etablissementsSansProprietaire;
+      if (r) {
+        liste = liste.filter(a =>
+          (a.nomEtablissement || a.titre || "").toLowerCase().includes(r) ||
+          (a.quartier || "").toLowerCase().includes(r) ||
+          (a.commune || "").toLowerCase().includes(r));
+      }
+      if (!liste.length) {
+        conteneur.innerHTML = `<p class="spinner" style="margin:10px;">${etablissementsSansProprietaire.length ? "Aucun résultat." : "Aucun établissement sans propriétaire pour le moment."}</p>`;
+        return;
+      }
+      conteneur.innerHTML = liste.slice(0, 50).map(a => `
+        <div class="rev-etablissement-item" data-id="${a.id}">
+          <span class="nom">${escapeHTML(a.nomEtablissement || a.titre || "Établissement")}</span>
+          <span class="lieu">📍 ${escapeHTML(a.quartier || "")}${a.commune ? " — " + escapeHTML(a.commune) : ""}</span>
+        </div>`).join("");
+      conteneur.querySelectorAll(".rev-etablissement-item").forEach(item => {
+        item.onclick = () => choisirEtablissement(item.dataset.id);
+      });
+    }
+
+    function choisirEtablissement(id) {
+      const a = etablissementsSansProprietaire.find(x => x.id === id);
+      if (!a) return;
+      etablissementChoisi = { id: a.id, nom: a.nomEtablissement || a.titre || "Établissement" };
+      document.getElementById("revEtablissementChoisiTexte").textContent = etablissementChoisi.nom;
+      document.getElementById("revEtablissementChoisiWrap").hidden = false;
+      document.getElementById("revChercheEtablissement").closest(".champ").querySelector(".rev-liste-etablissements").hidden = true;
+      document.getElementById("revChercheEtablissement").hidden = true;
+
+      if (mesRevendicationsEnCours.has(id)) {
+        document.getElementById("revPositionStatut").textContent =
+          "⚠️ Vous avez déjà une demande en attente pour cet établissement.";
+      }
+    }
+
+    function reinitialiserChoixEtablissement() {
+      etablissementChoisi = null;
+      document.getElementById("revEtablissementChoisiWrap").hidden = true;
+      document.getElementById("revChercheEtablissement").hidden = false;
+      document.getElementById("revChercheEtablissement").closest(".champ").querySelector(".rev-liste-etablissements").hidden = false;
+      document.getElementById("revChercheEtablissement").value = "";
+      rendreListeEtablissements("");
+    }
+
+    /* Même logique de compression/upload que côté admin (voir admin.js) —
+       fichier léger recompressé côté client avant l'envoi vers Cloudinary,
+       seule l'URL renvoyée part ensuite dans Firestore. */
+    const CLOUDINARY_CLOUD_NAME = "enpphgwu";
+    const CLOUDINARY_UPLOAD_PRESET = "malaga_photos";
+    function compresserImageRev(fichier, largeurMax = 900, qualite = 0.72) {
+      return new Promise((resolve, reject) => {
+        const lecteur = new FileReader();
+        lecteur.onerror = () => reject(new Error("Lecture du fichier impossible"));
+        lecteur.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error("Image invalide"));
+          img.onload = () => {
+            const ratio = Math.min(1, largeurMax / img.width);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * ratio);
+            canvas.height = Math.round(img.height * ratio);
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+              if (!blob) { reject(new Error("Compression impossible")); return; }
+              resolve(new File([blob], fichier.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+            }, "image/jpeg", qualite);
+          };
+          img.src = lecteur.result;
+        };
+        lecteur.readAsDataURL(fichier);
+      });
+    }
+    async function uploaderVersCloudinaryRev(fichier) {
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+      const formData = new FormData();
+      formData.append("file", fichier);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+      const reponse = await fetch(url, { method: "POST", body: formData });
+      if (!reponse.ok) throw new Error("Échec de l'envoi vers Cloudinary");
+      return (await reponse.json()).secure_url;
+    }
+
+    function rendreApercuPhotosRev() {
+      const conteneur = document.getElementById("revPhotosApercu");
+      conteneur.innerHTML = "";
+      revPhotosFichiers.forEach(fichier => {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(fichier);
+        conteneur.appendChild(img);
+      });
+    }
+
+    function ecouterMesRevendications(uid) {
+      const q = query(collection(db, "demandesRevendication"), where("proprietaireId", "==", uid));
+      onSnapshot(q, (snap) => {
+        const demandes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.dateDemande?.toMillis?.() || 0) - (a.dateDemande?.toMillis?.() || 0));
+
+        mesRevendicationsEnCours = new Set(demandes.filter(d => d.statut === "en_attente").map(d => d.etablissementId));
+
+        const wrap = document.getElementById("revMesDemandesWrap");
+        const liste = document.getElementById("revMesDemandesListe");
+        if (!demandes.length) { wrap.hidden = true; return; }
+        wrap.hidden = false;
+
+        const badges = {
+          en_attente: "⏳ En attente",
+          validee: "✅ Acceptée",
+          refusee: "🚫 Refusée"
+        };
+        liste.innerHTML = demandes.map(d => `
+          <div class="rev-demande-ligne">
+            <span>${escapeHTML(d.nomEtablissement || "Établissement")}</span>
+            <span>${badges[d.statut] || d.statut || "—"}</span>
+          </div>`).join("");
+      }, (err) => console.error(err));
+    }
+
+    function ouvrirModalRevendiquer() {
+      document.getElementById("formRevendiquer").reset();
+      reinitialiserChoixEtablissement();
+      revPositionCourante = null;
+      revPhotosFichiers = [];
+      rendreApercuPhotosRev();
+      document.getElementById("revPositionStatut").textContent = "Nécessaire pour que l'admin vérifie que vous êtes bien sur place.";
+      document.getElementById("modalRevendiquer").classList.add("ouverte");
+      chargerEtablissementsSansProprietaire();
+    }
+    document.getElementById("btnOuvrirRevendication").onclick = ouvrirModalRevendiquer;
+    document.getElementById("btnAnnulerRevendication").onclick = () => document.getElementById("modalRevendiquer").classList.remove("ouverte");
+    document.getElementById("btnRevChangerEtablissement").onclick = reinitialiserChoixEtablissement;
+
+    document.getElementById("revChercheEtablissement").addEventListener("input", (e) => rendreListeEtablissements(e.target.value));
+
+    document.getElementById("btnRevLocaliser").addEventListener("click", () => {
+      if (!navigator.geolocation) { alert("La géolocalisation n'est pas disponible sur cet appareil."); return; }
+      const btn = document.getElementById("btnRevLocaliser");
+      const statut = document.getElementById("revPositionStatut");
+      btn.disabled = true;
+      btn.textContent = "⏳ Localisation en cours…";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          revPositionCourante = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          btn.disabled = false;
+          btn.textContent = "📍 Utiliser ma position actuelle";
+          statut.textContent = "✅ Position enregistrée.";
+        },
+        () => {
+          btn.disabled = false;
+          btn.textContent = "📍 Utiliser ma position actuelle";
+          statut.textContent = "❌ Impossible d'obtenir votre position. Vérifiez l'autorisation de localisation dans votre navigateur.";
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+
+    document.getElementById("revPhotosInput").addEventListener("change", (e) => {
+      revPhotosFichiers = revPhotosFichiers.concat(Array.from(e.target.files || []));
+      rendreApercuPhotosRev();
+      e.target.value = "";
+    });
+
+    document.getElementById("formRevendiquer").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!etablissementChoisi) { alert("Choisissez d'abord l'établissement à revendiquer dans la liste."); return; }
+      if (!revPositionCourante) { alert("Utilisez le bouton de localisation avant d'envoyer votre demande."); return; }
+      if (!revPhotosFichiers.length) { alert("Ajoutez au moins une photo justificative."); return; }
+
+      const btnEnvoyer = document.getElementById("btnEnvoyerRevendication");
+      btnEnvoyer.disabled = true;
+      btnEnvoyer.textContent = "⏳ Envoi en cours…";
+      try {
+        const urls = [];
+        for (const fichier of revPhotosFichiers) {
+          const optimisee = await compresserImageRev(fichier);
+          urls.push(await uploaderVersCloudinaryRev(optimisee));
+        }
+
+        await addDoc(collection(db, "demandesRevendication"), {
+          proprietaireId: uidCourant,
+          proprietaireNom: document.getElementById("revNom").value.trim(),
+          telephone: document.getElementById("revTelephone").value.trim(),
+          etablissementId: etablissementChoisi.id,
+          nomEtablissement: etablissementChoisi.nom,
+          positionGPS: revPositionCourante,
+          photos: urls,
+          statut: "en_attente",
+          dateDemande: serverTimestamp()
+        });
+
+        document.getElementById("modalRevendiquer").classList.remove("ouverte");
+        alert("✅ Demande envoyée ! Un administrateur va vérifier vos informations et vous contactera.");
+      } catch (err) {
+        console.error("Erreur envoi revendication :", err);
+        alert("Impossible d'envoyer la demande. Vérifiez votre connexion et réessayez.");
+      } finally {
+        btnEnvoyer.disabled = false;
+        btnEnvoyer.textContent = "Envoyer la demande";
+      }
+    });
+
     protegerPage((user) => {
       uidCourant = user.uid;
       ecouterMesAnnonces(user.uid);
+      ecouterMesRevendications(user.uid);
     }, "proprietaire");
 
     // Remarque : le tri se fait côté client (et non via orderBy() dans la requête)
