@@ -865,12 +865,21 @@ function appliquerFiltres(liste) {
     // Règle par défaut pour tout affichage d'hébergement hôtelier (catégorie
     // "Hôtels & Motels" choisie via le sélecteur dédié, OU simplement un
     // filtre type = Chambre d'hôtel/de motel posé depuis les filtres avancés) :
-    // les établissements les mieux classés (le plus d'étoiles) en tête.
+    // les établissements les plus "réels" et les mieux classés en tête, pour
+    // que l'application donne une impression réaliste plutôt que de mettre en
+    // avant des fiches encore incomplètes (importées, sans photo ni standing).
     // Seul un tri explicitement choisi par l'utilisateur (les 2 branches
     // "Près de chez moi" / proximité ci-dessus) passe devant cette règle.
-    // Tri stable, donc à standing égal l'ordre reste celui de la requête
-    // Firestore (date de publication décroissante).
-    resultat.sort((a, b) => extraireEtoiles(b.standing) - extraireEtoiles(a.standing));
+    //
+    // Score = présence d'une vraie photo (poids fort, décisif) + nombre
+    // d'étoiles (poids secondaire, pour départager les établissements déjà
+    // photographiés). Tri stable, donc à score égal l'ordre reste celui de
+    // la requête Firestore (date de publication décroissante).
+    const scoreEtablissement = (a) => {
+      const aUneVraiePhoto = !!(a.photos && a.photos.length && a.photos[0]);
+      return (aUneVraiePhoto ? 100 : 0) + extraireEtoiles(a.standing);
+    };
+    resultat.sort((a, b) => scoreEtablissement(b) - scoreEtablissement(a));
   }
 
   return resultat;
