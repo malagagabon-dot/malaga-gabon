@@ -154,6 +154,10 @@
       <span class="nav-icon">🔲</span> Codes QR
       <span class="nav-badge danger" id="badgeQR">0</span>
     </a>
+    <a class="nav-item" onclick="showPage('proprietaires')" data-page="proprietaires">
+      <span class="nav-icon">🔑</span> Propriétaires
+      <span class="nav-badge danger" id="badgeProprietaires">0</span>
+    </a>
     <a class="nav-item" onclick="showPage('signalements')" data-page="signalements">
       <span class="nav-icon">🚨</span> Signalements
       <span class="nav-badge danger" id="badgeSignal">0</span>
@@ -747,6 +751,20 @@
   <!-- ═══ ZONE D'IMPRESSION GROUPÉE (hors écran, utilisée uniquement par window.print()) ═══ -->
   <div id="zoneImpressionGroupee" style="display:none;"></div>
 
+  <!-- Fiche d'une revendication d'établissement (module 🔑 Propriétaires) —
+       même structure que modalFicheVerif ci-dessus (photos + impression),
+       avec en plus la position GPS envoyée par le propriétaire et les
+       actions Accepter (avec choix de durée) / Refuser. -->
+  <div class="modal-overlay hidden" id="modalFicheRevendication">
+    <div class="modal" style="max-width:640px;width:92%;max-height:88vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h3 style="margin:0;" data-i18n>Revendication d'établissement</h3>
+        <button class="btn-outline-sm" onclick="fermerFicheRevendication()" data-i18n>Fermer</button>
+      </div>
+      <div id="ficheRevendicationContenu"></div>
+    </div>
+  </div>
+
   <style>
     /* Cette règle s'applique à l'écran ET à l'impression : sans elle, les photos
        (selfie, pièce d'identité) s'affichent à leur taille brute et débordent. */
@@ -829,6 +847,145 @@
             <tr><td colspan="7" class="table-empty" data-i18n>Chargement...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE : PROPRIÉTAIRES D'ÉTABLISSEMENTS (attribution/revendication avec expiration) ═══
+       3 onglets : Revendications en attente / Attribution manuelle / Propriétaires actifs.
+       Interrupteur général dans ⚙️ Paramètres du site → 🔑 Abonnements propriétaires
+       (désactivé par défaut : affichage gratuit/permanent tant qu'il ne l'est pas). -->
+  <div class="page" id="page-proprietaires">
+    <div class="page-header">
+      <h1 data-i18n>🔑 Propriétaires d'établissements</h1>
+      <p data-i18n>Revendications envoyées par les propriétaires, attribution manuelle d'établissements et suivi des abonnements en cours. Sans effet tant que l'interrupteur "Abonnements propriétaires" (⚙️ Paramètres du site) n'est pas activé.</p>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="basculerOngletProprio('revendications')" onkeydown="if(event.key==='Enter'){basculerOngletProprio('revendications')}">
+        <div class="kpi-icon yellow">📝</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiPropRevAttente">—</div>
+          <div class="kpi-label" data-i18n>Revendications en attente</div>
+        </div>
+      </div>
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="basculerOngletProprio('actifs')" onkeydown="if(event.key==='Enter'){basculerOngletProprio('actifs')}">
+        <div class="kpi-icon green">✅</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiPropActifs">—</div>
+          <div class="kpi-label" data-i18n>Propriétaires actifs</div>
+        </div>
+      </div>
+      <div class="kpi-card clickable" role="button" tabindex="0" onclick="basculerOngletProprio('actifs')" onkeydown="if(event.key==='Enter'){basculerOngletProprio('actifs')}">
+        <div class="kpi-icon red">⏰</div>
+        <div class="kpi-info">
+          <div class="kpi-num" id="kpiPropExpireBientot">—</div>
+          <div class="kpi-label" data-i18n>Expirent sous 7 jours</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <button type="button" class="btn-outline-sm tab-proprio-btn actif" data-onglet="revendications" onclick="basculerOngletProprio('revendications')" data-i18n>📝 Revendications en attente</button>
+      <button type="button" class="btn-outline-sm tab-proprio-btn" data-onglet="attribution" onclick="basculerOngletProprio('attribution')" data-i18n>➕ Attribution manuelle</button>
+      <button type="button" class="btn-outline-sm tab-proprio-btn" data-onglet="actifs" onclick="basculerOngletProprio('actifs')" data-i18n>✅ Propriétaires actifs</button>
+    </div>
+    <style>
+      .tab-proprio-btn.actif { background: #009E60; color: #fff; border-color: #009E60; }
+    </style>
+
+    <!-- Onglet : Revendications en attente -->
+    <div class="onglet-proprio" id="ongletProprioRevendications">
+      <div class="filters-bar">
+        <input type="text" class="filter-input" id="filterRevendications" placeholder="🔍 Rechercher un propriétaire..." oninput="filtrerRevendications()" data-i18n-ph />
+        <select class="filter-select" id="filterStatutRevendication" onchange="filtrerRevendications()">
+          <option value="en_attente" data-i18n>⏳ En attente</option>
+          <option value="validee" data-i18n>✅ Acceptées</option>
+          <option value="refusee" data-i18n>🚫 Refusées</option>
+          <option value="" data-i18n>Toutes</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th data-i18n>Propriétaire</th>
+                <th data-i18n>Établissement revendiqué</th>
+                <th data-i18n>Téléphone</th>
+                <th data-i18n>Position GPS</th>
+                <th data-i18n>Statut</th>
+                <th data-i18n>Demandé le</th>
+                <th data-i18n>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="revendicationsTableBody">
+              <tr><td colspan="7" class="table-empty" data-i18n>Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet : Attribution manuelle -->
+    <div class="onglet-proprio hidden" id="ongletProprioAttribution">
+      <div class="card form-card">
+        <h3 style="margin-bottom:4px;" data-i18n>➕ Attribuer un ou plusieurs établissements</h3>
+        <p style="font-size:12.5px;color:#5B6472;margin:0 0 14px;" data-i18n>
+          À utiliser pour attribuer directement un établissement à un propriétaire, sans passer par une revendication (ex : accord conclu par un autre canal).
+        </p>
+        <div class="form-grid">
+          <div class="form-group full-col">
+            <label data-i18n>Utilisateur</label>
+            <select id="attribUtilisateurSelect">
+              <option value="" data-i18n>— Choisir un utilisateur —</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin:16px 0;">
+          <strong style="display:block;font-size:13px;margin-bottom:8px;" data-i18n>Établissements à attribuer</strong>
+          <input type="text" id="attribFiltreEtablissement" placeholder="🔍 Filtrer les établissements..." oninput="filtrerListeAttributionEtablissements()" style="margin-bottom:10px;" data-i18n-ph />
+          <div id="attribListeEtablissements" style="max-height:280px;overflow-y:auto;border:1px solid #E5E7EB;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label data-i18n>Durée de l'attribution</label>
+            <select id="attribDuree">
+              <option value="1mois" data-i18n>1 mois</option>
+              <option value="1trimestre" data-i18n>1 trimestre (3 mois)</option>
+              <option value="6mois" data-i18n>6 mois</option>
+              <option value="1an" data-i18n>1 an</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-primary" type="button" style="margin-top:6px;" onclick="validerAttributionManuelle()" data-i18n>🔑 Attribuer</button>
+      </div>
+    </div>
+
+    <!-- Onglet : Propriétaires actifs -->
+    <div class="onglet-proprio hidden" id="ongletProprioActifs">
+      <div class="filters-bar">
+        <input type="text" class="filter-input" id="filterProprioActifs" placeholder="🔍 Rechercher un propriétaire ou un établissement..." oninput="filtrerProprioActifs()" data-i18n-ph />
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th data-i18n>Propriétaire</th>
+                <th data-i18n>Établissement</th>
+                <th data-i18n>Depuis</th>
+                <th data-i18n>Expire dans</th>
+                <th data-i18n>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="proprioActifsTableBody">
+              <tr><td colspan="5" class="table-empty" data-i18n>Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -1206,6 +1363,19 @@
         </div>
       </div>
       <button class="btn-primary" type="button" onclick="enregistrerParametresSite()" data-i18n>💾 Enregistrer les coordonnées</button>
+    </div>
+
+    <!-- 🔑 Abonnements propriétaires -->
+    <div class="card form-card" style="border-left:5px solid #7C3AED;">
+      <h3 style="margin-bottom:4px;" data-i18n>🔑 Abonnements propriétaires</h3>
+      <p style="font-size:12.5px;color:#5B6472;margin:0 0 14px;" data-i18n>
+        Tant que cet interrupteur est désactivé, l'affichage des établissements reste gratuit et permanent (comme aujourd'hui) : aucune échéance n'a d'effet réel, même si des propriétaires sont déjà revendiqués ou attribués depuis 🔑 Propriétaires. Active-le seulement quand tu es prêt à faire disparaître du site public les établissements dont l'abonnement a expiré.
+      </p>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;font-weight:600;">
+        <input type="checkbox" id="paramAbonnementsProprioActifs" style="width:20px;height:20px;flex-shrink:0;">
+        <span data-i18n>Activer le contrôle des abonnements propriétaires (masquer les établissements expirés sur le site public)</span>
+      </label>
+      <button class="btn-primary" type="button" style="margin-top:14px;" onclick="enregistrerParametresSite()" data-i18n>💾 Enregistrer</button>
     </div>
 
     <!-- 🏷️ Catégories & filtres -->
@@ -1624,63 +1794,6 @@
 
 <!-- Toast -->
 <div class="toast hidden" id="toast"></div>
-
-<!-- ═══════════════════ NAVIGATION BASSE (mobile) ═══════════════════
-     Style posé ici en inline (plutôt que dans admin.css) pour ne pas
-     dépendre de son cache. Réutilise showPage() + la classe .nav-item
-     (déjà gérée par showPage() pour l'état actif) — les 4 onglets les plus
-     utilisés au quotidien, plus "Plus" qui ouvre le menu latéral complet
-     pour accéder à toutes les autres sections (Entreprises, Vérification,
-     Codes QR, Signalements, Messages, Statistiques, Classement,
-     Notifications...). Masquée automatiquement au-delà de 900px (voir
-     media query) puisque le menu latéral reste visible en desktop. -->
-<style>
-  .bottom-nav-admin {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
-    display: flex; justify-content: space-around; align-items: stretch;
-    background: #fff; border-top: 1px solid #E5E7EB;
-    box-shadow: 0 -4px 16px rgba(0,0,0,.08);
-    padding-bottom: env(safe-area-inset-bottom, 0);
-  }
-  .bottom-nav-admin .bnav-item {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 2px; padding: 8px 4px 6px; text-decoration: none; color: #8A93A3;
-    font-size: 10.5px; font-weight: 600; border: none; background: none; cursor: pointer;
-    position: relative;
-  }
-  .bottom-nav-admin .bnav-item .bnav-icon { font-size: 19px; line-height: 1; }
-  .bottom-nav-admin .bnav-item.active { color: #009E60; }
-  .bottom-nav-admin .bnav-item .bnav-dot {
-    position: absolute; top: 4px; right: calc(50% - 16px);
-    width: 8px; height: 8px; border-radius: 50%; background: #EF4444;
-    display: none;
-  }
-  .bottom-nav-admin .bnav-item .bnav-dot.visible { display: block; }
-  body { padding-bottom: 62px; }
-  @media (min-width: 900px) {
-    .bottom-nav-admin { display: none; }
-    body { padding-bottom: 0; }
-  }
-</style>
-<nav class="bottom-nav-admin" id="bottomNavAdmin">
-  <a class="nav-item bnav-item" data-page="dashboard" onclick="showPage('dashboard')">
-    <span class="bnav-icon">📊</span> Tableau de bord
-  </a>
-  <a class="nav-item bnav-item" data-page="annonces" onclick="showPage('annonces')">
-    <span class="bnav-icon">🏠</span> Annonces
-    <span class="bnav-dot" id="bnavDotAnnonces"></span>
-  </a>
-  <a class="nav-item bnav-item" data-page="utilisateurs" onclick="showPage('utilisateurs')">
-    <span class="bnav-icon">👥</span> Utilisateurs
-  </a>
-  <a class="nav-item bnav-item" data-page="reservations" onclick="showPage('reservations')">
-    <span class="bnav-icon">💳</span> Réservations
-    <span class="bnav-dot" id="bnavDotReservations"></span>
-  </a>
-  <button type="button" class="bnav-item" id="btnBnavPlus" onclick="document.getElementById('burgerAdmin')?.click()">
-    <span class="bnav-icon">☰</span> Plus
-  </button>
-</nav>
 
 <!-- Firebase -->
 <!-- Pont ES module → global : expose les listes de référence de malaga-reference.js
