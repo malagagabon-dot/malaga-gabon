@@ -875,8 +875,19 @@ function appliquerFiltres(liste) {
     // d'étoiles (poids secondaire, pour départager les établissements déjà
     // photographiés). Tri stable, donc à score égal l'ordre reste celui de
     // la requête Firestore (date de publication décroissante).
+    //
+    // Attention : les fiches importées automatiquement depuis OpenStreetMap
+    // (aCompleter === true, voir admin.js → importerSelectionOSM) reçoivent
+    // une photo générique par type d'établissement (pas une vraie photo du
+    // lieu) pour ne pas laisser de case vide — leur champ `photos` n'est donc
+    // JAMAIS vide, même sans vraie photo. Sans cette exclusion, ces fiches
+    // encore incomplètes remonteraient à tort devant de vrais établissements
+    // photographiés. Ce drapeau est supprimé par l'admin dès qu'une fiche est
+    // complétée (voir "✏️ Compléter" dans admin.js), donc une fiche réellement
+    // renseignée n'est jamais pénalisée par cette règle.
     const scoreEtablissement = (a) => {
-      const aUneVraiePhoto = !!(a.photos && a.photos.length && a.photos[0]);
+      const estValidee = a.aCompleter !== true;
+      const aUneVraiePhoto = estValidee && !!(a.photos && a.photos.length && a.photos[0]);
       return (aUneVraiePhoto ? 100 : 0) + extraireEtoiles(a.standing);
     };
     resultat.sort((a, b) => scoreEtablissement(b) - scoreEtablissement(a));
