@@ -1215,7 +1215,10 @@ function rendreMarqueurs(liste) {
     // annonces affichées, qui peuvent inclure des résultats de repli hors
     // rayon (quartier/arrondissement/commune).
   } else if (bounds.length > 0) {
-    map.flyToBounds(bounds, { padding: [30, 30], maxZoom: 15, duration: 0.6 });
+    // Marge réduite + zoom max relevé : resserre la vue sur le nuage de
+    // points réel (au lieu de laisser une large bande de mer/forêt vide
+    // autour), sans toucher à la taille du cadre de la carte (gérée en CSS).
+    map.flyToBounds(bounds, { padding: [10, 10], maxZoom: 16, duration: 0.6 });
   } else {
     recentrerSurZoneFiltre();
   }
