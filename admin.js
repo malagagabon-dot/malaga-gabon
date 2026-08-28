@@ -64,6 +64,9 @@ let ecouteVerifDemarree = false;
 let ecouteAlertesFraudeDemarree = false;
 let demandesQRData = [];         // alimenté en temps réel depuis Firestore "demandesQR"
 let ecouteQRDemarree = false;
+let revendicationsData = [];     // alimenté en temps réel depuis Firestore "demandesRevendication"
+let ecouteRevendicationsDemarree = false;
+let intervalChronoProprio = null; // rafraîchit le chrono JJ:HH:MM:SS de l'onglet "Propriétaires actifs"
 const selectionVerif = new Set(); // uids sélectionnés pour l'impression groupée
 let pageActuelle = 'dashboard';
 let periodeClassement = 'tout';
@@ -75,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initTopbarDate();
   initSidebar();
-  initBottomNavBadges();
   preChargerCouleursAdmin();
   initToggleMdp();
   initMdpOublieAdmin();
@@ -259,6 +261,7 @@ function onLoginSuccess(user) {
   demarrerEcouteVerification();
   demarrerEcouteAlertesFraude();
   demarrerEcouteQR();
+  demarrerEcouteRevendications();
   loadDashboard();
 
   // Lien profond depuis le message WhatsApp envoyé par un propriétaire qui
@@ -330,7 +333,8 @@ function rendreAlertesAdmin() {
   const nbVerif = verificationsData.filter(v => v.statut === 'attente').length;
   const nbFraude = alertesFraudeData.filter(a => !a.traite).length;
   const nbQR = demandesQRData.filter(q => q.statut === 'en_attente').length;
-  const total = nbSignal + nbVerif + nbFraude + nbQR;
+  const nbRevendications = revendicationsData.filter(r => r.statut === 'en_attente').length;
+  const total = nbSignal + nbVerif + nbFraude + nbQR + nbRevendications;
 
   const badge = document.getElementById('badgeAlertesAdmin');
   if (badge) {
@@ -342,7 +346,8 @@ function rendreAlertesAdmin() {
     { n: nbSignal, icone: '🚨', texte: 'signalement(s) non traité(s)', page: 'signalements' },
     { n: nbVerif, icone: '📁', texte: "vérification(s) d'identité en attente", page: 'verification' },
     { n: nbFraude, icone: '⚠️', texte: 'alerte(s) anti-fraude', page: 'verification' },
-    { n: nbQR, icone: '🔲', texte: 'demande(s) de code QR premium en attente', page: 'codesqr' }
+    { n: nbQR, icone: '🔲', texte: 'demande(s) de code QR premium en attente', page: 'codesqr' },
+    { n: nbRevendications, icone: '🔑', texte: 'revendication(s) de propriétaire en attente', page: 'proprietaires' }
   ].filter(c => c.n > 0);
 
   const panel = construirePanneauAlertesAdmin();
@@ -640,6 +645,462 @@ window.refuserDemandeQR = refuserDemandeQR;
 window.revoquerAccesQR = revoquerAccesQR;
 
 /* ══════════════════════════════════════════════════════════
+   🔑 PROPRIÉTAIRES D'ÉTABLISSEMENTS
+   ------------------------------------------------------------
+   Revendication ("demandesRevendication") : un compte connecté déclare
+   posséder un établissement publié sans propriétaire lié (annonces/{id}
+   sans proprietaireId — typiquement les imports OpenStreetMap, voir
+   importerSelectionOSM). L'admin ouvre la fiche (photos + position GPS
+   envoyée par le déclarant, comparée à celle de l'annonce), puis Accepte
+   (avec une durée) ou Refuse. L'attribution manuelle fait la même chose
+   sans passer par une revendication.
+   Dans les deux cas, ce qui est réellement écrit se limite à des champs
+   sur annonces/{id} : proprietaireId, proprietaireNom, proprietaireTel,
+   abonnementDepuisLe, abonnementExpireLe — ce dernier est déjà lu par
+   app.js (estAnnonceVisibleSelonAbonnement) pour masquer du site public
+   les établissements expirés une fois l'interrupteur "Abonnements
+   propriétaires" activé. Il n'existe donc PAS de collection Firestore
+   "proprietairesActifs" séparée : l'onglet "Propriétaires actifs" est
+   simplement dérivé d'annoncesData, déjà alimenté en temps réel par
+   demarrerEcouteAnnonces() depuis la connexion admin.
+══════════════════════════════════════════════════════════ */
+function basculerOngletProprio(nomOnglet) {
+  document.querySelectorAll('.onglet-proprio').forEach(el => el.classList.add('hidden'));
+  document.getElementById('ongletProprio' + nomOnglet.charAt(0).toUpperCase() + nomOnglet.slice(1))?.classList.remove('hidden');
+  document.querySelectorAll('.tab-proprio-btn').forEach(btn => btn.classList.toggle('actif', btn.dataset.onglet === nomOnglet));
+}
+window.basculerOngletProprio = basculerOngletProprio;
+
+/* ───────── Écoute temps réel des revendications ─────────
+   Démarrée dès la connexion admin (voir onLoginSuccess), comme demandesQR,
+   pour que le badge de la sidebar et le centre d'alertes 🔔 restent à jour
+   même si l'admin n'a pas encore ouvert la page 🔑 Propriétaires. */
+function demarrerEcouteRevendications() {
+  if (ecouteRevendicationsDemarree) return;
+  ecouteRevendicationsDemarree = true;
+  if (!window.dbAdmin) return;
+
+  window.dbAdmin.collection('demandesRevendication').onSnapshot((snap) => {
+    revendicationsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const nbAttente = revendicationsData.filter(r => r.statut === 'en_attente').length;
+    const badge = document.getElementById('badgeProprietaires');
+    if (badge) badge.textContent = nbAttente;
+    if (pageActuelle === 'proprietaires') { calculerKpiProprietaires(); filtrerRevendications(); }
+    rendreAlertesAdmin();
+  }, (err) => {
+    console.error('Erreur de synchronisation des revendications :', err);
+    const tbody = document.getElementById('revendicationsTableBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Impossible de charger les revendications. Vérifiez les règles Firestore.</td></tr>';
+  });
+}
+
+/* Pas de collection dédiée à écouter : les propriétaires actifs sont
+   dérivés d'annoncesData (voir filtrerProprioActifs). Cette fonction ne
+   sert qu'à conserver le nom attendu par showPage('proprietaires'). */
+function demarrerEcouteProprietairesActifs() {
+  filtrerProprioActifs();
+}
+
+function calculerKpiProprietaires() {
+  const maintenant = Date.now();
+  const attente = revendicationsData.filter(r => r.statut === 'en_attente').length;
+  const etablissementsAbonnes = annoncesData.filter(a => champ(a, 'proprietaireId') && a.abonnementExpireLe);
+  const actifs = etablissementsAbonnes.filter(a => dateMs(a.abonnementExpireLe) > maintenant).length;
+  const expireBientot = etablissementsAbonnes.filter(a => {
+    const t = dateMs(a.abonnementExpireLe);
+    return t > maintenant && t <= maintenant + 7 * 86400000;
+  }).length;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('kpiPropRevAttente', attente);
+  set('kpiPropActifs', actifs);
+  set('kpiPropExpireBientot', expireBientot);
+}
+
+function filtrerRevendications() {
+  calculerKpiProprietaires();
+  const recherche = (document.getElementById('filterRevendications')?.value || '').toLowerCase();
+  const statutFiltre = document.getElementById('filterStatutRevendication')?.value || '';
+  const tbody = document.getElementById('revendicationsTableBody');
+  if (!tbody) return;
+
+  let liste = revendicationsData.slice().sort((a, b) => (b.dateDemande?.seconds || 0) - (a.dateDemande?.seconds || 0));
+  if (statutFiltre) liste = liste.filter(r => r.statut === statutFiltre);
+  if (recherche) {
+    liste = liste.filter(r =>
+      (r.proprietaireNom || '').toLowerCase().includes(recherche) ||
+      (r.nomEtablissement || '').toLowerCase().includes(recherche) ||
+      (r.telephone || '').toLowerCase().includes(recherche));
+  }
+
+  if (!liste.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Aucune revendication.</td></tr>';
+    return;
+  }
+
+  const badgesStatut = {
+    en_attente: '<span class="badge badge-yellow">⏳ En attente</span>',
+    validee: '<span class="badge badge-green">✅ Acceptée</span>',
+    refusee: '<span class="badge badge-red">🚫 Refusée</span>'
+  };
+
+  tbody.innerHTML = liste.map(r => {
+    const dateStr = r.dateDemande?.toDate ? r.dateDemande.toDate().toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    const gps = (r.positionGPS && r.positionGPS.lat != null && r.positionGPS.lng != null)
+      ? `<a href="https://www.google.com/maps?q=${r.positionGPS.lat},${r.positionGPS.lng}" target="_blank" rel="noopener">📍 Voir</a>`
+      : '—';
+    return `<tr id="ligneRevendication-${r.id}">
+      <td>${escapeHTML(r.proprietaireNom || '—')}</td>
+      <td>${escapeHTML(r.nomEtablissement || '—')}</td>
+      <td>${escapeHTML(r.telephone || '—')}</td>
+      <td>${gps}</td>
+      <td>${badgesStatut[r.statut] || r.statut || '—'}</td>
+      <td>${dateStr}</td>
+      <td><button class="btn-outline-sm" onclick="ouvrirFicheRevendication('${r.id}')">👁️ Voir la fiche</button></td>
+    </tr>`;
+  }).join('');
+}
+window.filtrerRevendications = filtrerRevendications;
+
+/* ───────── Fiche détaillée d'une revendication ─────────
+   Photos justificatives + position GPS envoyée par le déclarant (comparée
+   à celle de l'annonce quand elle existe) + décision (durée puis
+   Accepter, ou Refuser). Réutilise la structure modale déjà stylée pour
+   modalFicheVerif (voir CSS .fiche-print juste au-dessus dans admin.html). */
+function ouvrirFicheRevendication(id) {
+  const r = revendicationsData.find(x => x.id === id);
+  if (!r) { toast('❌ Revendication introuvable. Rafraîchissez la page.'); return; }
+
+  const annonce = annoncesData.find(a => a.id === r.etablissementId);
+  const dateStr = r.dateDemande?.toDate ? r.dateDemande.toDate().toLocaleString('fr-FR') : '—';
+  const telPropre = (r.telephone || '').replace(/[^\d]/g, '');
+  const gpsLien = (r.positionGPS && r.positionGPS.lat != null)
+    ? `<a href="https://www.google.com/maps?q=${r.positionGPS.lat},${r.positionGPS.lng}" target="_blank" rel="noopener">📍 ${Number(r.positionGPS.lat).toFixed(5)}, ${Number(r.positionGPS.lng).toFixed(5)}</a>`
+    : '—';
+
+  // Écart entre la position envoyée par le déclarant et celle enregistrée
+  // sur l'annonce : un repère simple pour détecter une revendication
+  // suspecte (établissement à Owendo revendiqué depuis une position à
+  // Akanda...). N'empêche jamais l'acceptation, c'est juste indicatif.
+  let ecartTexte = '';
+  if (annonce && r.positionGPS && annonce.lat != null && annonce.lng != null) {
+    const dist = distanceKm(annonce.lat, annonce.lng, r.positionGPS.lat, r.positionGPS.lng);
+    ecartTexte = dist > 1
+      ? `<p style="color:#B91C1C;font-size:12px;margin:4px 0 0;">⚠️ Position envoyée à ${dist.toFixed(1)} km de l'établissement enregistré — à vérifier.</p>`
+      : `<p style="color:#059669;font-size:12px;margin:4px 0 0;">✅ Position cohérente avec l'établissement (≈ ${Math.round(dist * 1000)} m).</p>`;
+  }
+
+  const photos = Array.isArray(r.photos) ? r.photos : [];
+  const galerie = photos.length
+    ? `<div class="photos-defaut-grid">${photos.map(url => `<div class="photo-defaut-cadre"><div class="photo-defaut-apercu"><img src="${escapeHTML(url)}" alt="Photo justificative"></div></div>`).join('')}</div>`
+    : '<p style="font-size:12.5px;color:#8A93A3;">Aucune photo jointe.</p>';
+
+  const boutonsDecision = r.statut === 'en_attente' ? `
+    <div class="form-group" style="margin-top:14px;">
+      <label>Durée à accorder si acceptée</label>
+      <select id="ficheRevendicationDuree">
+        <option value="1mois">1 mois</option>
+        <option value="1trimestre">1 trimestre (3 mois)</option>
+        <option value="6mois">6 mois</option>
+        <option value="1an">1 an</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" style="color:#B91C1C;border-color:#B91C1C;" onclick="refuserRevendication('${r.id}')">🚫 Refuser</button>
+      <button class="btn-primary" onclick="accepterRevendication('${r.id}')">✅ Accepter et attribuer</button>
+    </div>` : `<p style="font-size:12.5px;color:#8A93A3;margin-top:10px;">Déjà traitée${r.dateTraitement?.toDate ? ' le ' + r.dateTraitement.toDate().toLocaleString('fr-FR') : ''}.</p>`;
+
+  document.getElementById('ficheRevendicationContenu').innerHTML = `
+    <p style="font-weight:700;font-size:15px;margin:0 0 2px;">${escapeHTML(r.nomEtablissement || 'Établissement')}</p>
+    <p style="font-size:12.5px;color:#8A93A3;margin:0 0 12px;">Revendiqué le ${dateStr}</p>
+    <p><strong>Propriétaire déclaré :</strong> ${escapeHTML(r.proprietaireNom || '—')}</p>
+    <p><strong>Téléphone :</strong> ${escapeHTML(r.telephone || '—')} ${telPropre ? `<a href="https://wa.me/${telPropre}" target="_blank" rel="noopener">💬</a>` : ''}</p>
+    <p><strong>Position GPS envoyée :</strong> ${gpsLien}</p>
+    ${ecartTexte}
+    <p style="margin-top:12px;"><strong>Photos justificatives :</strong></p>
+    ${galerie}
+    ${boutonsDecision}
+  `;
+  document.getElementById('modalFicheRevendication').classList.remove('hidden');
+}
+window.ouvrirFicheRevendication = ouvrirFicheRevendication;
+
+function fermerFicheRevendication() {
+  document.getElementById('modalFicheRevendication').classList.add('hidden');
+}
+window.fermerFicheRevendication = fermerFicheRevendication;
+
+/* Distance à vol d'oiseau (Haversine), en kilomètres. */
+function distanceKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/* Ajoute une durée ('1mois'/'1trimestre'/'6mois'/'1an') à une date de
+   départ. Utilisée à la fois pour une nouvelle attribution (départ =
+   maintenant) et pour un renouvellement (départ = échéance actuelle si
+   elle n'est pas encore dépassée). */
+function ajouterDuree(depuis, duree) {
+  const d = new Date(depuis);
+  if (duree === '1mois') d.setMonth(d.getMonth() + 1);
+  else if (duree === '1trimestre') d.setMonth(d.getMonth() + 3);
+  else if (duree === '6mois') d.setMonth(d.getMonth() + 6);
+  else if (duree === '1an') d.setFullYear(d.getFullYear() + 1);
+  return d;
+}
+
+function dateMs(champTimestamp) {
+  return champTimestamp?.toDate ? champTimestamp.toDate().getTime() : new Date(champTimestamp).getTime();
+}
+
+function accepterRevendication(id) {
+  const r = revendicationsData.find(x => x.id === id);
+  if (!r) { toast('❌ Revendication introuvable.'); return; }
+  if (!r.etablissementId) { toast('❌ Établissement introuvable pour cette revendication.'); return; }
+  const duree = document.getElementById('ficheRevendicationDuree')?.value || '1mois';
+  if (!confirm(`Attribuer « ${r.nomEtablissement || 'cet établissement'} » à ${r.proprietaireNom || 'ce propriétaire'} pour ${duree} ?`)) return;
+
+  const maintenant = new Date();
+  const expiration = ajouterDuree(maintenant, duree);
+
+  Promise.all([
+    window.dbAdmin.collection('annonces').doc(r.etablissementId).update({
+      proprietaireId: r.proprietaireId,
+      proprietaireNom: r.proprietaireNom || '',
+      proprietaireTel: r.telephone || '',
+      whatsapp: r.telephone || '',
+      abonnementDepuisLe: firebase.firestore.Timestamp.fromDate(maintenant),
+      abonnementExpireLe: firebase.firestore.Timestamp.fromDate(expiration)
+    }),
+    window.dbAdmin.collection('demandesRevendication').doc(id).update({
+      statut: 'validee',
+      dureeAccordee: duree,
+      dateTraitement: firebase.firestore.FieldValue.serverTimestamp()
+    })
+  ]).then(() => {
+    toast('✅ Établissement attribué');
+    fermerFicheRevendication();
+    const telPropre = (r.telephone || '').replace(/[^\d]/g, '');
+    if (telPropre) {
+      const texteMsg = `Bonjour ${r.proprietaireNom || ''}, votre revendication de l'établissement « ${r.nomEtablissement || ''} » sur MALAGA est acceptée ✅. Vous en êtes maintenant le propriétaire enregistré, pour une durée de ${duree}.`;
+      window.open(`https://wa.me/${telPropre}?text=${encodeURIComponent(texteMsg)}`, '_blank');
+    }
+  }).catch((err) => {
+    console.error('Erreur acceptation revendication :', err);
+    toast('❌ Impossible d\'attribuer (' + (err.code || err.message || 'erreur inconnue') + ')');
+  });
+}
+window.accepterRevendication = accepterRevendication;
+
+function refuserRevendication(id) {
+  const r = revendicationsData.find(x => x.id === id);
+  if (!r) { toast('❌ Revendication introuvable.'); return; }
+  if (!confirm(`Refuser la revendication de ${r.proprietaireNom || 'ce propriétaire'} ?`)) return;
+
+  window.dbAdmin.collection('demandesRevendication').doc(id).update({
+    statut: 'refusee',
+    dateTraitement: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    toast('✅ Revendication refusée');
+    fermerFicheRevendication();
+  }).catch((err) => {
+    console.error('Erreur refus revendication :', err);
+    toast('❌ Impossible de refuser (' + (err.code || err.message || 'erreur inconnue') + ')');
+  });
+}
+window.refuserRevendication = refuserRevendication;
+
+/* ───────── Attribution manuelle (sans revendication) ───────── */
+function remplirSelectAttributionUtilisateurs() {
+  const select = document.getElementById('attribUtilisateurSelect');
+  if (!select) return;
+  const valeurActuelle = select.value;
+  const utilisateurs = usersData.slice().sort((a, b) => texte(a, 'nom').localeCompare(texte(b, 'nom')));
+  select.innerHTML = '<option value="">— Choisir un utilisateur —</option>' +
+    utilisateurs.map(u => `<option value="${u.id}">${escapeHTML(texte(u, 'nom') || texte(u, 'email'))} (${escapeHTML(texte(u, 'email'))})</option>`).join('');
+  if (valeurActuelle && utilisateurs.some(u => u.id === valeurActuelle)) select.value = valeurActuelle;
+}
+window.remplirSelectAttributionUtilisateurs = remplirSelectAttributionUtilisateurs;
+
+/* Établissements attribuables = annonces sans proprietaireId (imports OSM
+   ou fiches publiées par l'admin sans compte lié). Une fois attribué ou
+   revendiqué avec succès, un établissement disparaît naturellement de
+   cette liste (proprietaireId est alors renseigné). */
+function etablissementsAttribuables() {
+  return annoncesData.filter(a => !champ(a, 'proprietaireId'));
+}
+
+function rendreListeAttributionEtablissements() {
+  const conteneur = document.getElementById('attribListeEtablissements');
+  if (!conteneur) return;
+  const liste = etablissementsAttribuables();
+  if (!liste.length) {
+    conteneur.innerHTML = '<p style="font-size:12.5px;color:#8A93A3;margin:0;">Aucun établissement disponible (tous ont déjà un propriétaire).</p>';
+    return;
+  }
+  conteneur.innerHTML = liste.map(a => `
+    <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:4px 0;">
+      <input type="checkbox" class="attrib-etablissement-checkbox" value="${a.id}">
+      <span>${escapeHTML(texte(a, 'nomEtablissement', 'titre'))} <span style="color:#8A93A3;">— ${escapeHTML(texte(a, 'commune'))}</span></span>
+    </label>`).join('');
+}
+window.rendreListeAttributionEtablissements = rendreListeAttributionEtablissements;
+
+function filtrerListeAttributionEtablissements() {
+  const recherche = (document.getElementById('attribFiltreEtablissement')?.value || '').toLowerCase();
+  document.querySelectorAll('#attribListeEtablissements label').forEach(label => {
+    label.style.display = !recherche || label.textContent.toLowerCase().includes(recherche) ? 'flex' : 'none';
+  });
+}
+window.filtrerListeAttributionEtablissements = filtrerListeAttributionEtablissements;
+
+function validerAttributionManuelle() {
+  const uid = document.getElementById('attribUtilisateurSelect')?.value;
+  const duree = document.getElementById('attribDuree')?.value || '1mois';
+  const idsChoisis = Array.from(document.querySelectorAll('.attrib-etablissement-checkbox:checked')).map(cb => cb.value);
+
+  if (!uid) { toast('⚠️ Choisissez un utilisateur'); return; }
+  if (!idsChoisis.length) { toast('⚠️ Sélectionnez au moins un établissement'); return; }
+
+  const u = usersData.find(x => x.id === uid);
+  if (!u) { toast('❌ Utilisateur introuvable'); return; }
+  if (!confirm(`Attribuer ${idsChoisis.length} établissement(s) à ${texte(u, 'nom') || texte(u, 'email')} pour ${duree} ?`)) return;
+
+  const maintenant = new Date();
+  const expiration = ajouterDuree(maintenant, duree);
+  const batch = window.dbAdmin.batch();
+  idsChoisis.forEach(id => {
+    batch.update(window.dbAdmin.collection('annonces').doc(id), {
+      proprietaireId: uid,
+      proprietaireNom: texte(u, 'nom') || texte(u, 'email'),
+      proprietaireTel: champ(u, 'whatsapp', 'telephone', 'tel') || '',
+      whatsapp: champ(u, 'whatsapp', 'telephone', 'tel') || '',
+      abonnementDepuisLe: firebase.firestore.Timestamp.fromDate(maintenant),
+      abonnementExpireLe: firebase.firestore.Timestamp.fromDate(expiration)
+    });
+  });
+
+  batch.commit().then(() => {
+    toast(`✅ ${idsChoisis.length} établissement(s) attribué(s)`);
+    rendreListeAttributionEtablissements();
+    document.getElementById('attribUtilisateurSelect').value = '';
+  }).catch((err) => {
+    console.error('Erreur attribution manuelle :', err);
+    toast('❌ Impossible d\'attribuer (' + (err.code || err.message || 'erreur inconnue') + ')');
+  });
+}
+window.validerAttributionManuelle = validerAttributionManuelle;
+
+/* ───────── Propriétaires actifs (dérivé d'annoncesData) + chrono ───────── */
+function filtrerProprioActifs() {
+  const recherche = (document.getElementById('filterProprioActifs')?.value || '').toLowerCase();
+  const tbody = document.getElementById('proprioActifsTableBody');
+  if (!tbody) return;
+
+  let liste = annoncesData.filter(a => champ(a, 'proprietaireId') && a.abonnementExpireLe);
+  if (recherche) {
+    liste = liste.filter(a =>
+      (texte(a, 'proprietaireNom') || '').toLowerCase().includes(recherche) ||
+      (texte(a, 'nomEtablissement', 'titre') || '').toLowerCase().includes(recherche));
+  }
+  liste.sort((a, b) => dateMs(a.abonnementExpireLe) - dateMs(b.abonnementExpireLe));
+
+  calculerKpiProprietaires();
+  clearInterval(intervalChronoProprio);
+
+  if (!liste.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="table-empty">Aucun propriétaire actif.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = liste.map(a => {
+    const depuisStr = a.abonnementDepuisLe ? new Date(dateMs(a.abonnementDepuisLe)).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    return `<tr id="ligneProprioActif-${a.id}">
+      <td>${escapeHTML(texte(a, 'proprietaireNom'))}</td>
+      <td>${escapeHTML(texte(a, 'nomEtablissement', 'titre'))}</td>
+      <td>${depuisStr}</td>
+      <td><span class="chrono-proprio" data-expire="${dateMs(a.abonnementExpireLe)}">—</span></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn-outline-sm" style="color:#059669;border-color:#059669;" onclick="renouvelerAbonnement('${a.id}')">🔄 Renouveler</button>
+        <button class="btn-outline-sm" style="color:#B91C1C;border-color:#B91C1C;" onclick="retirerAbonnement('${a.id}')">⛔ Retirer</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  mettreAJourChronoProprio();
+  intervalChronoProprio = setInterval(mettreAJourChronoProprio, 1000);
+}
+window.filtrerProprioActifs = filtrerProprioActifs;
+
+/* Chrono JJ:HH:MM:SS coloré : vert (> 7 jours restants), orange (≤ 7
+   jours), rouge une fois l'échéance dépassée ("⛔ Expiré"). Ne touche que
+   le texte des cellules déjà rendues (pas de reconstruction du tableau),
+   pour ne pas faire clignoter la liste toutes les secondes. */
+function mettreAJourChronoProprio() {
+  document.querySelectorAll('.chrono-proprio').forEach(el => {
+    const expire = parseInt(el.dataset.expire, 10);
+    const restant = expire - Date.now();
+    if (restant <= 0) {
+      el.textContent = '⛔ Expiré';
+      el.style.color = '#B91C1C';
+      el.style.fontWeight = '700';
+      return;
+    }
+    const j = Math.floor(restant / 86400000);
+    const h = Math.floor((restant % 86400000) / 3600000);
+    const m = Math.floor((restant % 3600000) / 60000);
+    const s = Math.floor((restant % 60000) / 1000);
+    const pad = (n) => String(n).padStart(2, '0');
+    el.textContent = `${pad(j)}:${pad(h)}:${pad(m)}:${pad(s)}`;
+    el.style.color = j > 7 ? '#059669' : (j >= 1 ? '#D97706' : '#B91C1C');
+    el.style.fontWeight = '700';
+    el.style.fontFamily = "'Courier New', monospace";
+  });
+}
+
+function renouvelerAbonnement(annonceId) {
+  const a = annoncesData.find(x => x.id === annonceId);
+  if (!a) { toast('❌ Établissement introuvable.'); return; }
+  const duree = prompt('Durée du renouvellement : 1mois, 1trimestre, 6mois ou 1an', '1mois');
+  if (!duree) return;
+  if (!['1mois', '1trimestre', '6mois', '1an'].includes(duree)) {
+    toast('⚠️ Durée invalide (1mois / 1trimestre / 6mois / 1an)');
+    return;
+  }
+  // Repart de l'échéance actuelle si elle n'est pas encore dépassée, sinon
+  // de maintenant — un renouvellement anticipé ne fait pas perdre de temps
+  // au propriétaire.
+  const base = a.abonnementExpireLe && dateMs(a.abonnementExpireLe) > Date.now() ? new Date(dateMs(a.abonnementExpireLe)) : new Date();
+  const nouvelleExpiration = ajouterDuree(base, duree);
+
+  window.dbAdmin.collection('annonces').doc(annonceId).update({
+    abonnementExpireLe: firebase.firestore.Timestamp.fromDate(nouvelleExpiration)
+  }).then(() => toast('✅ Abonnement renouvelé'))
+    .catch((err) => { console.error(err); toast('❌ Erreur lors du renouvellement'); });
+}
+window.renouvelerAbonnement = renouvelerAbonnement;
+
+function retirerAbonnement(annonceId) {
+  const a = annoncesData.find(x => x.id === annonceId);
+  if (!a) { toast('❌ Établissement introuvable.'); return; }
+  if (!confirm(`Retirer l'abonnement de ${texte(a, 'proprietaireNom')} sur « ${texte(a, 'nomEtablissement', 'titre')} » ? L'établissement redeviendra disponible pour attribution.`)) return;
+
+  window.dbAdmin.collection('annonces').doc(annonceId).update({
+    proprietaireId: firebase.firestore.FieldValue.delete(),
+    proprietaireNom: firebase.firestore.FieldValue.delete(),
+    proprietaireTel: firebase.firestore.FieldValue.delete(),
+    abonnementDepuisLe: firebase.firestore.FieldValue.delete(),
+    abonnementExpireLe: firebase.firestore.FieldValue.delete()
+  }).then(() => {
+    toast('✅ Abonnement retiré, établissement disponible pour attribution');
+    rendreListeAttributionEtablissements();
+  }).catch((err) => { console.error(err); toast('❌ Erreur lors du retrait'); });
+}
+window.retirerAbonnement = retirerAbonnement;
+
+/* ══════════════════════════════════════════════════════════
    ÉCOUTE TEMPS RÉEL — SIGNALEMENTS (Firestore, collection "signalements")
    Écrit par le site public via contact-signalement.js (formulaire
    "🚩 Signaler un problème" dans le menu).
@@ -889,9 +1350,6 @@ function showPage(pageId) {
 
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(n => n.classList.remove('active'));
-  // querySelectorAll (pas querySelector) : le même data-page existe à la fois
-  // dans le menu latéral et dans la barre basse mobile (voir bottom-nav-admin
-  // dans admin.html) — les deux doivent se surligner ensemble.
   document.querySelectorAll(`[data-page="${pageId}"]`).forEach(el => el.classList.add('active'));
 
   const titles = {
@@ -901,6 +1359,7 @@ function showPage(pageId) {
     'entreprises': '🏢 Comptes professionnels',
     'verification': '📁 Vérification & Archives',
     'codesqr': '🔲 Codes QR — accès premium',
+    'proprietaires': '🔑 Propriétaires d\'établissements',
     'signalements': 'Signalements',
     'reservations': 'Demandes de visite',
     'messages': 'Messages',
@@ -918,6 +1377,14 @@ function showPage(pageId) {
   else if (pageId === 'entreprises') filtrerEntreprises();
   else if (pageId === 'verification') { filtrerVerif(); loadAlertesFraude(); }
   else if (pageId === 'codesqr') { demarrerEcouteQR(); filtrerQR(); }
+  else if (pageId === 'proprietaires') {
+    demarrerEcouteRevendications();
+    demarrerEcouteProprietairesActifs();
+    filtrerRevendications();
+    remplirSelectAttributionUtilisateurs();
+    rendreListeAttributionEtablissements();
+    filtrerProprioActifs();
+  }
   else if (pageId === 'signalements') loadSignalements();
   else if (pageId === 'reservations' && window.chargerReservations) window.chargerReservations();
   else if (pageId === 'messages') loadMessages();
@@ -3736,24 +4203,6 @@ function initTopbarDate() {
   document.getElementById('topbarDate').textContent = d.toLocaleDateString('fr-FR', options);
 }
 
-// Reflète les pastilles rouges du menu latéral (badgeAnnonces / badgeReservations,
-// alimentées ailleurs — dont reservations-admin.js) sur les points de la barre
-// basse mobile, sans dépendre de l'endroit exact où chaque badge est mis à
-// jour : un simple sondage léger toutes les 2s suffit ici (aucun impact
-// perceptible, la barre basse n'a que 2 pastilles).
-function initBottomNavBadges() {
-  const paires = [['badgeAnnonces', 'bnavDotAnnonces'], ['badgeReservations', 'bnavDotReservations']];
-  setInterval(() => {
-    paires.forEach(([idBadge, idDot]) => {
-      const badge = document.getElementById(idBadge);
-      const dot = document.getElementById(idDot);
-      if (!badge || !dot) return;
-      const n = parseInt(badge.textContent, 10) || 0;
-      dot.classList.toggle('visible', n > 0);
-    });
-  }, 2000);
-}
-
 /* ══════════════════════════════════════════════════════════
    PARAMÈTRES DU SITE — appliqués en direct sur le site public
    (voir appliquerParametresSite() dans app.js). Document unique
@@ -3773,7 +4222,11 @@ const PARAMS_SITE_DEFAUT = {
   typesBienExtra: [],
   typesBienMasques: [],
   equipementsExtra: [],
-  equipementsMasques: []
+  equipementsMasques: [],
+  // Interrupteur général du module 🔑 Propriétaires — désactivé par défaut :
+  // affichage gratuit et permanent tant qu'il n'est pas coché depuis
+  // ⚙️ Paramètres du site → 🔑 Abonnements propriétaires.
+  proprietairesAbonnementsActifs: false
 };
 let parametresSiteCourants = { ...PARAMS_SITE_DEFAUT };
 
@@ -3913,6 +4366,7 @@ async function chargerParametresSite() {
   document.getElementById('paramContactEmail').value = p.contactEmail || '';
   document.getElementById('paramContactFacebook').value = p.contactFacebook || '';
   document.getElementById('paramContactInstagram').value = p.contactInstagram || '';
+  document.getElementById('paramAbonnementsProprioActifs').checked = !!p.proprietairesAbonnementsActifs;
 
   const ref = window.MALAGA_REF || {};
   rendreListeCategorieParam('paramListeTypesBien', ref.TYPES_BIEN || [], p.typesBienExtra || [], p.typesBienMasques || []);
@@ -3958,6 +4412,7 @@ async function enregistrerParametresSite() {
     typesBienMasques: typesBien.standardsMasques,
     equipementsExtra: equipements.extra,
     equipementsMasques: equipements.standardsMasques,
+    proprietairesAbonnementsActifs: document.getElementById('paramAbonnementsProprioActifs').checked,
     dateModification: firebase.firestore.FieldValue.serverTimestamp()
   };
 
