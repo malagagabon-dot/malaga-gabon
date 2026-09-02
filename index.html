@@ -63,6 +63,43 @@
     }
   </style>
 
+  <!-- Bouton "Installer l'application" : lien du menu latéral + FAB flottant sous le header -->
+  <style>
+    .drawer-link-install{
+      background:linear-gradient(135deg,#009E60,#007a47);
+      color:#fff !important;
+      border-radius:10px;
+      margin:4px 8px;
+      box-shadow:0 2px 8px rgba(0,158,96,.3);
+    }
+    .drawer-link-install:hover{background:linear-gradient(135deg,#00b56d,#008a52);}
+    .drawer-link-install.installee{opacity:.65;pointer-events:none;background:linear-gradient(135deg,#6b7280,#4b5563);box-shadow:none;}
+
+    .install-fab{
+      position:fixed;right:12px;top:74px;z-index:120;display:none;align-items:center;
+      background:#fff;border-radius:30px;box-shadow:0 6px 20px rgba(10,22,40,.22);
+      animation:installFabIn .45s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    .install-fab.show{display:flex;}
+    .install-fab-main{
+      display:flex;align-items:center;gap:8px;border:none;cursor:pointer;
+      padding:10px 16px 10px 14px;border-radius:30px;
+      background:linear-gradient(135deg,#009E60,#007a47);color:#fff;
+      font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;
+      box-shadow:0 2px 10px rgba(0,158,96,.35);white-space:nowrap;
+    }
+    .install-fab-main:active{transform:scale(.96);}
+    .install-fab-icon{font-size:16px;animation:installFabPulse 2.4s ease-in-out infinite;}
+    .install-fab-close{
+      position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;
+      border:2px solid #fff;background:#1a1a2e;color:#fff;font-size:10px;line-height:1;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25);
+    }
+    @keyframes installFabIn{from{opacity:0;transform:translateY(-10px) scale(.85);}to{opacity:1;transform:translateY(0) scale(1);}}
+    @keyframes installFabPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+    @media (min-width:760px){.install-fab{right:24px;}}
+  </style>
+
   <!-- Barre de suggestions de recherche : posée ici (plutôt que dans style.css)
        pour ne pas dépendre de son cache — voir #search-suggestions dans le
        Hero et initAutocompleteRecherche() dans app.js. -->
@@ -120,6 +157,8 @@
       <button class="drawer-close" id="fermerDrawer">✕</button>
     </div>
     <nav class="drawer-nav">
+      <a href="#" class="drawer-link drawer-link-install" id="drawerInstall">📲 <strong>Installer l'application</strong></a>
+      <div class="drawer-sep"></div>
       <a href="index.html" class="drawer-link actif">🏠 Accueil</a>
       <a href="#liste-annonces" class="drawer-link">📋 Toutes les annonces</a>
       <a href="#" class="drawer-link" id="drawerFavorisLink">❤️ Mes favoris</a>
@@ -165,6 +204,15 @@
       </div>
     </div>
   </header>
+
+  <!-- FAB flottant "Installer l'application" (fermable), calé sous le header sans le modifier -->
+  <div id="install-fab" class="install-fab" role="button" tabindex="0" aria-label="Installer l'application">
+    <button class="install-fab-close" id="install-fab-close" onclick="event.stopPropagation();dismissInstallFab();" aria-label="Fermer">✕</button>
+    <button class="install-fab-main" onclick="installApp()">
+      <span class="install-fab-icon">📲</span>
+      <span class="install-fab-text">Installer l'app</span>
+    </button>
+  </div>
 
   <!-- Hero -->
   <section class="hero">
@@ -1072,6 +1120,89 @@
   <script type="module" src="app.js?v=20260828g"></script>
   <script src="grille-adaptive.js?v=20260819b"></script>
   <script type="module" src="contact-signalement.js?v=20260819b"></script>
+
+  <!-- Bouton "Installer l'application" — menu latéral + FAB flottant sous le header -->
+  <script>
+  (function(){
+    let deferredPrompt = null;
+    const DISMISS_KEY = 'malaga_install_fab_dismissed_at';
+    const SNOOZE_DAYS = 7;
+
+    function isStandalone(){
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.navigator.standalone === true;
+    }
+
+    function positionFab(){
+      const header = document.querySelector('.header');
+      const fab = document.getElementById('install-fab');
+      if(!header || !fab) return;
+      const bottom = header.getBoundingClientRect().bottom;
+      fab.style.top = Math.round(bottom + 10) + 'px';
+    }
+
+    function wasRecentlyDismissed(){
+      const ts = localStorage.getItem(DISMISS_KEY);
+      if(!ts) return false;
+      return (Date.now() - parseInt(ts,10)) / 86400000 < SNOOZE_DAYS;
+    }
+
+    function setInstalledState(){
+      const link = document.getElementById('drawerInstall');
+      if(link){ link.classList.add('installee'); link.textContent = '✅ Application installée'; }
+      const fab = document.getElementById('install-fab');
+      if(fab){ fab.classList.remove('show'); fab.style.display = 'none'; }
+    }
+
+    function maybeShowFab(){
+      if(isStandalone() || wasRecentlyDismissed()) return;
+      positionFab();
+      const fab = document.getElementById('install-fab');
+      if(fab){ fab.classList.add('show'); }
+    }
+
+    window.dismissInstallFab = function(){
+      const fab = document.getElementById('install-fab');
+      if(fab){ fab.classList.remove('show'); }
+      try{ localStorage.setItem(DISMISS_KEY, String(Date.now())); }catch(e){}
+    };
+
+    window.installApp = function(){
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(result){
+          if(result.outcome === 'accepted'){ setInstalledState(); }
+          deferredPrompt = null;
+        });
+      } else {
+        alert('📲 Pour installer MALAGA :\n\nSur Android Chrome :\nMenu ⋮ → "Ajouter à l\'écran d\'accueil" / "Installer l\'application"\n\nSur iPhone Safari :\nBouton Partager ⬆️ → "Sur l\'écran d\'accueil"');
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', function(e){
+      e.preventDefault();
+      deferredPrompt = e;
+      setTimeout(maybeShowFab, 1800);
+    });
+
+    window.addEventListener('appinstalled', setInstalledState);
+    window.addEventListener('resize', positionFab);
+
+    document.addEventListener('DOMContentLoaded', function(){
+      const link = document.getElementById('drawerInstall');
+      if(link){ link.addEventListener('click', function(ev){ ev.preventDefault(); installApp(); document.getElementById('drawerOverlay') && document.getElementById('drawerOverlay').click(); }); }
+
+      if(isStandalone()){
+        setInstalledState();
+      } else {
+        positionFab();
+        setTimeout(maybeShowFab, 2500);
+      }
+      const fab = document.getElementById('install-fab');
+      if(fab){ fab.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ installApp(); } }); }
+    });
+  })();
+  </script>
 
   <!-- Activation de la PWA (installation + fonctionnement hors-ligne) -->
   <script>
