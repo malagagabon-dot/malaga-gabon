@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /admin.html
 
 Sitemap: https://malagagabon-dot.github.io/malaga-gabon/sitemap.xml
