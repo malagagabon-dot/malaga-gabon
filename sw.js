@@ -9,7 +9,7 @@
 
 // Change ce numéro à chaque mise à jour importante du site pour forcer
 // les navigateurs à recharger les fichiers en cache.
-const CACHE_NAME = "malaga-cache-v2";
+const CACHE_NAME = "malaga-cache-v3";
 
 const FICHIERS_A_METTRE_EN_CACHE = [
   "./",
@@ -20,6 +20,7 @@ const FICHIERS_A_METTRE_EN_CACHE = [
   "./auth.js",
   "./malaga-reference.js",
   "./grille-adaptive.js",
+  "./guide.js",
   "./contact-signalement.js",
   "./firebase-config.js",
   "./manifest.json",
