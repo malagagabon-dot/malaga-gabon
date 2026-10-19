@@ -1,0 +1,242 @@
+[
+ {
+  "titre": "Chambre à Okala (1ère pompe)",
+  "prix": 50000,
+  "prix_texte": "50 000 FCFA",
+  "contact": [
+   "074 39 59 81",
+   "066 21 03 63"
+  ],
+  "quartier_hint": "Okala",
+  "type_guess": "Chambre",
+  "chambres": null,
+  "terrasse": false,
+  "cloture": true,
+  "description": "Bordure de route, dans la barrière. Sans charges. Prix par mois.\nPrix : 50 000 FCFA par mois\nContact : 074 39 59 81 / 066 21 03 63"
+ },
+ {
+  "titre": "Villa à Nzeng-Ayong",
+  "prix": 300000,
+  "prix_texte": "300 000 FCFA",
+  "contact": [
+   "066 75 73 08",
+   "065 98 23 54"
+  ],
+  "quartier_hint": "Nzeng-Ayong",
+  "type_guess": "Villa",
+  "chambres": 2,
+  "terrasse": true,
+  "cloture": false,
+  "description": "2 chambres, 2 douches/WC, salon, cuisine, terrasse, garage. Eau en permanence. 1 mois de caution + 1 mois de loyer. Prix par mois.\nPrix : 300 000 FCFA par mois\nContact : 066 75 73 08 / 065 98 23 54"
+ },
+ {
+  "titre": "Chambre à Bikélé Nzong",
+  "prix": 60000,
+  "prix_texte": "60 000 FCFA",
+  "contact": [
+   "077 05 76 08",
+   "066 08 36 05"
+  ],
+  "quartier_hint": "Bikélé Nzong",
+  "type_guess": "Chambre",
+  "chambres": null,
+  "terrasse": false,
+  "cloture": false,
+  "description": "Grande chambre en bordure de route, douche intérieure, sans charges. Loyer + caution. Prix par mois.\nPrix : 60 000 FCFA par mois\nContact : 077 05 76 08 / 066 08 36 05"
+ },
+ {
+  "titre": "Studio à Sibang",
+  "prix": 180000,
+  "prix_texte": "180 000 FCFA",
+  "contact": [
+   "077 37 22 94",
+   "066 64 93 78"
+  ],
+  "quartier_hint": "Sibang",
+  "type_guess": "Studio",
+  "chambres": 1,
+  "terrasse": true,
+  "cloture": false,
+  "description": "1 grande chambre avec placards, douche complète, cuisine, 2 terrasses, compteur électricité + eau. Sans charges. 2 mois de caution + 1 mois de loyer. Prix par mois.\nPrix : 180 000 FCFA par mois\nContact : 077 37 22 94 / 066 64 93 78"
+ },
+ {
+  "titre": "Chambre américaine à Mindoubé 2",
+  "prix": 90000,
+  "prix_texte": "90 000 FCFA",
+  "contact": [
+   "077 62 90 93",
+   "062 80 32 66",
+   "077 19 45 83"
+  ],
+  "quartier_hint": "Mindoubé 2",
+  "type_guess": "Chambre",
+  "chambres": null,
+  "terrasse": true,
+  "cloture": true,
+  "description": "Moderne, douche, toilettes, coin cuisine, petite terrasse, à l'étage, dans la clôture. Eau comprise. Prix par mois.\nPrix : 90 000 FCFA par mois\nContact : 077 62 90 93 / 062 80 32 66 / 077 19 45 83"
+ },
+ {
+  "titre": "Studio à Mindoubé 1",
+  "prix": 150000,
+  "prix_texte": "150 000 FCFA",
+  "contact": [
+   "074 48 02 00",
+   "04 44 96 66",
+   "04 16 01 27"
+  ],
+  "quartier_hint": "Mindoubé 1",
+  "type_guess": "Studio",
+  "chambres": null,
+  "terrasse": true,
+  "cloture": false,
+  "description": "Chambre, salon, cuisine, douche, terrasse, grilles de sécurité, parking. Eau comprise. 1 mois de loyer + 1 mois de caution. Prix par mois.\nPrix : 150 000 FCFA par mois\nContact : 074 48 02 00 / 04 44 96 66 / 04 16 01 27"
+ },
+ {
+  "titre": "Studio à Port-Gentil (Ford de l'eau)",
+  "prix": 100000,
+  "prix_texte": "100 000 FCFA",
+  "contact": [
+   "077 37 60 75",
+   "077 66 03 46"
+  ],
+  "quartier_hint": "Port-Gentil",
+  "type_guess": "Studio",
+  "chambres": null,
+  "terrasse": false,
+  "cloture": false,
+  "description": "Chambre, salon, douche, toilette, coin cuisine, en bordure de route. Loyer + caution. Propriétaire. Prix par mois.\nPrix : 100 000 FCFA par mois\nContact : 077 37 60 75 / 077 66 03 46"
+ },
+ {
+  "titre": "Studio au Beau Séjour",
+  "prix": 160000,
+  "prix_texte": "160 000 FCFA",
+  "contact": [
+   "066 68 78 22",
+   "062 10 48 23"
+  ],
+  "quartier_hint": "Beau Séjour",
+  "type_guess": "Studio",
+  "chambres": 2,
+  "terrasse": false,
+  "cloture": false,
+  "description": "Carrefour Nyali. 2 chambres, 1 salon, coin cuisine, douche/WC. Sans charges. Disponible de suite. Prix par mois.\nPrix : 160 000 FCFA par mois\nContact : 066 68 78 22 / 062 10 48 23"
+ },
+ {
+  "titre": "Maison à Port-Gentil (Ford de l'eau)",
+  "prix": 250000,
+  "prix_texte": "250 000 FCFA",
+  "contact": [
+   "077 37 60 75",
+   "077 66 03 46"
+  ],
+  "quartier_hint": "Port-Gentil",
+  "type_guess": "Maison",
+  "chambres": 3,
+  "terrasse": false,
+  "cloture": false,
+  "description": "3 chambres, forage d'eau, électricité, box wifi, caméra. Loyer + caution. Propriétaire. Prix par mois.\nPrix : 250 000 FCFA par mois\nContact : 077 37 60 75 / 077 66 03 46"
+ },
+ {
+  "titre": "Maison à Akébé Ville",
+  "prix": 250000,
+  "prix_texte": "250 000 FCFA",
+  "contact": [
+   "077 89 13 01",
+   "060 27 32 90"
+  ],
+  "quartier_hint": "Akébé Ville",
+  "type_guess": "Maison",
+  "chambres": 3,
+  "terrasse": false,
+  "cloture": true,
+  "description": "Haut standing, clôturée, bordure de route, gardien jour et nuit, parking, 3 chambres, 2 douches, 2 WC, salon, cuisine. Prix par mois.\nPrix : 250 000 FCFA par mois\nContact : 077 89 13 01 / 060 27 32 90"
+ },
+ {
+  "titre": "Maison à Nzeng-Ayong (rond-point)",
+  "prix": 275000,
+  "prix_texte": "275 000 FCFA",
+  "contact": [
+   "065 98 43 36",
+   "077 14 81 35"
+  ],
+  "quartier_hint": "Nzeng-Ayong",
+  "type_guess": "Maison",
+  "chambres": 2,
+  "terrasse": false,
+  "cloture": true,
+  "description": "Bordure de goudron, dans la clôture. Salon, salle à manger, cuisine, 2 chambres climatisées avec placards, 2 douches/WC, parking, compteur personnel. Prix par mois.\nPrix : 275 000 FCFA par mois\nContact : 065 98 43 36 / 077 14 81 35"
+ },
+ {
+  "titre": "Maison au PK12",
+  "prix": 300000,
+  "prix_texte": "300 000 FCFA",
+  "contact": [
+   "066 78 35 49",
+   "077 19 99 59"
+  ],
+  "quartier_hint": "PK12",
+  "type_guess": "Maison",
+  "chambres": 2,
+  "terrasse": true,
+  "cloture": true,
+  "description": "Dans la barrière, 1 grande cour, parking, salon, 2 chambres avec placards, 2 terrasses, 2 douches, 2 WC, cuisine. Pas de problème d'eau. Prix par mois.\nPrix : 300 000 FCFA par mois\nContact : 066 78 35 49 / 077 19 99 59"
+ },
+ {
+  "titre": "Maison à Owendo (derrière la pédiatrie)",
+  "prix": 300000,
+  "prix_texte": "300 000 FCFA",
+  "contact": [
+   "066 05 67 67",
+   "074 70 90 37"
+  ],
+  "quartier_hint": "Owendo",
+  "type_guess": "Maison",
+  "chambres": 4,
+  "terrasse": true,
+  "cloture": false,
+  "description": "4 chambres dont 2 avec salle de bain privative, salon/salle à manger, grande cuisine, terrasses, cour pour 2 voitures. 1 mois de loyer + 1 mois de caution. Prix par mois.\nPrix : 300 000 FCFA par mois\nContact : 066 05 67 67 / 074 70 90 37"
+ },
+ {
+  "titre": "Maison à la Démocratie",
+  "prix": 150000,
+  "prix_texte": "150 000 FCFA",
+  "contact": [
+   "074 07 75 08",
+   "066 10 94 77"
+  ],
+  "quartier_hint": "Démocratie",
+  "type_guess": "Maison",
+  "chambres": 2,
+  "terrasse": false,
+  "cloture": false,
+  "description": "Au rond-point, bordure de route, 2 chambres, douche/WC, cuisine avec placards, salon. Avec charges. Loyer + caution + frais d'agence. Prix par mois.\nPrix : 150 000 FCFA par mois\nContact : 074 07 75 08 / 066 10 94 77"
+ },
+ {
+  "titre": "Maison au PK9",
+  "prix": 300000,
+  "prix_texte": "300 000 FCFA",
+  "contact": [
+   "077 49 89 99"
+  ],
+  "quartier_hint": "PK9",
+  "type_guess": "Maison",
+  "chambres": 3,
+  "terrasse": true,
+  "cloture": false,
+  "description": "Sur le pavé, 3 chambres, 1 salon, 2 douches, cuisine, terrasse. Compteur eau et courant individuels. Prix par mois.\nPrix : 300 000 FCFA par mois\nContact : 077 49 89 99"
+ },
+ {
+  "titre": "Local bar-restaurant climatisé à Baraka",
+  "prix": 85000,
+  "prix_texte": "85 000 FCFA",
+  "contact": [
+   "066 49 71 31"
+  ],
+  "quartier_hint": "Baraka",
+  "type_guess": "",
+  "chambres": null,
+  "terrasse": false,
+  "cloture": false,
+  "description": "Au carrefour, avec matériel (chaises, fauteuils, tables, comptoir, étagère, cuisine). Sans charge. Prix par mois.\nPrix : 85 000 FCFA par mois\nContact : 066 49 71 31"
+ }
+]
