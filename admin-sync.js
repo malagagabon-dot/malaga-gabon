@@ -2,6 +2,7 @@
 var ADMIN='malagagabon@gmail.com',busy=false,REF=null,d=document;
 function n(s){return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function el(t,c,x){var e=d.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+var BASE='https://malagagabon-dot.github.io/malaga-gabon/img/cat/';function photoUrl(t){t=n(t);var f=/studio/.test(t)?'studio':/chambre/.test(t)?'chambre':/villa/.test(t)?'villa':/appartement/.test(t)?'appartement':/local|bureau|boutique|commerc|magasin/.test(t)?'local':'maison';return BASE+'malaga-'+f+'.jpg';}
 function avatar(type){
   var t=n(type),bed=t==='chambre';
   var col=(t==='studio'||bed)?['#e6f6ea','#1f7a43']:(t==='maison'||t==='villa')?['#e8f1fb','#1f5fa8']:['#fdf0e0','#a85f12'];
@@ -60,7 +61,7 @@ function review(fresh,u,s){
           etat:'Bon état',numeroBien:'',etage:'',vue:'',cloture:!!a.cloture,materiau:'',terrasse:!!a.terrasse,carreaux:false,couleurMurale:'',
           eau:'',electricite:'',compteur:'',equipements:[],moyensPaiement:[],
           uniteTarif:'mois',capacitePersonnes:null,typeLit:'',nbChambresCategorie:null,
-          photos:[avatar(type)],video:'',statut:'disponible',vues:0,dateCreation:ts,dateModification:ts});
+          photos:[photoUrl(type)],video:'',statut:'disponible',vues:0,dateCreation:ts,dateModification:ts});
       });
       await batch.commit();
       s.textContent='✅ '+picked.length+' annonce(s) ajoutée(s).';ov.remove();
@@ -80,6 +81,8 @@ async function run(b,s){
     var list=await r.json();
     var q=await window.dbAdmin.collection('annonces').where('proprietaireId','==',u.uid).get();
     var have=q.docs.map(function(x){return x.data();});
+var upd=0;for(var j=0;j<q.docs.length;j++){var dd=q.docs[j].data(),p0=(dd.photos||[])[0];if(p0&&String(p0).indexOf('data:image/svg')===0){try{await q.docs[j].ref.update({photos:[photoUrl(dd.type)],dateModification:firebase.firestore.FieldValue.serverTimestamp()});upd++;}catch(e){}}}
+if(upd)alert(upd+' image(s) mise(s) à jour');
     var fresh=list.filter(function(a){return a&&a.titre&&a.contact&&a.contact.length&&!have.some(function(h){return h.titre===a.titre&&String(h.description||'').indexOf(a.contact[0])>-1;});});
     if(!fresh.length){s.textContent='✅ Déjà à jour ('+list.length+' annonces présentes).';return;}
     s.textContent='';review(fresh,u,s);
